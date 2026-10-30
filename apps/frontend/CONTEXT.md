@@ -35,3 +35,4 @@ grep -r "conteudo_texto" src/ --include="*.js" --include="*.jsx" -l | \
 ```
 
 Repetir para cada campo renomeado conforme lista em `docs/PLANO.md`.
+

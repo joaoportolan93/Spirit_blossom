@@ -30,3 +30,4 @@ O Django usa `SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")`.
 1. Fazer POST em `/api/auth/csrf/` → obter `csrftoken` no cookie.
 2. Fazer POST em `/api/posts/` com `X-CSRFToken` correto → esperar 201.
 3. Fazer POST sem `X-CSRFToken` → esperar 403.
+

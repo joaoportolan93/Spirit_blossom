@@ -31,3 +31,4 @@ cargo clippy
 |---|---|---|
 | `FEED_PORT` | `3000` | Porta de escuta |
 | `RUST_LOG` | `info` | Nível de log |
+

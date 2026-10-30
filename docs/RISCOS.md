@@ -27,3 +27,4 @@
 - **Validar com jurista**: R6 (`AccessLog`) antes de qualquer deploy em produção.
 - **NOT VERIFIED**: build ARM64 (R2, R9) — requer ambiente nativo para confirmar.
 - Riscos de segurança com probabilidade Alta ou Impacto Alto são revisados a cada marco.
+

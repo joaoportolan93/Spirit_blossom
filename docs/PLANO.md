@@ -145,3 +145,4 @@ Ver `infra/CONTEXT.md`.
 - Algoritmo Rev3 ("Para Você")
 - Embeddings MiniLM-L12-v2 (126 tokens úteis)
 - Rust feed service com lógica real
+

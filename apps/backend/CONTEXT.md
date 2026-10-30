@@ -34,3 +34,4 @@ cp ../../.env.example .env  # preencha os valores
 python manage.py migrate
 python manage.py runserver
 ```
+
