@@ -1,0 +1,46 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "feed-contract.json",
+  "title": "FeedResponse",
+  "description": "Contrato neutro do serviço de feed. Implementado em Python (M0–M3) e Rust (Fase 1+).",
+  "type": "object",
+  "required": ["items"],
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/FeedItem" }
+    },
+    "next_cursor": {
+      "description": "Cursor opaco para keyset pagination. null quando não há próxima página.",
+      "type": ["string", "null"]
+    }
+  },
+  "$defs": {
+    "FeedItem": {
+      "type": "object",
+      "required": ["post_id", "reason"],
+      "additionalProperties": false,
+      "properties": {
+        "post_id": {
+          "description": "UUID7 do post gerado pelo backend Django.",
+          "type": "string",
+          "format": "uuid"
+        },
+        "reason": {
+          "$ref": "#/$defs/FeedReason"
+        },
+        "cursor": {
+          "description": "Cursor deste item para retomar a partir dele. null no último item.",
+          "type": ["string", "null"]
+        }
+      }
+    },
+    "FeedReason": {
+      "description": "Motivo pelo qual o post aparece no feed.",
+      "type": "string",
+      "enum": ["following", "recommended", "pinned"]
+    }
+  }
+}
+

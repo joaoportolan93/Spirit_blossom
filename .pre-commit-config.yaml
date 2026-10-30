@@ -1,0 +1,44 @@
+repos:
+  # Python — Ruff (lint + format)
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.4.4
+    hooks:
+      - id: ruff
+        args: [--fix]
+        files: ^apps/backend/
+      - id: ruff-format
+        files: ^apps/backend/
+
+  # JavaScript — ESLint
+  - repo: https://github.com/pre-commit/mirrors-eslint
+    rev: v9.3.0
+    hooks:
+      - id: eslint
+        files: ^apps/frontend/src/.*\.(js|jsx)$
+        additional_dependencies:
+          - eslint@9.3.0
+          - eslint-plugin-react@7.34.1
+
+  # Rust — cargo fmt
+  - repo: local
+    hooks:
+      - id: cargo-fmt
+        name: cargo fmt
+        entry: cargo fmt --manifest-path services/feed/Cargo.toml --
+        language: system
+        files: ^services/feed/src/.*\.rs$
+        pass_filenames: false
+
+  # Geral — trailing whitespace, EOF, yaml, large files
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-json
+      - id: check-added-large-files
+        args: [--maxkb=500]
+      - id: no-commit-to-branch
+        args: [--branch, main]
+

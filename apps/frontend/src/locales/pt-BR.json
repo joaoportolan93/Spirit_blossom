@@ -1,0 +1,37 @@
+{
+  "app": {
+    "name": "{{appName}}"
+  },
+  "auth": {
+    "login": "Entrar",
+    "logout": "Sair",
+    "register": "Criar conta",
+    "email": "E-mail",
+    "password": "Senha",
+    "username": "Nome de usuário"
+  },
+  "post": {
+    "placeholder": "No que você está pensando?",
+    "publish": "Publicar",
+    "chars_remaining": "{{count}} caracteres restantes"
+  },
+  "feed": {
+    "following": "Seguindo",
+    "for_you": "Para você",
+    "empty": "Nenhuma publicação ainda."
+  },
+  "profile": {
+    "follow": "Seguir",
+    "unfollow": "Deixar de seguir",
+    "bio": "Biografia"
+  },
+  "notifications": {
+    "title": "Notificações",
+    "empty": "Sem notificações no momento."
+  },
+  "errors": {
+    "generic": "Algo deu errado. Tente novamente.",
+    "not_found": "Página não encontrada.",
+    "unauthorized": "Você precisa estar autenticado."
+  }
+}

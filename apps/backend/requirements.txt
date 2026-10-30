@@ -1,0 +1,38 @@
+# ── Django core ─────────────────────────────────────────────────────────────
+Django==5.2.1
+djangorestframework==3.15.2
+djangorestframework-simplejwt==5.3.1
+django-cors-headers==4.3.1
+django-celery-beat==2.6.0
+
+# ── Banco de dados ───────────────────────────────────────────────────────────
+psycopg[binary]==3.1.19
+pgvector==0.3.2
+
+# ── Auth ─────────────────────────────────────────────────────────────────────
+argon2-cffi==23.1.0
+
+# ── UUID7 (mesmo que o Lumem) ────────────────────────────────────────────────
+uuid6==2024.1.12
+
+# ── Celery / Redis ───────────────────────────────────────────────────────────
+celery==5.3.6
+redis==5.0.4
+
+# ── Servidor WSGI ────────────────────────────────────────────────────────────
+gunicorn==22.0.0
+
+# ── Logging estruturado (N11) ────────────────────────────────────────────────
+structlog==24.2.0
+
+# ── Busca full-text ──────────────────────────────────────────────────────────
+# django.contrib.postgres já inclui SearchVector / GinIndex — sem dependência extra
+
+# ── Testes ───────────────────────────────────────────────────────────────────
+pytest==8.2.0
+pytest-django==4.8.0
+factory-boy==3.3.0
+jsonschema[format-nongpl]==4.22.0
+
+# ── Linting (usado também no CI) ─────────────────────────────────────────────
+ruff==0.4.4

@@ -1,0 +1,37 @@
+{
+  "app": {
+    "name": "{{appName}}"
+  },
+  "auth": {
+    "login": "Log in",
+    "logout": "Log out",
+    "register": "Create account",
+    "email": "Email",
+    "password": "Password",
+    "username": "Username"
+  },
+  "post": {
+    "placeholder": "What's on your mind?",
+    "publish": "Post",
+    "chars_remaining": "{{count}} characters remaining"
+  },
+  "feed": {
+    "following": "Following",
+    "for_you": "For you",
+    "empty": "No posts yet."
+  },
+  "profile": {
+    "follow": "Follow",
+    "unfollow": "Unfollow",
+    "bio": "Bio"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "empty": "No notifications yet."
+  },
+  "errors": {
+    "generic": "Something went wrong. Please try again.",
+    "not_found": "Page not found.",
+    "unauthorized": "You need to be signed in."
+  }
+}
