@@ -19,55 +19,36 @@ O produto precisa de busca em conteúdo de posts. Os usuários digitam texto liv
   ⚠️ **Nunca usar `to_tsquery` diretamente com input do usuário** — quebra com termos compostos, parênteses ou caracteres especiais.
 - **Anotação no seletor:** `sv` (não `search_vector`) para evitar conflito com o campo do model no Plano A.
 
-### Planos de implementação (resolver no spike do M1a)
+### Implementação adotada — Plano A (`GeneratedField` — confirmado no spike do M1a)
 
-Executar spike antes de decidir entre os planos. Manter **apenas um** após o spike.
+O spike realizado pelo especialista E3 (Dados Postgres) confirmou que o Django 5.x
+**exclui automaticamente** campos `GeneratedField` do INSERT/UPDATE via `SQLInsertCompiler`
+(propriedade `field.generated = True`). O Postgres 16 aceita a expressão porque
+`to_tsvector('simple'::regconfig, ...)` é estritamente `IMMUTABLE`.
 
-**Plano A — `GeneratedField` (Django 5.0+):**
 ```python
-# models.py
-class Post(models.Model):
-    content_text = models.TextField()
-    search_vector = GeneratedField(
-        expression=SearchVector("content_text", config="simple"),
-        output_field=SearchVectorField(),
-        db_persist=True,
-    )
-    class Meta:
-        indexes = [GinIndex(fields=["search_vector"])]
+# posts/models.py — campo definitivo
+search_vector = GeneratedField(
+    expression=SearchVector("content_text", config="simple"),
+    output_field=SearchVectorField(),
+    db_persist=True,
+)
+
+class Meta:
+    indexes = [
+        models.Index(fields=["author", "-id"], name="posts_post_author_id_idx"),
+        GinIndex(fields=["search_vector"], name="posts_post_search_gin"),
+    ]
 ```
+
 ```python
-# selectors.py
+# posts/selectors.py — query direta no campo STORED
 def search_posts(*, query: str):
-    return Post.objects.annotate(
-        sv=F("search_vector")
-    ).filter(sv=SearchQuery(query, config="simple", search_type="websearch"))
+    sq = SearchQuery(query, config="simple", search_type="websearch")
+    return Post.objects.filter(search_vector=sq)
 ```
-> ⚠️ **NÃO VERIFICADO** — Django pode ou não excluir `GeneratedField` do INSERT/UPDATE nativamente. Confirmar no spike antes de usar em produção.
 
-**Plano B — GinIndex em expressão (fallback, verificado):**
-```python
-# models.py
-class Post(models.Model):
-    content_text = models.TextField()
-    class Meta:
-        indexes = [
-            GinIndex(
-                SearchVector("content_text", config="simple"),
-                name="post_content_gin_idx",
-            )
-        ]
-```
-```python
-# selectors.py
-def search_posts(*, query: str):
-    return Post.objects.annotate(
-        sv=SearchVector("content_text", config="simple")
-    ).filter(sv=SearchQuery(query, config="simple", search_type="websearch"))
-```
-> Plano B é nativo, verificado e não requer campo adicional no model.
-
-**Após o spike:** apagar o plano não escolhido deste ADR e do código.
+> Plano B descartado. Não há necessidade de `annotate(sv=...)` no seletor com o campo STORED.
 
 ## Alternativas consideradas
 

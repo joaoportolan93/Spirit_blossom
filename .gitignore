@@ -1,2 +1,62 @@
-agents/node_modules/
+# ── Python ───────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+.Python
+
+# ── Ambientes virtuais ────────────────────────────────────────────────────────
+.venv/
+venv/
+env/
+ENV/
+
+# ── Django ────────────────────────────────────────────────────────────────────
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+apps/backend/media/
+apps/backend/staticfiles/
+
+# ── Secrets / ambiente ────────────────────────────────────────────────────────
 .env
+.env.*
+!.env.example
+!.env.test
+
+# ── Node / frontend ───────────────────────────────────────────────────────────
+node_modules/
+agents/node_modules/
+dist/
+.pnp
+.pnp.js
+apps/frontend/dist/
+
+# ── Rust / Cargo ──────────────────────────────────────────────────────────────
+services/feed/target/
+
+# ── IDEs e editores ───────────────────────────────────────────────────────────
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# ── macOS / Windows ───────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Coverage / testes ─────────────────────────────────────────────────────────
+.coverage
+htmlcov/
+.pytest_cache/
+.tox/
+
+# ── Build / dist ─────────────────────────────────────────────────────────────
+*.egg-info/
+*.egg
+build/
+dist/

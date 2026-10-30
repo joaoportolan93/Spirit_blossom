@@ -57,12 +57,12 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt.token_blacklist",
     "corsheaders",
     "django_celery_beat",
-    # Domínio (criados em M1a)
-    # "accounts",
-    # "posts",
-    # "social",
-    # "feed",
-    # "notifications",
+    # Domínio
+    "accounts",
+    "posts",
+    "social",
+    "feed",
+    "notifications",
 ]
 
 # ---------------------------------------------------------------------------
@@ -169,7 +169,7 @@ PASSWORD_HASHERS = [
 # ---------------------------------------------------------------------------
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
-        # Definido em M1a: accounts.authentication.CookieJWTAuthentication
+        "accounts.authentication.CookieJWTAuthentication",
     ],
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",

@@ -25,6 +25,9 @@ gunicorn==22.0.0
 # ── Logging estruturado (N11) ────────────────────────────────────────────────
 structlog==24.2.0
 
+# ── Media / imagens ──────────────────────────────────────────────────────────
+Pillow==10.3.0
+
 # ── Busca full-text ──────────────────────────────────────────────────────────
 # django.contrib.postgres já inclui SearchVector / GinIndex — sem dependência extra
 

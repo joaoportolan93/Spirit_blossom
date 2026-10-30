@@ -1,0 +1,115 @@
+import hashlib
+import hmac
+import uuid
+import uuid6
+from django.conf import settings
+from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
+from django.db import models
+from django.utils.translation import gettext_lazy as _
+
+
+class UserManager(BaseUserManager):
+    def create_user(self, email, username, password=None, **extra_fields):
+        if not email:
+            raise ValueError(_("O e-mail é obrigatório."))
+        if not username:
+            raise ValueError(_("O nome de usuário é obrigatório."))
+        email = self.normalize_email(email)
+        user = self.model(email=email, username=username, **extra_fields)
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
+
+    def create_superuser(self, email, username, password=None, **extra_fields):
+        extra_fields.setdefault("is_staff", True)
+        extra_fields.setdefault("is_superuser", True)
+        return self.create_user(email, username, password, **extra_fields)
+
+
+class User(AbstractBaseUser, PermissionsMixin):
+    class Status(models.TextChoices):
+        ACTIVE = "active", _("Ativo")
+        SUSPENDED = "suspended", _("Suspenso")
+        DEACTIVATED = "deactivated", _("Desativado")
+
+    id = models.UUIDField(primary_key=True, default=uuid6.uuid7, editable=False)
+    email = models.EmailField(_("endereço de e-mail"), unique=True, max_length=255)
+    username = models.CharField(_("nome de usuário"), unique=True, max_length=30, db_index=True)
+    status = models.CharField(
+        max_length=15,
+        choices=Status.choices,
+        default=Status.ACTIVE,
+    )
+    is_active = models.BooleanField(default=True)
+    is_staff = models.BooleanField(default=False)
+    date_joined = models.DateTimeField(auto_now_add=True)
+
+    USERNAME_FIELD = "email"
+    REQUIRED_FIELDS = ["username"]
+
+    objects = UserManager()
+
+    class Meta:
+        db_table = "accounts_user"
+        verbose_name = _("usuário")
+        verbose_name_plural = _("usuários")
+
+    def __str__(self):
+        return self.username
+
+    @property
+    def is_valid_for_auth(self):
+        """Returns True if the account is active and not suspended/deactivated."""
+        return self.is_active and self.status == self.Status.ACTIVE
+
+
+class UserProfile(models.Model):
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        primary_key=True,
+        related_name="profile",
+    )
+    bio = models.CharField(max_length=160, blank=True, default="")
+    avatar = models.ImageField(upload_to="avatars/", null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "accounts_userprofile"
+        verbose_name = _("perfil de usuário")
+        verbose_name_plural = _("perfis de usuário")
+
+    def __str__(self):
+        return f"Perfil de {self.user.username}"
+
+
+class AccessLog(models.Model):
+    """
+    Registro de acesso por IP hasheado (HMAC-SHA256).
+    Finalidade: cumprimento do Marco Civil da Internet, Art. 13/15.
+    VALIDAR COM JURISTA antes de ativar em produção.
+    """
+    # BigAutoField herdado de DEFAULT_AUTO_FIELD
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="access_logs",
+    )
+    ip_hash = models.CharField(max_length=64, db_index=True)  # HMAC-SHA256 hex
+    port = models.PositiveIntegerField()  # Portas efêmeras chegam a 65535
+    timestamp = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        db_table = "accounts_accesslog"
+        verbose_name = _("registro de acesso")
+        verbose_name_plural = _("registros de acesso")
+        # Marco Civil exige retenção de 1 ano — retenção via Celery ou particionamento futuro.
+
+    @classmethod
+    def hash_ip(cls, ip: str) -> str:
+        """HMAC-SHA256 do IP usando SECRET_KEY como chave. Não é reversível."""
+        from django.conf import settings as django_settings
+        key = django_settings.SECRET_KEY.encode()
+        return hmac.new(key, ip.encode(), hashlib.sha256).hexdigest()

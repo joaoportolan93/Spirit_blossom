@@ -2,6 +2,16 @@
 
 > Desenvolvedor solo. Simplicidade e reversibilidade pesam mais que sofisticação.
 
+## Política de idioma e traduções
+
+- **Código e arquitetura (ESTRITAMENTE EM INGLÊS)**: Todas as funções, métodos, classes, variáveis, models, tabelas, colunas, rotas e contratos da API devem ser escritos estritamente em inglês (`get_following_feed`, `content_text`, `author_id`, `created_at`, etc.).
+- **Textos de UI e documentação**: Manter em português (pt-BR) neste momento. A tradução da interface para inglês é postergada para pós-MVP via arquivos de catálogo gettext (`.po` e `.mo`), sem dispersão de esforço agora.
+
+## Governança de agentes e modelos
+
+- **Orquestrador principal**: Claude Sonnet 4.6 Thinking (coordena, sintetiza decisões, edita arquivos e roda testes).
+- **Subagentes especialistas (E1 a E10)**: Operam obrigatoriamente no modelo **Gemini 3.8 Flash High** (`Model: flash`). Esse perfil de alta capacidade analítica é mandatório para análises técnicas, queries complexas e prevenção de falhas de segurança. Subagentes não alteram arquivos diretamente; entregam propostas analisadas para o orquestrador.
+
 ## Renomeações de modelo (Lumem → produto)
 
 | Lumem (pt-BR) | Este projeto (EN) | Nota |
