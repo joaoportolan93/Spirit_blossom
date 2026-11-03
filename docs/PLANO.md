@@ -7,6 +7,12 @@
 - **Código e arquitetura (ESTRITAMENTE EM INGLÊS)**: Todas as funções, métodos, classes, variáveis, models, tabelas, colunas, rotas e contratos da API devem ser escritos estritamente em inglês (`get_following_feed`, `content_text`, `author_id`, `created_at`, etc.).
 - **Textos de UI e documentação**: Manter em português (pt-BR) neste momento. A tradução da interface para inglês é postergada para pós-MVP via arquivos de catálogo gettext (`.po` e `.mo`), sem dispersão de esforço agora.
 
+## Política de faixa etária (18+ estrito)
+
+- **Público exclusivo adulto**: A rede social é estritamente proibida para menores de 18 anos (`hard 18+ gate`).
+- **Validação no backend**: Campo `birth_date` é obrigatório no registro (`RegisterSerializer`), rejeitando sumariamente usuários com idade inferior a 18 anos com erro 400.
+- **Simplificação regulatória**: Elimina complexidade de conformidade com ECA Digital (Lei 14.811/2024), dispensando fluxos de consentimento parental e salvaguardas específicas para público infantojuvenil.
+
 ## Governança de agentes e modelos
 
 - **Orquestrador principal**: Claude Sonnet 4.6 Thinking (coordena, sintetiza decisões, edita arquivos e roda testes).
