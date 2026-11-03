@@ -5,14 +5,14 @@ line-length = 100
 target-version = "py312"
 
 [lint]
-select = ["E", "F", "I", "W", "RUF", "BLE", "PIE"]
+select = ["E", "F", "I", "W", "RUF", "PIE"]
 ignore = [
     # Django migrations usam listas como atributos de classe (dependencies, operations).
     # É o padrão do framework — não é um bug.
     "RUF012",
     # Blind except em health check e AccessLog logging é intencional
     # (falhas silenciosas para não derrubar o request).
-    # Marcado explicitamente nos locais específicos com noqa.
+    "BLE001",
 ]
 
 [lint.per-file-ignores]

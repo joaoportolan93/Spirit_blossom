@@ -207,7 +207,7 @@ class TokenRefreshView(APIView):
                 {"detail": "Token inválido."},
                 status=status.HTTP_401_UNAUTHORIZED,
             )
-        except Exception:  # noqa: BLE001 — AccessLog: falha silenciosa intencional (Marco Civil)
+        except Exception:
             return Response(
                 {"detail": "Token inválido."},
                 status=status.HTTP_401_UNAUTHORIZED,
