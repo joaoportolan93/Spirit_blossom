@@ -49,6 +49,7 @@ class TestRegister:
             "username": "novousuario",
             "password": "senhaforte123",
             "password_confirm": "senhaforte123",
+            "birth_date": "2000-01-01",
         }
         response = client.post(
             "/api/auth/register/",
@@ -57,7 +58,9 @@ class TestRegister:
             HTTP_X_CSRFTOKEN=csrf,
         )
         assert response.status_code == status.HTTP_201_CREATED
-        assert User.objects.filter(email="novo@example.com").exists()
+        user = User.objects.filter(email="novo@example.com").first()
+        assert user is not None
+        assert user.profile.birth_date.isoformat() == "2000-01-01"
         assert "access_token" in response.cookies
         assert "refresh_token" in response.cookies
 
@@ -69,6 +72,7 @@ class TestRegister:
             "username": "xuser",
             "password": "senha123",
             "password_confirm": "diferente456",
+            "birth_date": "2000-01-01",
         }
         response = client.post(
             "/api/auth/register/",
@@ -87,6 +91,7 @@ class TestRegister:
             "username": "existente",
             "password": "senha123",
             "password_confirm": "senha123",
+            "birth_date": "2000-01-01",
         }
         response = client.post(
             "/api/auth/register/",
@@ -105,6 +110,7 @@ class TestRegister:
             "username": "novouser1",
             "password": "senhaforte123",
             "password_confirm": "senhaforte123",
+            "birth_date": "2000-01-01",
         }
         response = client.post(
             "/api/auth/register/",
@@ -122,6 +128,7 @@ class TestRegister:
             "username": "novouser2",
             "password": "123",
             "password_confirm": "123",
+            "birth_date": "2000-01-01",
         }
         response = client.post(
             "/api/auth/register/",
@@ -139,6 +146,7 @@ class TestRegister:
             "username": "user com espaco",
             "password": "senhaforte123",
             "password_confirm": "senhaforte123",
+            "birth_date": "2000-01-01",
         }
         response = client.post(
             "/api/auth/register/",
@@ -147,6 +155,47 @@ class TestRegister:
             HTTP_X_CSRFTOKEN=csrf,
         )
         assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    def test_register_menor_de_18_anos_retorna_400(self):
+        client = _make_client(enforce_csrf=True)
+        csrf = _get_csrf(client)
+        from datetime import date
+        today = date.today()
+        # 17 anos atrás
+        underage = date(today.year - 17, today.month, today.day).isoformat()
+        data = {
+            "email": "menor@example.com",
+            "username": "menoridade",
+            "password": "senhaforte123",
+            "password_confirm": "senhaforte123",
+            "birth_date": underage,
+        }
+        response = client.post(
+            "/api/auth/register/",
+            data,
+            format="json",
+            HTTP_X_CSRFTOKEN=csrf,
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "18 anos" in str(response.data)
+
+    def test_register_sem_birth_date_retorna_400(self):
+        client = _make_client(enforce_csrf=True)
+        csrf = _get_csrf(client)
+        data = {
+            "email": "sembirth@example.com",
+            "username": "sembirth",
+            "password": "senhaforte123",
+            "password_confirm": "senhaforte123",
+        }
+        response = client.post(
+            "/api/auth/register/",
+            data,
+            format="json",
+            HTTP_X_CSRFTOKEN=csrf,
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "birth_date" in response.data
 
 
 @pytest.mark.django_db
@@ -273,3 +322,66 @@ class TestLogin:
         log = AccessLog.objects.filter(user=user).last()
         assert log is not None
         assert log.port == 54321
+
+
+@pytest.mark.django_db
+class TestRefreshTokenRotation:
+    """Testa que refresh token é rotacionado corretamente e não pode ser reutilizado."""
+
+    def test_refresh_reutilizado_retorna_401(self, db):
+        """Usar um refresh token já rotacionado deve retornar 401."""
+        from tests.conftest import set_auth_cookies
+        client = APIClient()
+        user = UserFactory()
+        
+        # Obtém refresh token original
+        refresh = RefreshToken.for_user(user)
+        old_refresh_str = str(refresh)
+        
+        # Primeiro uso — deve funcionar
+        client.cookies["refresh_token"] = old_refresh_str
+        client.cookies["csrftoken"] = "testcsrf"
+        response = client.post(
+            "/api/auth/refresh/",
+            HTTP_X_CSRFTOKEN="testcsrf",
+        )
+        assert response.status_code == 200, f"Primeiro refresh falhou: {response.data}"
+        
+        # Segundo uso do mesmo token — deve falhar (blacklistado)
+        client2 = APIClient()
+        client2.cookies["refresh_token"] = old_refresh_str
+        client2.cookies["csrftoken"] = "testcsrf"
+        response2 = client2.post(
+            "/api/auth/refresh/",
+            HTTP_X_CSRFTOKEN="testcsrf",
+        )
+        assert response2.status_code == 401, f"Token reutilizado deveria dar 401: {response2.data}"
+
+    def test_refresh_apos_logout_retorna_401(self, db):
+        """Após logout, o refresh token deve ser blacklistado e não funcionar."""
+        from tests.conftest import set_auth_cookies
+        client = APIClient()
+        user = UserFactory()
+        
+        refresh = RefreshToken.for_user(user)
+        refresh_str = str(refresh)
+        
+        # Logout
+        client.cookies["refresh_token"] = refresh_str
+        client.cookies["csrftoken"] = "testcsrf"
+        response_logout = client.post(
+            "/api/auth/logout/",
+            HTTP_X_CSRFTOKEN="testcsrf",
+        )
+        assert response_logout.status_code == 200
+        
+        # Tentar usar o token após logout — deve falhar
+        client2 = APIClient()
+        client2.cookies["refresh_token"] = refresh_str
+        client2.cookies["csrftoken"] = "testcsrf"
+        response = client2.post(
+            "/api/auth/refresh/",
+            HTTP_X_CSRFTOKEN="testcsrf",
+        )
+        assert response.status_code == 401, f"Token pós-logout deveria dar 401: {response.data}"
+

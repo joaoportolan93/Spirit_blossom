@@ -25,6 +25,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from .authentication import _enforce_csrf
 from .models import AccessLog
 from .serializers import LoginSerializer, RegisterSerializer
+from .throttles import LoginRateThrottle, RegisterRateThrottle
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
@@ -98,6 +99,7 @@ class RegisterView(APIView):
     """
     authentication_classes = []
     permission_classes = [AllowAny]
+    throttle_classes = [RegisterRateThrottle]
 
     def post(self, request):
         serializer = RegisterSerializer(data=request.data, context={"request": request})
@@ -122,6 +124,7 @@ class LoginView(APIView):
     """
     authentication_classes = []
     permission_classes = [AllowAny]
+    throttle_classes = [LoginRateThrottle]
 
     def post(self, request):
         serializer = LoginSerializer(data=request.data, context={"request": request})

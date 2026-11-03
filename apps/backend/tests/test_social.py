@@ -153,7 +153,7 @@ class TestBlock:
 class TestUserProfile:
     def test_user_criado_pode_ter_perfil(self):
         """UserProfile pode ser criado para um User."""
-        user = UserFactory()
+        user = UserFactory(profile=False)
         profile = UserProfile.objects.create(user=user, bio="Olá, sou eu.")
         assert profile.user == user
         assert profile.bio == "Olá, sou eu."

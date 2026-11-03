@@ -72,6 +72,11 @@ class UserProfile(models.Model):
     )
     bio = models.CharField(max_length=160, blank=True, default="")
     avatar = models.ImageField(upload_to="avatars/", null=True, blank=True)
+    birth_date = models.DateField(
+        null=True,
+        blank=True,
+        help_text=_("Data de nascimento — usada para verificação de idade mínima."),
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -109,7 +114,17 @@ class AccessLog(models.Model):
 
     @classmethod
     def hash_ip(cls, ip: str) -> str:
-        """HMAC-SHA256 do IP usando SECRET_KEY como chave. Não é reversível."""
+        """HMAC-SHA256 do IP usando ACCESS_LOG_HMAC_KEY como chave. Não é reversível.
+        
+        Usa chave separada da SECRET_KEY para que a rotação da SECRET_KEY
+        não quebre o histórico de hashes (Marco Civil exige retenção por 1 ano).
+        """
         from django.conf import settings as django_settings
-        key = django_settings.SECRET_KEY.encode()
-        return hmac.new(key, ip.encode(), hashlib.sha256).hexdigest()
+        from django.core.exceptions import ImproperlyConfigured
+        key_str = getattr(django_settings, "ACCESS_LOG_HMAC_KEY", "")
+        if not key_str:
+            raise ImproperlyConfigured(
+                "ACCESS_LOG_HMAC_KEY ausente ou vazia. "
+                "Defina uma chave de no mínimo 32 bytes no settings."
+            )
+        return hmac.new(key_str.encode(), ip.encode(), hashlib.sha256).hexdigest()

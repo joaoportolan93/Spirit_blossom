@@ -19,6 +19,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # ---------------------------------------------------------------------------
 SECRET_KEY = os.environ["SECRET_KEY"]
 
+# Chave HMAC para hashing de IPs no AccessLog.
+# DEVE ser separada da SECRET_KEY: trocar SECRET_KEY quebraria o histórico de hashes.
+# Mínimo 32 bytes. O app falha ao iniciar se ausente.
+ACCESS_LOG_HMAC_KEY = os.environ["ACCESS_LOG_HMAC_KEY"]
+
 DEBUG = os.environ.get("DEBUG", "False").lower() in ("1", "true", "yes")
 
 ALLOWED_HOSTS = [
@@ -147,6 +152,15 @@ CELERY_RESULT_SERIALIZER = "json"
 CELERY_TIMEZONE = "America/Sao_Paulo"
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 
+from celery.schedules import crontab
+
+CELERY_BEAT_SCHEDULE = {
+    "flush-expired-tokens-daily": {
+        "task": "accounts.flush_expired_tokens",
+        "schedule": crontab(hour=3, minute=0),  # 03:00 America/Sao_Paulo todo dia
+    },
+}
+
 # ---------------------------------------------------------------------------
 # Autenticação
 # ---------------------------------------------------------------------------
@@ -184,6 +198,8 @@ REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_RATES": {
         "anon": "30/minute",
         "user": "120/minute",
+        "login": "5/minute",
+        "register": "3/minute",
     },
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.CursorPagination",
     "PAGE_SIZE": int(os.environ.get("FEED_DEFAULT_LIMIT", "20")),
