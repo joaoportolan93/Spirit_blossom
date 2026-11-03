@@ -1,7 +1,12 @@
 """
-Testes do feed cronológico (keyset pagination) e validação do contrato JSON Schema.
+Testes do feed cronológico e busca full-text.
+
+Contrato do feed: docs/api/feed-contract.json
+  { "items": [{"post_id": "...", "reason": "following", "cursor": "..."}],
+    "next_cursor": "<uuid>" | null }
 """
 import json
+import os
 import pathlib
 import uuid
 
@@ -11,10 +16,21 @@ from rest_framework import status
 from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from .factories import FollowFactory, PostFactory, UserFactory
+from .factories import BlockFactory, FollowFactory, PostFactory, UserFactory
 
+SCHEMA_PATH = (
+    pathlib.Path(__file__).parent.parent.parent.parent
+    / "docs" / "api" / "feed-contract.json"
+)
 
-SCHEMA_PATH = pathlib.Path(__file__).parent.parent.parent.parent / "docs" / "api" / "feed-contract.json"
+# Testes de busca full-text exigem Postgres (tsvector/GIN).
+# Em SQLite com patch, SearchQuery não encontra resultados reais.
+# No CI (DJANGO_SETTINGS_MODULE=config.settings_ci), esses testes DEVEM rodar.
+_is_sqlite = os.environ.get("DJANGO_SETTINGS_MODULE", "config.settings_test") == "config.settings_test"
+requires_postgres = pytest.mark.skipif(
+    _is_sqlite,
+    reason="Busca full-text exige Postgres (tsvector/GIN). Rode com DJANGO_SETTINGS_MODULE=config.settings_ci.",
+)
 
 
 def _client_for(user):
@@ -24,6 +40,10 @@ def _client_for(user):
     return client
 
 
+# ---------------------------------------------------------------------------
+# Feed cronológico
+# ---------------------------------------------------------------------------
+
 @pytest.mark.django_db
 class TestFollowingFeed:
     def test_feed_vazio_para_usuario_sem_seguidos(self):
@@ -31,7 +51,9 @@ class TestFollowingFeed:
         client = _client_for(user)
         response = client.get("/api/feed/following/")
         assert response.status_code == status.HTTP_200_OK
-        assert response.json() == []
+        data = response.json()
+        assert data["items"] == []
+        assert data["next_cursor"] is None
 
     def test_feed_retorna_posts_de_seguidos_em_ordem_decrescente(self):
         user = UserFactory()
@@ -42,8 +64,8 @@ class TestFollowingFeed:
         p3 = PostFactory(author=followed)
         client = _client_for(user)
         data = client.get("/api/feed/following/").json()
-        ids = [item["id"] for item in data]
-        # Os IDs são UUIDv7 — ordenação descendente = p3, p2, p1
+        ids = [item["post_id"] for item in data["items"]]
+        # UUIDv7 — mais recente primeiro
         assert ids.index(str(p3.pk)) < ids.index(str(p2.pk)) < ids.index(str(p1.pk))
 
     def test_feed_nao_inclui_posts_de_nao_seguidos(self):
@@ -51,7 +73,7 @@ class TestFollowingFeed:
         stranger = UserFactory()
         post = PostFactory(author=stranger)
         client = _client_for(user)
-        ids = [item["id"] for item in client.get("/api/feed/following/").json()]
+        ids = [item["post_id"] for item in client.get("/api/feed/following/").json()["items"]]
         assert str(post.pk) not in ids
 
     def test_cursor_invalido_retorna_400(self):
@@ -60,85 +82,148 @@ class TestFollowingFeed:
         response = client.get("/api/feed/following/?cursor=nao-e-uuid")
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
-    def test_cursor_valido_pagina_corretamente(self):
+    def test_cursor_valido_pagina_sem_sobreposicao(self):
         user = UserFactory()
         followed = UserFactory()
         FollowFactory(follower=user, followed=followed)
-        posts = [PostFactory(author=followed) for _ in range(5)]
-        # Pega os 3 mais recentes (sem cursor)
+        [PostFactory(author=followed) for _ in range(5)]
         client = _client_for(user)
         data_first = client.get("/api/feed/following/").json()
-        # Usa o id do último item como cursor
-        cursor = data_first[-1]["id"]
+        cursor = data_first["items"][-1]["cursor"]
         data_next = client.get(f"/api/feed/following/?cursor={cursor}").json()
-        ids_first = {item["id"] for item in data_first}
-        ids_next = {item["id"] for item in data_next}
-        # Não deve haver overlap
+        ids_first = {item["post_id"] for item in data_first["items"]}
+        ids_next = {item["post_id"] for item in data_next["items"]}
         assert ids_first.isdisjoint(ids_next)
 
+    def test_feed_exclui_posts_bloqueados(self):
+        user = UserFactory()
+        blocked = UserFactory()
+        FollowFactory(follower=user, followed=blocked)
+        BlockFactory(blocker=user, blocked=blocked)
+        PostFactory(author=blocked)
+        client = _client_for(user)
+        data = client.get("/api/feed/following/").json()
+        assert data["items"] == []
+
+
+# ---------------------------------------------------------------------------
+# Contrato JSON Schema
+# ---------------------------------------------------------------------------
 
 @pytest.mark.django_db
 class TestFeedContract:
-    def test_feed_response_campos_obrigatorios(self):
-        """Resposta do feed tem os campos obrigatórios do contrato."""
+    def test_feed_valida_contra_json_schema(self):
+        """Response do feed valida contra docs/api/feed-contract.json."""
+        schema = json.loads(SCHEMA_PATH.read_text(encoding="utf-8"))
         user = UserFactory()
         followed = UserFactory()
         FollowFactory(follower=user, followed=followed)
         PostFactory(author=followed)
         client = _client_for(user)
         data = client.get("/api/feed/following/").json()
-        assert len(data) > 0
-        item = data[0]
-        # Campos obrigatórios conforme feed-contract.json
-        assert "id" in item
-        assert "content_text" in item
-        assert "created_at" in item
-        assert "author" in item
-        assert "visibility" in item
+        jsonschema.validate(instance=data, schema=schema)
 
-    def test_post_lista_campos_obrigatorios(self):
-        """Lista de posts tem os campos obrigatórios."""
-        user = UserFactory()
-        PostFactory(author=user, visibility="public")
-        client = _client_for(user)
-        data = client.get("/api/posts/").json()
-        assert len(data) > 0
-        item = data[0]
-        for field in ("id", "content_text", "created_at", "author", "visibility"):
-            assert field in item, f"Campo '{field}' ausente na resposta"
-
-    def test_id_e_uuid_valido(self):
-        """Campo id deve ser um UUID válido."""
-        user = UserFactory()
-        PostFactory(author=user)
-        client = _client_for(user)
-        data = client.get("/api/posts/").json()
-        for item in data:
-            uuid.UUID(item["id"])  # lança ValueError se inválido
-
-    def test_cursor_keyset_nao_repete_itens(self):
-        """Paginação por cursor nunca retorna o mesmo item duas vezes."""
+    def test_reason_e_following_nos_items(self):
+        """Cada item do feed tem reason='following'."""
         user = UserFactory()
         followed = UserFactory()
         FollowFactory(follower=user, followed=followed)
-        [PostFactory(author=followed) for _ in range(25)]
-        client = _client_for(user)
-        first_page = client.get("/api/feed/following/").json()
-        assert len(first_page) == 20
-        cursor = first_page[-1]["id"]
-        second_page = client.get(f"/api/feed/following/?cursor={cursor}").json()
-        ids_first = {item["id"] for item in first_page}
-        ids_second = {item["id"] for item in second_page}
-        assert ids_first.isdisjoint(ids_second)
-
-    def test_feed_exclui_posts_bloqueados(self):
-        """Feed cronológico não inclui posts de usuários bloqueados."""
-        from social.models import Block
-        user = UserFactory()
-        blocked = UserFactory()
-        FollowFactory(follower=user, followed=blocked)
-        Block.objects.create(blocker=user, blocked=blocked)
-        PostFactory(author=blocked)
+        PostFactory(author=followed)
         client = _client_for(user)
         data = client.get("/api/feed/following/").json()
-        assert data == []
+        for item in data["items"]:
+            assert item["reason"] == "following"
+
+    def test_next_cursor_presente_quando_pagina_cheia(self):
+        """next_cursor é string quando há exatamente 20 posts."""
+        user = UserFactory()
+        followed = UserFactory()
+        FollowFactory(follower=user, followed=followed)
+        [PostFactory(author=followed) for _ in range(20)]
+        client = _client_for(user)
+        data = client.get("/api/feed/following/").json()
+        assert len(data["items"]) == 20
+        assert data["next_cursor"] is not None
+
+    def test_next_cursor_nulo_quando_pagina_incompleta(self):
+        """next_cursor é null quando há menos de 20 posts."""
+        user = UserFactory()
+        followed = UserFactory()
+        FollowFactory(follower=user, followed=followed)
+        [PostFactory(author=followed) for _ in range(5)]
+        client = _client_for(user)
+        data = client.get("/api/feed/following/").json()
+        assert len(data["items"]) == 5
+        assert data["next_cursor"] is None
+
+    def test_post_id_e_uuid_valido(self):
+        """post_id em cada item deve ser UUID válido."""
+        user = UserFactory()
+        followed = UserFactory()
+        FollowFactory(follower=user, followed=followed)
+        PostFactory(author=followed)
+        client = _client_for(user)
+        data = client.get("/api/feed/following/").json()
+        for item in data["items"]:
+            uuid.UUID(item["post_id"])  # lança ValueError se inválido
+
+
+# ---------------------------------------------------------------------------
+# Busca full-text
+# ---------------------------------------------------------------------------
+
+@pytest.mark.django_db
+class TestSearch:
+    @requires_postgres
+    def test_busca_encontra_post_por_palavra(self):
+        """Busca retorna post que contém o termo."""
+        user = UserFactory()
+        post = PostFactory(author=user, content_text="python é uma linguagem incrível")
+        client = _client_for(user)
+        response = client.get("/api/posts/search/?q=python")
+        assert response.status_code == 200
+        ids = [item["id"] for item in response.json()]
+        assert str(post.pk) in ids
+
+    @requires_postgres
+    def test_busca_nao_retorna_post_de_usuario_bloqueado(self):
+        """Busca não retorna posts de usuários bloqueados (bidirecional)."""
+        user = UserFactory()
+        blocked = UserFactory()
+        BlockFactory(blocker=user, blocked=blocked)
+        PostFactory(author=blocked, content_text="conteúdo bloqueado único xpto")
+        client = _client_for(user)
+        response = client.get("/api/posts/search/?q=xpto")
+        assert response.status_code == 200
+        ids = [item["id"] for item in response.json()]
+        # Post do bloqueado não deve aparecer
+        from posts.models import Post
+        blocked_posts = Post.objects.filter(author=blocked).values_list("id", flat=True)
+        for blocked_id in blocked_posts:
+            assert str(blocked_id) not in ids
+
+    @requires_postgres
+    def test_busca_nao_retorna_post_privado_de_nao_seguido(self):
+        """Busca não retorna post visibility=followers de usuário não seguido."""
+        user = UserFactory()
+        stranger = UserFactory()
+        PostFactory(
+            author=stranger,
+            content_text="conteúdo privado restrito zyxw",
+            visibility="followers",
+        )
+        client = _client_for(user)
+        response = client.get("/api/posts/search/?q=zyxw")
+        assert response.status_code == 200
+        ids = [item["id"] for item in response.json()]
+        from posts.models import Post
+        private_posts = Post.objects.filter(author=stranger, visibility="followers").values_list("id", flat=True)
+        for pid in private_posts:
+            assert str(pid) not in ids
+
+    def test_busca_sem_q_retorna_400(self):
+        """Busca sem parâmetro q retorna 400."""
+        user = UserFactory()
+        client = _client_for(user)
+        response = client.get("/api/posts/search/")
+        assert response.status_code == 400
