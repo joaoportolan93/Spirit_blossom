@@ -25,7 +25,7 @@ class Follow(models.Model):
         constraints = [
             models.UniqueConstraint(fields=["follower", "followed"], name="unique_follow"),
             models.CheckConstraint(
-                check=~Q(follower=models.F("followed")),
+                condition=~Q(follower=models.F("followed")),
                 name="no_self_follow",
             ),
         ]
@@ -54,7 +54,7 @@ class Block(models.Model):
         constraints = [
             models.UniqueConstraint(fields=["blocker", "blocked"], name="unique_block"),
             models.CheckConstraint(
-                check=~Q(blocker=models.F("blocked")),
+                condition=~Q(blocker=models.F("blocked")),
                 name="no_self_block",
             ),
         ]
@@ -83,7 +83,7 @@ class Mute(models.Model):
         constraints = [
             models.UniqueConstraint(fields=["muter", "muted"], name="unique_mute"),
             models.CheckConstraint(
-                check=~Q(muter=models.F("muted")),
+                condition=~Q(muter=models.F("muted")),
                 name="no_self_mute",
             ),
         ]

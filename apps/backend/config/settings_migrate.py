@@ -27,3 +27,4 @@ AUTH_USER_MODEL = "accounts.User"
 # posts.Post.content_text valida contra esta setting
 POST_MAX_CHARS = 3000
 USE_TZ = True
+
