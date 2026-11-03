@@ -1,9 +1,12 @@
 from rest_framework import serializers
+
 from .models import Notification
 
 
 class NotificationSerializer(serializers.ModelSerializer):
-    sender_username = serializers.CharField(source="sender.username", read_only=True, allow_null=True)
+    sender_username = serializers.CharField(
+        source="sender.username", read_only=True, allow_null=True
+    )
 
     class Meta:
         model = Notification

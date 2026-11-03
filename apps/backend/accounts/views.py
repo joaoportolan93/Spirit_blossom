@@ -8,6 +8,7 @@ Fluxo de CSRF:
   POST /api/auth/refresh/  → authentication_classes=[], _enforce_csrf() manual na view
   POST /api/auth/logout/   → authentication_classes=[], _enforce_csrf() manual na view
 """
+
 import logging
 
 from django.conf import settings
@@ -84,6 +85,7 @@ class CSRFView(APIView):
     Força o Django a enviar o cookie csrftoken ao frontend.
     Sem autenticação — o frontend chama isso antes de qualquer POST.
     """
+
     authentication_classes = []
     permission_classes = [AllowAny]
 
@@ -97,6 +99,7 @@ class RegisterView(APIView):
     Cria conta e retorna cookies JWT.
     authentication_classes=[] para evitar que cookie de acesso antigo cause 401.
     """
+
     authentication_classes = []
     permission_classes = [AllowAny]
     throttle_classes = [RegisterRateThrottle]
@@ -122,6 +125,7 @@ class LoginView(APIView):
     Autentica e retorna cookies JWT.
     authentication_classes=[] para evitar que cookie de acesso antigo cause 401.
     """
+
     authentication_classes = []
     permission_classes = [AllowAny]
     throttle_classes = [LoginRateThrottle]
@@ -159,6 +163,7 @@ class TokenRefreshView(APIView):
     authentication_classes=[] porque o access token já expirou quando o
     refresh é chamado. O CSRF é verificado manualmente com _enforce_csrf().
     """
+
     authentication_classes = []
     permission_classes = [AllowAny]
 
@@ -189,6 +194,7 @@ class TokenRefreshView(APIView):
         # Extrai user_id do access token para checar status
         try:
             from rest_framework_simplejwt.tokens import AccessToken
+
             decoded = AccessToken(new_access)
             user = User.objects.get(pk=decoded["user_id"])
             if not user.is_active or user.status != user.Status.ACTIVE:
@@ -201,7 +207,7 @@ class TokenRefreshView(APIView):
                 {"detail": "Token inválido."},
                 status=status.HTTP_401_UNAUTHORIZED,
             )
-        except Exception:
+        except Exception:  # noqa: BLE001 — AccessLog: falha silenciosa intencional (Marco Civil)
             return Response(
                 {"detail": "Token inválido."},
                 status=status.HTTP_401_UNAUTHORIZED,
@@ -220,6 +226,7 @@ class LogoutView(APIView):
 
     authentication_classes=[] para não falhar com access token expirado.
     """
+
     authentication_classes = []
     permission_classes = [AllowAny]
 

@@ -7,63 +7,141 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
-        ('auth', '0012_alter_user_first_name_max_length'),
+        ("auth", "0012_alter_user_first_name_max_length"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='User',
+            name="User",
             fields=[
-                ('password', models.CharField(max_length=128, verbose_name='password')),
-                ('last_login', models.DateTimeField(blank=True, null=True, verbose_name='last login')),
-                ('is_superuser', models.BooleanField(default=False, help_text='Designates that this user has all permissions without explicitly assigning them.', verbose_name='superuser status')),
-                ('id', models.UUIDField(default=uuid6.uuid7, editable=False, primary_key=True, serialize=False)),
-                ('email', models.EmailField(max_length=255, unique=True, verbose_name='endereço de e-mail')),
-                ('username', models.CharField(db_index=True, max_length=30, unique=True, verbose_name='nome de usuário')),
-                ('status', models.CharField(choices=[('active', 'Ativo'), ('suspended', 'Suspenso'), ('deactivated', 'Desativado')], default='active', max_length=15)),
-                ('is_active', models.BooleanField(default=True)),
-                ('is_staff', models.BooleanField(default=False)),
-                ('date_joined', models.DateTimeField(auto_now_add=True)),
-                ('groups', models.ManyToManyField(blank=True, help_text='The groups this user belongs to. A user will get all permissions granted to each of their groups.', related_name='user_set', related_query_name='user', to='auth.group', verbose_name='groups')),
-                ('user_permissions', models.ManyToManyField(blank=True, help_text='Specific permissions for this user.', related_name='user_set', related_query_name='user', to='auth.permission', verbose_name='user permissions')),
+                ("password", models.CharField(max_length=128, verbose_name="password")),
+                (
+                    "last_login",
+                    models.DateTimeField(blank=True, null=True, verbose_name="last login"),
+                ),
+                (
+                    "is_superuser",
+                    models.BooleanField(
+                        default=False,
+                        help_text="Designates that this user has all permissions without explicitly assigning them.",
+                        verbose_name="superuser status",
+                    ),
+                ),
+                (
+                    "id",
+                    models.UUIDField(
+                        default=uuid6.uuid7, editable=False, primary_key=True, serialize=False
+                    ),
+                ),
+                (
+                    "email",
+                    models.EmailField(
+                        max_length=255, unique=True, verbose_name="endereço de e-mail"
+                    ),
+                ),
+                (
+                    "username",
+                    models.CharField(
+                        db_index=True, max_length=30, unique=True, verbose_name="nome de usuário"
+                    ),
+                ),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[
+                            ("active", "Ativo"),
+                            ("suspended", "Suspenso"),
+                            ("deactivated", "Desativado"),
+                        ],
+                        default="active",
+                        max_length=15,
+                    ),
+                ),
+                ("is_active", models.BooleanField(default=True)),
+                ("is_staff", models.BooleanField(default=False)),
+                ("date_joined", models.DateTimeField(auto_now_add=True)),
+                (
+                    "groups",
+                    models.ManyToManyField(
+                        blank=True,
+                        help_text="The groups this user belongs to. A user will get all permissions granted to each of their groups.",
+                        related_name="user_set",
+                        related_query_name="user",
+                        to="auth.group",
+                        verbose_name="groups",
+                    ),
+                ),
+                (
+                    "user_permissions",
+                    models.ManyToManyField(
+                        blank=True,
+                        help_text="Specific permissions for this user.",
+                        related_name="user_set",
+                        related_query_name="user",
+                        to="auth.permission",
+                        verbose_name="user permissions",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'usuário',
-                'verbose_name_plural': 'usuários',
-                'db_table': 'accounts_user',
+                "verbose_name": "usuário",
+                "verbose_name_plural": "usuários",
+                "db_table": "accounts_user",
             },
         ),
         migrations.CreateModel(
-            name='UserProfile',
+            name="UserProfile",
             fields=[
-                ('user', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, primary_key=True, related_name='profile', serialize=False, to=settings.AUTH_USER_MODEL)),
-                ('bio', models.CharField(blank=True, default='', max_length=160)),
-                ('avatar', models.ImageField(blank=True, null=True, upload_to='avatars/')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
+                (
+                    "user",
+                    models.OneToOneField(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        primary_key=True,
+                        related_name="profile",
+                        serialize=False,
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
+                ("bio", models.CharField(blank=True, default="", max_length=160)),
+                ("avatar", models.ImageField(blank=True, null=True, upload_to="avatars/")),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
             ],
             options={
-                'verbose_name': 'perfil de usuário',
-                'verbose_name_plural': 'perfis de usuário',
-                'db_table': 'accounts_userprofile',
+                "verbose_name": "perfil de usuário",
+                "verbose_name_plural": "perfis de usuário",
+                "db_table": "accounts_userprofile",
             },
         ),
         migrations.CreateModel(
-            name='AccessLog',
+            name="AccessLog",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('ip_hash', models.CharField(db_index=True, max_length=64)),
-                ('port', models.PositiveIntegerField()),
-                ('timestamp', models.DateTimeField(auto_now_add=True, db_index=True)),
-                ('user', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='access_logs', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                ("ip_hash", models.CharField(db_index=True, max_length=64)),
+                ("port", models.PositiveIntegerField()),
+                ("timestamp", models.DateTimeField(auto_now_add=True, db_index=True)),
+                (
+                    "user",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="access_logs",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'registro de acesso',
-                'verbose_name_plural': 'registros de acesso',
-                'db_table': 'accounts_accesslog',
+                "verbose_name": "registro de acesso",
+                "verbose_name_plural": "registros de acesso",
+                "db_table": "accounts_accesslog",
             },
         ),
     ]

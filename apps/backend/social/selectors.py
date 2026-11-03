@@ -1,10 +1,12 @@
 """
 Queries de visibilidade e filtros sociais.
 """
+
 from django.db import models
 from django.db.models import Exists, OuterRef, QuerySet
 
 from posts.models import Post
+
 from .models import Block
 
 
@@ -28,14 +30,11 @@ def get_visible_posts_queryset(user) -> QuerySet:
         blocked=user,
     )
 
-    qs = Post.objects.exclude(
-        Exists(blocked_by_user)
-    ).exclude(
-        Exists(blocker_of_user)
-    )
+    qs = Post.objects.exclude(Exists(blocked_by_user)).exclude(Exists(blocker_of_user))
 
     # Visibilidade: posts de seguidores visíveis apenas se o user segue o autor
     from .models import Follow
+
     following_ids = Follow.objects.filter(follower=user).values("followed_id")
     qs = qs.filter(
         models.Q(visibility=Post.Visibility.PUBLIC)

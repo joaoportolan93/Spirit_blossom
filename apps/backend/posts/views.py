@@ -1,6 +1,7 @@
 """
 Views do app posts.
 """
+
 from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
@@ -18,6 +19,7 @@ class PostListCreateView(APIView):
     GET  /api/posts/   → lista posts visíveis (filtro de bloqueio aplicado)
     POST /api/posts/   → cria um post
     """
+
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -26,6 +28,7 @@ class PostListCreateView(APIView):
         cursor = request.query_params.get("cursor")
         if cursor:
             import uuid
+
             try:
                 cursor_uuid = uuid.UUID(cursor)
             except ValueError:
@@ -53,6 +56,7 @@ class PostDetailView(APIView):
     GET    /api/posts/<id>/  → detalhe de um post (com filtro de visibilidade)
     DELETE /api/posts/<id>/  → apaga o próprio post
     """
+
     permission_classes = [IsAuthenticated]
 
     def _get_post(self, request, pk):
@@ -74,6 +78,7 @@ class PostSearchView(APIView):
     """
     GET /api/posts/search/?q=termo → busca full-text
     """
+
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -84,6 +89,7 @@ class PostSearchView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         from .selectors import search_posts
+
         qs = search_posts(query=query)
         # Aplica filtro de bloqueio bidirecional sobre o resultado da busca
         visible_ids = get_visible_posts_queryset(request.user).values("id")

@@ -1,6 +1,7 @@
 """
 URLs raiz — M1a: todos os apps de domínio incluídos.
 """
+
 from django.contrib import admin
 from django.urls import include, path
 

@@ -2,6 +2,7 @@
 Queries de leitura para posts.
 Separadas das views para evitar lógica de domínio em serializers/views.
 """
+
 from django.contrib.postgres.search import SearchQuery
 from django.db.models import QuerySet
 

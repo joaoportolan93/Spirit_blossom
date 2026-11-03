@@ -32,4 +32,3 @@ pub struct FeedResponse {
     /// Cursor para a próxima página. None quando não há mais itens.
     pub next_cursor: Option<String>,
 }
-

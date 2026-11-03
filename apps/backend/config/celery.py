@@ -22,4 +22,3 @@ app.conf.beat_schedule = {
         "schedule": crontab(hour=3, minute=30),  # 03:30 America/Sao_Paulo
     },
 }
-

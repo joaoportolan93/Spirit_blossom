@@ -49,10 +49,11 @@ services/feed/target/
 Thumbs.db
 desktop.ini
 
-# ── Coverage / testes ─────────────────────────────────────────────────────────
+# ── Coverage / testes / linter ───────────────────────────────────────────────
 .coverage
 htmlcov/
 .pytest_cache/
+.ruff_cache/
 .tox/
 
 # ── Build / dist ─────────────────────────────────────────────────────────────

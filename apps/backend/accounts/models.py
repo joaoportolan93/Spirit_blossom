@@ -1,9 +1,13 @@
 import hashlib
 import hmac
-import uuid
+
 import uuid6
 from django.conf import settings
-from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
+from django.contrib.auth.models import (
+    AbstractBaseUser,
+    BaseUserManager,
+    PermissionsMixin,
+)
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
@@ -94,6 +98,7 @@ class AccessLog(models.Model):
     Finalidade: cumprimento do Marco Civil da Internet, Art. 13/15.
     VALIDAR COM JURISTA antes de ativar em produção.
     """
+
     # BigAutoField herdado de DEFAULT_AUTO_FIELD
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -115,12 +120,13 @@ class AccessLog(models.Model):
     @classmethod
     def hash_ip(cls, ip: str) -> str:
         """HMAC-SHA256 do IP usando ACCESS_LOG_HMAC_KEY como chave. Não é reversível.
-        
+
         Usa chave separada da SECRET_KEY para que a rotação da SECRET_KEY
         não quebre o histórico de hashes (Marco Civil exige retenção por 1 ano).
         """
         from django.conf import settings as django_settings
         from django.core.exceptions import ImproperlyConfigured
+
         key_str = getattr(django_settings, "ACCESS_LOG_HMAC_KEY", "")
         if not key_str:
             raise ImproperlyConfigured(

@@ -1,6 +1,7 @@
 """
 Serializers para o app posts.
 """
+
 from django.conf import settings
 from rest_framework import serializers
 
@@ -9,6 +10,7 @@ from .models import Post
 
 class AuthorSerializer(serializers.Serializer):
     """Representação mínima do autor em posts."""
+
     id = serializers.UUIDField(read_only=True)
     username = serializers.CharField(read_only=True)
     avatar = serializers.SerializerMethodField()
@@ -50,6 +52,7 @@ class PostSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         from .services import create_post
+
         return create_post(
             author=self.context["request"].user,
             **validated_data,

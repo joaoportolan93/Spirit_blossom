@@ -9,6 +9,8 @@ import os
 from datetime import timedelta
 from pathlib import Path
 
+from celery.schedules import crontab
+
 # ---------------------------------------------------------------------------
 # Caminhos base
 # ---------------------------------------------------------------------------
@@ -152,8 +154,6 @@ CELERY_RESULT_SERIALIZER = "json"
 CELERY_TIMEZONE = "America/Sao_Paulo"
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 
-from celery.schedules import crontab
-
 CELERY_BEAT_SCHEDULE = {
     "flush-expired-tokens-daily": {
         "task": "accounts.flush_expired_tokens",
@@ -228,9 +228,7 @@ SIMPLE_JWT = {
 # CORS
 # ---------------------------------------------------------------------------
 CORS_ALLOWED_ORIGINS = [
-    o.strip()
-    for o in os.environ.get("CORS_ALLOWED_ORIGINS", "").split(",")
-    if o.strip()
+    o.strip() for o in os.environ.get("CORS_ALLOWED_ORIGINS", "").split(",") if o.strip()
 ]
 CORS_ALLOW_CREDENTIALS = True
 
@@ -242,18 +240,14 @@ CSRF_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_SAMESITE = "Lax"
 CSRF_COOKIE_HTTPONLY = False  # frontend precisa ler o valor
 CSRF_TRUSTED_ORIGINS = [
-    o.strip()
-    for o in os.environ.get("CSRF_TRUSTED_ORIGINS", "").split(",")
-    if o.strip()
+    o.strip() for o in os.environ.get("CSRF_TRUSTED_ORIGINS", "").split(",") if o.strip()
 ]
 
 # ---------------------------------------------------------------------------
 # Negócio
 # ---------------------------------------------------------------------------
 POST_MAX_CHARS = int(os.environ.get("POST_MAX_CHARS", "3000"))
-FEED_FRESHNESS_HALFLIFE_HOURS = int(
-    os.environ.get("FEED_FRESHNESS_HALFLIFE_HOURS", "48")
-)
+FEED_FRESHNESS_HALFLIFE_HOURS = int(os.environ.get("FEED_FRESHNESS_HALFLIFE_HOURS", "48"))
 FEED_SERVICE_URL = os.environ.get("FEED_SERVICE_URL", "http://feed:3000")
 
 # ---------------------------------------------------------------------------
@@ -300,4 +294,3 @@ LOGGING = {
         "level": "INFO",
     },
 }
-

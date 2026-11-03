@@ -1,4 +1,5 @@
 from django.urls import path
+
 from .views import CSRFView, LoginView, LogoutView, RegisterView, TokenRefreshView
 
 app_name = "accounts"

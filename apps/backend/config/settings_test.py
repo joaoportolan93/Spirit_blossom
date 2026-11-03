@@ -3,6 +3,7 @@ Settings para suite de testes (pytest).
 SQLite em memória — sem Postgres real, sem Redis, sem Celery.
 NÃO usar em produção.
 """
+
 from datetime import timedelta
 
 SECRET_KEY = "test-secret-key-only-for-tests"
@@ -125,4 +126,3 @@ STATIC_URL = "/static/"
 APP_NAME = "TestApp"
 CORS_ALLOWED_ORIGINS = ["http://testserver"]
 CORS_ALLOW_CREDENTIALS = True
-

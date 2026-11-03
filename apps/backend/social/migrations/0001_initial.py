@@ -6,7 +6,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
@@ -15,49 +14,124 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name='Block',
+            name="Block",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('blocked', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='blocked_by', to=settings.AUTH_USER_MODEL)),
-                ('blocker', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='blocking', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "blocked",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="blocked_by",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
+                (
+                    "blocker",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="blocking",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'bloqueio',
-                'verbose_name_plural': 'bloqueios',
-                'db_table': 'social_block',
-                'constraints': [models.UniqueConstraint(fields=('blocker', 'blocked'), name='unique_block'), models.CheckConstraint(condition=models.Q(('blocker', models.F('blocked')), _negated=True), name='no_self_block')],
+                "verbose_name": "bloqueio",
+                "verbose_name_plural": "bloqueios",
+                "db_table": "social_block",
+                "constraints": [
+                    models.UniqueConstraint(fields=("blocker", "blocked"), name="unique_block"),
+                    models.CheckConstraint(
+                        condition=models.Q(("blocker", models.F("blocked")), _negated=True),
+                        name="no_self_block",
+                    ),
+                ],
             },
         ),
         migrations.CreateModel(
-            name='Follow',
+            name="Follow",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('is_close_friend', models.BooleanField(default=False)),
-                ('followed', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='followers', to=settings.AUTH_USER_MODEL)),
-                ('follower', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='following', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("is_close_friend", models.BooleanField(default=False)),
+                (
+                    "followed",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="followers",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
+                (
+                    "follower",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="following",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'seguimento',
-                'verbose_name_plural': 'seguimentos',
-                'db_table': 'social_follow',
-                'constraints': [models.UniqueConstraint(fields=('follower', 'followed'), name='unique_follow'), models.CheckConstraint(condition=models.Q(('follower', models.F('followed')), _negated=True), name='no_self_follow')],
+                "verbose_name": "seguimento",
+                "verbose_name_plural": "seguimentos",
+                "db_table": "social_follow",
+                "constraints": [
+                    models.UniqueConstraint(fields=("follower", "followed"), name="unique_follow"),
+                    models.CheckConstraint(
+                        condition=models.Q(("follower", models.F("followed")), _negated=True),
+                        name="no_self_follow",
+                    ),
+                ],
             },
         ),
         migrations.CreateModel(
-            name='Mute',
+            name="Mute",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('muted', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='muted_by', to=settings.AUTH_USER_MODEL)),
-                ('muter', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='muting', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "muted",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="muted_by",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
+                (
+                    "muter",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="muting",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'silenciamento',
-                'verbose_name_plural': 'silenciamentos',
-                'db_table': 'social_mute',
-                'constraints': [models.UniqueConstraint(fields=('muter', 'muted'), name='unique_mute'), models.CheckConstraint(condition=models.Q(('muter', models.F('muted')), _negated=True), name='no_self_mute')],
+                "verbose_name": "silenciamento",
+                "verbose_name_plural": "silenciamentos",
+                "db_table": "social_mute",
+                "constraints": [
+                    models.UniqueConstraint(fields=("muter", "muted"), name="unique_mute"),
+                    models.CheckConstraint(
+                        condition=models.Q(("muter", models.F("muted")), _negated=True),
+                        name="no_self_mute",
+                    ),
+                ],
             },
         ),
     ]

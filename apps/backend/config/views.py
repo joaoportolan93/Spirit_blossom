@@ -12,7 +12,7 @@ def health_check(request):
     try:
         connection.ensure_connection()
         db_ok = True
-    except Exception:
+    except Exception:  # noqa: BLE001 — health check: falha silenciosa intencional
         db_ok = False
 
     status = 200 if db_ok else 503
@@ -23,4 +23,3 @@ def health_check(request):
         },
         status=status,
     )
-

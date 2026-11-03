@@ -5,6 +5,7 @@ Contrato do feed: docs/api/feed-contract.json
   { "items": [{"post_id": "...", "reason": "following", "cursor": "..."}],
     "next_cursor": "<uuid>" | null }
 """
+
 import json
 import os
 import pathlib
@@ -19,14 +20,15 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from .factories import BlockFactory, FollowFactory, PostFactory, UserFactory
 
 SCHEMA_PATH = (
-    pathlib.Path(__file__).parent.parent.parent.parent
-    / "docs" / "api" / "feed-contract.json"
+    pathlib.Path(__file__).parent.parent.parent.parent / "docs" / "api" / "feed-contract.json"
 )
 
 # Testes de busca full-text exigem Postgres (tsvector/GIN).
 # Em SQLite com patch, SearchQuery não encontra resultados reais.
 # No CI (DJANGO_SETTINGS_MODULE=config.settings_ci), esses testes DEVEM rodar.
-_is_sqlite = os.environ.get("DJANGO_SETTINGS_MODULE", "config.settings_test") == "config.settings_test"
+_is_sqlite = (
+    os.environ.get("DJANGO_SETTINGS_MODULE", "config.settings_test") == "config.settings_test"
+)
 requires_postgres = pytest.mark.skipif(
     _is_sqlite,
     reason="Busca full-text exige Postgres (tsvector/GIN). Rode com DJANGO_SETTINGS_MODULE=config.settings_ci.",
@@ -43,6 +45,7 @@ def _client_for(user):
 # ---------------------------------------------------------------------------
 # Feed cronológico
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.django_db
 class TestFollowingFeed:
@@ -110,6 +113,7 @@ class TestFollowingFeed:
 # Contrato JSON Schema
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.django_db
 class TestFeedContract:
     def test_feed_valida_contra_json_schema(self):
@@ -172,6 +176,7 @@ class TestFeedContract:
 # Busca full-text
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.django_db
 class TestSearch:
     @requires_postgres
@@ -198,6 +203,7 @@ class TestSearch:
         ids = [item["id"] for item in response.json()]
         # Post do bloqueado não deve aparecer
         from posts.models import Post
+
         blocked_posts = Post.objects.filter(author=blocked).values_list("id", flat=True)
         for blocked_id in blocked_posts:
             assert str(blocked_id) not in ids
@@ -217,7 +223,10 @@ class TestSearch:
         assert response.status_code == 200
         ids = [item["id"] for item in response.json()]
         from posts.models import Post
-        private_posts = Post.objects.filter(author=stranger, visibility="followers").values_list("id", flat=True)
+
+        private_posts = Post.objects.filter(author=stranger, visibility="followers").values_list(
+            "id", flat=True
+        )
         for pid in private_posts:
             assert str(pid) not in ids
 

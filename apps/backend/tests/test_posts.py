@@ -1,11 +1,12 @@
 """
 Testes de CRUD de posts e validação de conteúdo.
 """
+
 import pytest
 from rest_framework.test import APIClient
 
-from tests.factories import PostFactory, UserFactory
 from tests.conftest import set_auth_cookies
+from tests.factories import PostFactory, UserFactory
 
 
 @pytest.mark.django_db
@@ -17,7 +18,7 @@ class TestPostCRUD:
         client = APIClient()
         user = UserFactory()
         set_auth_cookies(client, user)
-        
+
         response = client.post("/api/posts/", {"content_text": "Olá mundo!"})
         assert response.status_code == 201
         assert response.data["content_text"] == "Olá mundo!"
@@ -32,10 +33,11 @@ class TestPostCRUD:
     def test_post_max_chars_validado(self, db):
         """Conteúdo acima de POST_MAX_CHARS retorna 400."""
         from django.conf import settings
+
         client = APIClient()
         user = UserFactory()
         set_auth_cookies(client, user)
-        
+
         conteudo_longo = "x" * (getattr(settings, "POST_MAX_CHARS", 3000) + 1)
         response = client.post("/api/posts/", {"content_text": conteudo_longo})
         assert response.status_code == 400
@@ -45,7 +47,7 @@ class TestPostCRUD:
         client = APIClient()
         user = UserFactory()
         set_auth_cookies(client, user)
-        
+
         texto = "Teste de conteúdo."
         response = client.post("/api/posts/", {"content_text": texto})
         assert response.status_code == 201
@@ -58,11 +60,15 @@ class TestPostCRUD:
         set_auth_cookies(client, user)
         PostFactory(author=user, visibility="public")
         PostFactory(author=user, visibility="public")
-        
+
         response = client.get("/api/posts/")
         assert response.status_code == 200
         # Ao menos 2 posts devem aparecer
-        results = response.data.get("results", response.data) if isinstance(response.data, dict) else response.data
+        results = (
+            response.data.get("results", response.data)
+            if isinstance(response.data, dict)
+            else response.data
+        )
         assert len(results) >= 2
 
     def test_deletar_post_proprio(self, db):
@@ -71,7 +77,7 @@ class TestPostCRUD:
         user = UserFactory()
         set_auth_cookies(client, user)
         post = PostFactory(author=user)
-        
+
         response = client.delete(f"/api/posts/{post.id}/")
         assert response.status_code == 204
 
@@ -82,7 +88,7 @@ class TestPostCRUD:
         outro = UserFactory()
         set_auth_cookies(client, user)
         post = PostFactory(author=outro)
-        
+
         response = client.delete(f"/api/posts/{post.id}/")
         assert response.status_code in (403, 404)
 
@@ -94,10 +100,17 @@ class TestPostContrato:
     def test_contrato_post_schema(self, db):
         """Response de criação de post tem todos os campos esperados."""
         import jsonschema
-        
+
         POST_SCHEMA = {
             "type": "object",
-            "required": ["id", "author", "content_text", "content_length", "visibility", "created_at"],
+            "required": [
+                "id",
+                "author",
+                "content_text",
+                "content_length",
+                "visibility",
+                "created_at",
+            ],
             "properties": {
                 "id": {"type": "string"},
                 "author": {
@@ -115,11 +128,11 @@ class TestPostContrato:
                 "created_at": {"type": "string"},
             },
         }
-        
+
         client = APIClient()
         user = UserFactory()
         set_auth_cookies(client, user)
-        
+
         response = client.post("/api/posts/", {"content_text": "Teste de contrato."})
         assert response.status_code == 201
         jsonschema.validate(instance=response.data, schema=POST_SCHEMA)

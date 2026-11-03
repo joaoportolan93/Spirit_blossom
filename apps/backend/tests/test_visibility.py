@@ -7,6 +7,7 @@ Grupos:
   - Bloqueio bidirecional na busca (2)
   - Bloqueio bidirecional no perfil de posts (2)
 """
+
 import pytest
 from rest_framework import status
 from rest_framework.test import APIClient
@@ -32,6 +33,7 @@ def _csrf_token(client):
 # ---------------------------------------------------------------------------
 # Visibilidade público vs followers-only
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.django_db
 class TestVisibility:
@@ -105,6 +107,7 @@ class TestVisibility:
 # Bloqueio bidirecional no feed
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.django_db
 class TestBidirectionalBlock:
     def test_bloqueado_nao_aparece_no_feed_do_bloqueador(self):
@@ -137,6 +140,7 @@ class TestBidirectionalBlock:
     def test_bloquear_remove_follow_bidirecional(self):
         """Ao bloquear, o follow nas duas direções é removido."""
         from social.models import Follow
+
         blocker = UserFactory()
         target = UserFactory()
         FollowFactory(follower=blocker, followed=target)
@@ -224,7 +228,9 @@ class TestBidirectionalBlock:
         blocker = UserFactory()
         blocked = UserFactory()
         BlockFactory(blocker=blocker, blocked=blocked)
-        PostFactory(author=blocker, content_text="palavra-unica-xablau-bloqueador", visibility="public")
+        PostFactory(
+            author=blocker, content_text="palavra-unica-xablau-bloqueador", visibility="public"
+        )
         client = _client_for(blocked)
         response = client.get("/api/posts/search/?q=palavra-unica-xablau-bloqueador")
         assert response.status_code == status.HTTP_200_OK

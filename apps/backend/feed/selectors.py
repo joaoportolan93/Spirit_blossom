@@ -2,12 +2,13 @@
 Seletor de feed cronológico com keyset pagination.
 Sem model próprio no M1a — usa Post e social.selectors.
 """
+
 import uuid
+
 from django.db.models import QuerySet
 
-from posts.models import Post
-from social.selectors import get_visible_posts_queryset
 from social.models import Follow
+from social.selectors import get_visible_posts_queryset
 
 
 def get_following_feed(*, user, cursor: str | None = None, limit: int = 20) -> QuerySet:
@@ -22,9 +23,7 @@ def get_following_feed(*, user, cursor: str | None = None, limit: int = 20) -> Q
 
     # Restringe ao feed de "seguindo"
     following_ids = Follow.objects.filter(follower=user).values("followed_id")
-    qs = qs.filter(
-        author__in=following_ids
-    )
+    qs = qs.filter(author__in=following_ids)
 
     # Keyset pagination por UUID (UUIDv7 é ordenável por tempo)
     if cursor is not None:

@@ -3,6 +3,7 @@ Compatibilidade do SQLite com extensões Postgres (apenas para testes locais com
 Permite que SearchVector, SearchQuery e GinIndex funcionem no SQLite em memória.
 Em produção / CI com Postgres real, este módulo não é ativado.
 """
+
 from django.contrib.postgres.indexes import PostgresIndex
 from django.contrib.postgres.search import SearchQuery, SearchVector, SearchVectorExact
 
@@ -10,8 +11,7 @@ from django.contrib.postgres.search import SearchQuery, SearchVector, SearchVect
 def patch_sqlite():
     def search_vector_as_sqlite(self, compiler, connection):
         expressions = [
-            compiler.compile(expression)[0]
-            for expression in self.get_source_expressions()
+            compiler.compile(expression)[0] for expression in self.get_source_expressions()
         ]
         col = expressions[0] if expressions else "''"
         return f"coalesce({col}, '')", []
@@ -36,10 +36,7 @@ def patch_sqlite():
 
     def index_create_sql(self, model, schema_editor, using="", **kwargs):
         if schema_editor.connection.vendor == "sqlite":
-            return super(PostgresIndex, self).create_sql(
-                model, schema_editor, using="", **kwargs
-            )
+            return super(PostgresIndex, self).create_sql(model, schema_editor, using="", **kwargs)
         return orig_create_sql(self, model, schema_editor, using=using, **kwargs)
 
     PostgresIndex.create_sql = index_create_sql
-

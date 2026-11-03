@@ -3,6 +3,7 @@ View do feed cronológico seguindo (keyset pagination).
 Contrato de resposta: {items: [{post_id, reason, cursor}], next_cursor}
 conforme docs/api/feed-contract.json.
 """
+
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -22,6 +23,7 @@ class FollowingFeedView(APIView):
         "next_cursor": "<uuid>" | null
       }
     """
+
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -31,6 +33,7 @@ class FollowingFeedView(APIView):
             posts = get_following_feed(user=request.user, cursor=cursor, limit=limit)
         except ValueError:
             from rest_framework import status
+
             return Response(
                 {"detail": "Cursor de paginação inválido."},
                 status=status.HTTP_400_BAD_REQUEST,

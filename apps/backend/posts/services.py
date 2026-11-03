@@ -1,6 +1,7 @@
 """
 Operações de escrita para posts.
 """
+
 from django.conf import settings
 
 from .models import Post

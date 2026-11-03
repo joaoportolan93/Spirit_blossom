@@ -1,11 +1,12 @@
 """
 Testes básicos de notificações.
 """
+
 import pytest
 from rest_framework.test import APIClient
 
-from tests.factories import UserFactory
 from tests.conftest import set_auth_cookies
+from tests.factories import UserFactory
 
 
 @pytest.mark.django_db
@@ -17,7 +18,7 @@ class TestNotifications:
         client = APIClient()
         user = UserFactory()
         set_auth_cookies(client, user)
-        
+
         response = client.get("/api/notifications/")
         assert response.status_code == 200
 
@@ -30,7 +31,7 @@ class TestNotifications:
     def test_contrato_notificacoes_schema(self, db):
         """Response de listagem de notificações tem estrutura paginada."""
         import jsonschema
-        
+
         SCHEMA = {
             "type": "object",
             "properties": {
@@ -38,11 +39,11 @@ class TestNotifications:
                 "results": {"type": "array"},
             },
         }
-        
+
         client = APIClient()
         user = UserFactory()
         set_auth_cookies(client, user)
-        
+
         response = client.get("/api/notifications/")
         assert response.status_code == 200
         # Se paginado, valida schema; se lista simples, aceita array

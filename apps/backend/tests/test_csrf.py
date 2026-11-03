@@ -9,19 +9,18 @@ Grupos:
   - Testes de conta suspensa (1)
   - Testes de token reutilizado (1)
 """
+
 import pytest
-from django.middleware.csrf import get_token
-from django.test import RequestFactory
 from rest_framework import status
 from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .factories import PostFactory, UserFactory
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _make_csrf_client():
     return APIClient(enforce_csrf_checks=True)
@@ -52,6 +51,7 @@ def _get_csrf_token(client):
 # ---------------------------------------------------------------------------
 # Testes de CSRF em /api/posts/
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.django_db
 class TestCSRFPosts:
@@ -103,6 +103,7 @@ class TestCSRFPosts:
 # Testes de CSRF em /api/auth/refresh/
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.django_db
 class TestCSRFRefresh:
     def test_refresh_sem_csrf_retorna_403(self):
@@ -150,6 +151,7 @@ class TestCSRFRefresh:
         csrf = _get_csrf_token(client)
         # Suspende conta após emitir o token
         from django.contrib.auth import get_user_model
+
         User = get_user_model()
         User.objects.filter(pk=user.pk).update(status="suspended")
         response = client.post("/api/auth/refresh/", HTTP_X_CSRFTOKEN=csrf)
@@ -159,6 +161,7 @@ class TestCSRFRefresh:
 # ---------------------------------------------------------------------------
 # Testes de CSRF em /api/auth/logout/
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.django_db
 class TestCSRFLogout:
@@ -185,7 +188,10 @@ class TestCSRFLogout:
         assert access_cookie is not None, "Cookie access_token não veio na resposta"
         assert refresh_cookie is not None, "Cookie refresh_token não veio na resposta"
         # max_age deve ser 0 ou None (deleted) — qualquer um indica remoção
-        assert access_cookie.get("max-age", 1) in (0, "0", "", None) or access_cookie["expires"] == "Thu, 01 Jan 1970 00:00:00 GMT"
+        assert (
+            access_cookie.get("max-age", 1) in (0, "0", "", None)
+            or access_cookie["expires"] == "Thu, 01 Jan 1970 00:00:00 GMT"
+        )
 
     def test_refresh_apos_logout_retorna_401(self):
         """Após logout, tentativa de refresh → 401."""

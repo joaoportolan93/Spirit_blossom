@@ -9,7 +9,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
@@ -18,21 +17,54 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name='Post',
+            name="Post",
             fields=[
-                ('id', models.UUIDField(default=uuid6.uuid7, editable=False, primary_key=True, serialize=False)),
-                ('content_text', models.TextField(max_length=3000)),
-                ('visibility', models.CharField(choices=[('public', 'Público'), ('followers', 'Seguidores')], default='public', max_length=10)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('search_vector', models.GeneratedField(db_persist=True, expression=django.contrib.postgres.search.SearchVector('content_text', config='simple'), output_field=django.contrib.postgres.search.SearchVectorField())),
-                ('author', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='posts', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.UUIDField(
+                        default=uuid6.uuid7, editable=False, primary_key=True, serialize=False
+                    ),
+                ),
+                ("content_text", models.TextField(max_length=3000)),
+                (
+                    "visibility",
+                    models.CharField(
+                        choices=[("public", "Público"), ("followers", "Seguidores")],
+                        default="public",
+                        max_length=10,
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "search_vector",
+                    models.GeneratedField(
+                        db_persist=True,
+                        expression=django.contrib.postgres.search.SearchVector(
+                            "content_text", config="simple"
+                        ),
+                        output_field=django.contrib.postgres.search.SearchVectorField(),
+                    ),
+                ),
+                (
+                    "author",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="posts",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'publicação',
-                'verbose_name_plural': 'publicações',
-                'db_table': 'posts_post',
-                'ordering': ['-id'],
-                'indexes': [models.Index(fields=['author', '-id'], name='posts_post_author_id_idx'), django.contrib.postgres.indexes.GinIndex(fields=['search_vector'], name='posts_post_search_gin')],
+                "verbose_name": "publicação",
+                "verbose_name_plural": "publicações",
+                "db_table": "posts_post",
+                "ordering": ["-id"],
+                "indexes": [
+                    models.Index(fields=["author", "-id"], name="posts_post_author_id_idx"),
+                    django.contrib.postgres.indexes.GinIndex(
+                        fields=["search_vector"], name="posts_post_search_gin"
+                    ),
+                ],
             },
         ),
     ]

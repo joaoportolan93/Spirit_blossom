@@ -67,7 +67,7 @@ jobs:
         working-directory: apps/backend
         run: ruff format --check .
 
-      - name: Migrations check
+      - name: Migrations apply
         working-directory: apps/backend
         env:
           SECRET_KEY: ci-secret-key-not-used-in-prod
@@ -82,7 +82,9 @@ jobs:
           REDIS_PORT: "6379"
           REDIS_PASSWORD: ""
           ACCESS_LOG_HMAC_KEY: ci-hmac-key-32bytes-not-for-prod!
-        run: python manage.py migrate --check
+        run: |
+          python manage.py migrate
+          python manage.py makemigrations --check
 
       - name: Testes
         working-directory: apps/backend
@@ -112,25 +114,40 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Checar se frontend está inicializado (M1b+)
+        id: check_frontend
+        run: |
+          if [ -f "apps/frontend/package.json" ]; then
+            echo "initialized=true" >> $GITHUB_OUTPUT
+          else
+            echo "initialized=false" >> $GITHUB_OUTPUT
+            echo "apps/frontend/package.json ainda não existe (M1a). Pulando steps de frontend."
+          fi
+
       - uses: actions/setup-node@v4
+        if: steps.check_frontend.outputs.initialized == 'true'
         with:
           node-version: "20"
           cache: "npm"
           cache-dependency-path: apps/frontend/package-lock.json
 
       - name: Instalar dependências
+        if: steps.check_frontend.outputs.initialized == 'true'
         working-directory: apps/frontend
         run: npm ci
 
       - name: ESLint
+        if: steps.check_frontend.outputs.initialized == 'true'
         working-directory: apps/frontend
         run: npm run lint
 
       - name: Vitest
+        if: steps.check_frontend.outputs.initialized == 'true'
         working-directory: apps/frontend
         run: npm test
 
       - name: Build
+        if: steps.check_frontend.outputs.initialized == 'true'
         working-directory: apps/frontend
         env:
           VITE_APP_NAME: App
@@ -186,7 +203,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Checar se frontend está inicializado (M1b+)
+        id: check_frontend
+        run: |
+          if [ -f "apps/frontend/package.json" ]; then
+            echo "initialized=true" >> $GITHUB_OUTPUT
+          else
+            echo "initialized=false" >> $GITHUB_OUTPUT
+            echo "apps/frontend/package.json ainda não existe (M1a). Pulando E2E."
+          fi
+
       - name: Subir stack
+        if: steps.check_frontend.outputs.initialized == 'true'
         run: |
           cp .env.example .env
           echo "SECRET_KEY=ci-e2e-secret" >> .env
@@ -197,20 +225,23 @@ jobs:
           docker compose up -d --wait
 
       - uses: actions/setup-node@v4
+        if: steps.check_frontend.outputs.initialized == 'true'
         with:
           node-version: "20"
 
       - name: Instalar Playwright
+        if: steps.check_frontend.outputs.initialized == 'true'
         working-directory: apps/frontend
         run: |
           npm ci
           npx playwright install --with-deps chromium
 
       - name: Rodar E2E
+        if: steps.check_frontend.outputs.initialized == 'true'
         working-directory: apps/frontend
         run: npx playwright test
 
       - name: Parar stack
-        if: always()
+        if: steps.check_frontend.outputs.initialized == 'true' && always()
         run: docker compose down -v
 

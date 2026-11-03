@@ -1,15 +1,16 @@
 """
 Fixtures compartilhadas entre todos os testes.
 """
+
 from .sqlite_compat import patch_sqlite
+
 patch_sqlite()
 
 import pytest
-from django.test import Client
 from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from .factories import UserFactory, PostFactory
+from .factories import PostFactory, UserFactory
 
 
 @pytest.fixture
@@ -59,4 +60,8 @@ def set_auth_cookies(client, user):
 def get_csrf_token(client):
     """Obtém csrftoken via GET /api/auth/csrf/ e retorna o valor do cookie."""
     response = client.get("/api/auth/csrf/")
-    return client.cookies.get("csrftoken", {}).value if hasattr(client.cookies.get("csrftoken", {}), "value") else response.cookies.get("csrftoken", "")
+    return (
+        client.cookies.get("csrftoken", {}).value
+        if hasattr(client.cookies.get("csrftoken", {}), "value")
+        else response.cookies.get("csrftoken", "")
+    )

@@ -1,6 +1,7 @@
 """
 Testes de autenticação: login, register, CSRF endpoint, AccessLog.
 """
+
 import pytest
 from django.contrib.auth import get_user_model
 from rest_framework import status
@@ -8,6 +9,7 @@ from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from accounts.models import AccessLog
+
 from .factories import UserFactory
 
 User = get_user_model()
@@ -160,6 +162,7 @@ class TestRegister:
         client = _make_client(enforce_csrf=True)
         csrf = _get_csrf(client)
         from datetime import date
+
         today = date.today()
         # 17 anos atrás
         underage = date(today.year - 17, today.month, today.day).isoformat()
@@ -330,14 +333,13 @@ class TestRefreshTokenRotation:
 
     def test_refresh_reutilizado_retorna_401(self, db):
         """Usar um refresh token já rotacionado deve retornar 401."""
-        from tests.conftest import set_auth_cookies
         client = APIClient()
         user = UserFactory()
-        
+
         # Obtém refresh token original
         refresh = RefreshToken.for_user(user)
         old_refresh_str = str(refresh)
-        
+
         # Primeiro uso — deve funcionar
         client.cookies["refresh_token"] = old_refresh_str
         client.cookies["csrftoken"] = "testcsrf"
@@ -346,7 +348,7 @@ class TestRefreshTokenRotation:
             HTTP_X_CSRFTOKEN="testcsrf",
         )
         assert response.status_code == 200, f"Primeiro refresh falhou: {response.data}"
-        
+
         # Segundo uso do mesmo token — deve falhar (blacklistado)
         client2 = APIClient()
         client2.cookies["refresh_token"] = old_refresh_str
@@ -359,13 +361,12 @@ class TestRefreshTokenRotation:
 
     def test_refresh_apos_logout_retorna_401(self, db):
         """Após logout, o refresh token deve ser blacklistado e não funcionar."""
-        from tests.conftest import set_auth_cookies
         client = APIClient()
         user = UserFactory()
-        
+
         refresh = RefreshToken.for_user(user)
         refresh_str = str(refresh)
-        
+
         # Logout
         client.cookies["refresh_token"] = refresh_str
         client.cookies["csrftoken"] = "testcsrf"
@@ -374,7 +375,7 @@ class TestRefreshTokenRotation:
             HTTP_X_CSRFTOKEN="testcsrf",
         )
         assert response_logout.status_code == 200
-        
+
         # Tentar usar o token após logout — deve falhar
         client2 = APIClient()
         client2.cookies["refresh_token"] = refresh_str
@@ -384,4 +385,3 @@ class TestRefreshTokenRotation:
             HTTP_X_CSRFTOKEN="testcsrf",
         )
         assert response.status_code == 401, f"Token pós-logout deveria dar 401: {response.data}"
-

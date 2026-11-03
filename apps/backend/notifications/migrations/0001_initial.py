@@ -6,7 +6,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
@@ -15,22 +14,59 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name='Notification',
+            name="Notification",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('notification_type', models.CharField(choices=[('follow', 'Novo seguidor'), ('mention', 'Menção'), ('reply', 'Resposta'), ('repost', 'Repost'), ('system', 'Sistema')], max_length=20)),
-                ('ref_id', models.UUIDField(blank=True, null=True)),
-                ('read', models.BooleanField(db_index=True, default=False)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('recipient', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='notifications', to=settings.AUTH_USER_MODEL)),
-                ('sender', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='sent_notifications', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                (
+                    "notification_type",
+                    models.CharField(
+                        choices=[
+                            ("follow", "Novo seguidor"),
+                            ("mention", "Menção"),
+                            ("reply", "Resposta"),
+                            ("repost", "Repost"),
+                            ("system", "Sistema"),
+                        ],
+                        max_length=20,
+                    ),
+                ),
+                ("ref_id", models.UUIDField(blank=True, null=True)),
+                ("read", models.BooleanField(db_index=True, default=False)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "recipient",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="notifications",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
+                (
+                    "sender",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="sent_notifications",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'notificação',
-                'verbose_name_plural': 'notificações',
-                'db_table': 'notifications_notification',
-                'ordering': ['-created_at'],
-                'indexes': [models.Index(fields=['recipient', '-created_at'], name='notif_recipient_created_idx')],
+                "verbose_name": "notificação",
+                "verbose_name_plural": "notificações",
+                "db_table": "notifications_notification",
+                "ordering": ["-created_at"],
+                "indexes": [
+                    models.Index(
+                        fields=["recipient", "-created_at"], name="notif_recipient_created_idx"
+                    )
+                ],
             },
         ),
     ]

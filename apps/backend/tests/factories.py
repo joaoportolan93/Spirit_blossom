@@ -1,7 +1,9 @@
 """
 Factory-boy factories para os testes.
 """
+
 import datetime
+
 import factory
 from django.contrib.auth import get_user_model
 

@@ -49,9 +49,7 @@ class CookieJWTAuthentication(BaseAuthentication):
     def authenticate(self, request):
         from django.conf import settings as django_settings
 
-        cookie_name = getattr(django_settings, "SIMPLE_JWT", {}).get(
-            "AUTH_COOKIE", "access_token"
-        )
+        cookie_name = getattr(django_settings, "SIMPLE_JWT", {}).get("AUTH_COOKIE", "access_token")
         raw_token = request.COOKIES.get(cookie_name)
         if not raw_token:
             return None  # anônimo; deixa outras classes tentarem
@@ -86,4 +84,3 @@ class CookieJWTAuthentication(BaseAuthentication):
 
     def authenticate_header(self, request):
         return "Cookie"
-

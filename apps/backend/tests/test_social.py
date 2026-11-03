@@ -1,6 +1,7 @@
 """
 Testes de ações sociais: follow, unfollow, block, perfil.
 """
+
 import pytest
 from django.contrib.auth import get_user_model
 from rest_framework import status
@@ -9,6 +10,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from accounts.models import UserProfile
 from social.models import Block, Follow
+
 from .factories import FollowFactory, UserFactory
 
 User = get_user_model()

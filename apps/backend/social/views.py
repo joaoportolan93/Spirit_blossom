@@ -1,6 +1,7 @@
 """
 Views sociais: follow, unfollow, block.
 """
+
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
 from rest_framework import status
@@ -18,6 +19,7 @@ class FollowView(APIView):
     POST /api/social/follow/<username>/   → seguir usuário
     DELETE /api/social/follow/<username>/ → deixar de seguir
     """
+
     permission_classes = [IsAuthenticated]
 
     def post(self, request, username):
@@ -57,6 +59,7 @@ class BlockView(APIView):
     POST /api/social/block/<username>/   → bloquear usuário
     DELETE /api/social/block/<username>/ → desbloquear
     """
+
     permission_classes = [IsAuthenticated]
 
     def post(self, request, username):
