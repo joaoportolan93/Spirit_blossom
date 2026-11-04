@@ -232,16 +232,22 @@ class TestSearch:
 
     @requires_postgres
     def test_busca_ordena_por_relevancia(self):
-        """Post com maior densidade do termo aparece antes do menos relevante."""
+        """Post com maior densidade do termo aparece antes do menos relevante.
+
+        post_baixo é criado primeiro (UUID menor) para que, em caso de empate
+        no rank, o tiebreaker -id ainda favoreça post_alto. Com 7× vs 1×
+        ocorrência, o rank de post_alto deve ser estritamente maior.
+        """
         user = UserFactory()
-        # post_alto tem o termo 3x; post_baixo tem 1x — rank maior deve vir primeiro
-        post_alto = PostFactory(
-            author=user,
-            content_text="django django django framework web",
-        )
+        # Criado PRIMEIRO → UUID menor (tiebreaker desfavorável → rank precisa ser maior)
         post_baixo = PostFactory(
             author=user,
-            content_text="aprendi django hoje pela primeira vez",
+            content_text="aprendi algo sobre django hoje pela primeira vez na vida",
+        )
+        # Criado SEGUNDO → UUID maior (tiebreaker favorável como seguro extra)
+        post_alto = PostFactory(
+            author=user,
+            content_text="django django django django django django django framework python",
         )
         client = _client_for(user)
         response = client.get("/api/posts/search/?q=django")
