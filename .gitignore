@@ -24,7 +24,6 @@ apps/backend/staticfiles/
 .env
 .env.*
 !.env.example
-!.env.test
 
 # ── Node / frontend ───────────────────────────────────────────────────────────
 node_modules/
@@ -43,6 +42,12 @@ services/feed/target/
 *.swp
 *.swo
 *~
+
+# ── Documentação e agentes ────────────────────────────────────────────────────
+agents/
+docs/*
+!docs/api/
+!docs/api/feed-contract.json
 
 # ── macOS / Windows ───────────────────────────────────────────────────────────
 .DS_Store

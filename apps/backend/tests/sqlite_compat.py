@@ -32,6 +32,13 @@ def patch_sqlite():
 
     SearchVectorExact.as_sqlite = search_vector_exact_as_sqlite
 
+    from django.contrib.postgres.search import SearchRank
+
+    def search_rank_as_sqlite(self, compiler, connection):
+        return "1.0", []
+
+    SearchRank.as_sqlite = search_rank_as_sqlite
+
     orig_create_sql = PostgresIndex.create_sql
 
     def index_create_sql(self, model, schema_editor, using="", **kwargs):
