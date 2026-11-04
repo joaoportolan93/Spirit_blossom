@@ -230,6 +230,45 @@ class TestSearch:
         for pid in private_posts:
             assert str(pid) not in ids
 
+    @requires_postgres
+    def test_busca_ordena_por_relevancia(self):
+        """Post com maior densidade do termo aparece antes do menos relevante."""
+        user = UserFactory()
+        # post_alto tem o termo 3x; post_baixo tem 1x — rank maior deve vir primeiro
+        post_alto = PostFactory(
+            author=user,
+            content_text="django django django framework web",
+        )
+        post_baixo = PostFactory(
+            author=user,
+            content_text="aprendi django hoje pela primeira vez",
+        )
+        client = _client_for(user)
+        response = client.get("/api/posts/search/?q=django")
+        assert response.status_code == 200
+        ids = [item["id"] for item in response.json()]
+        assert str(post_alto.pk) in ids
+        assert str(post_baixo.pk) in ids
+        assert ids.index(str(post_alto.pk)) < ids.index(str(post_baixo.pk))
+
+    @requires_postgres
+    def test_busca_funciona_com_texto_pt_br_e_en(self):
+        """Busca encontra posts com termos em pt-BR e em EN usando config='simple'."""
+        user = UserFactory()
+        post_ptbr = PostFactory(author=user, content_text="programação orientada a objetos")
+        post_en = PostFactory(author=user, content_text="object oriented programming")
+        client = _client_for(user)
+
+        # pt-BR
+        resp_pt = client.get("/api/posts/search/?q=programação")
+        ids_pt = [item["id"] for item in resp_pt.json()]
+        assert str(post_ptbr.pk) in ids_pt
+
+        # EN
+        resp_en = client.get("/api/posts/search/?q=programming")
+        ids_en = [item["id"] for item in resp_en.json()]
+        assert str(post_en.pk) in ids_en
+
     def test_busca_sem_q_retorna_400(self):
         """Busca sem parâmetro q retorna 400."""
         user = UserFactory()
