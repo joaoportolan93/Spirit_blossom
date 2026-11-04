@@ -1,38 +1,67 @@
 {
   "app": {
-    "name": "{{appName}}"
+    "name": "{{appName}}",
+    "tagline": "Conscious and safe 18+ social network."
+  },
+  "nav": {
+    "feed": "Feed",
+    "profile": "Profile",
+    "login": "Login",
+    "register": "Register"
   },
   "auth": {
     "login": "Log in",
     "logout": "Log out",
-    "register": "Create account",
+    "register": "Create account (18+)",
     "email": "Email",
     "password": "Password",
-    "username": "Username"
+    "password_confirm": "Confirm password",
+    "username": "Username",
+    "birth_date": "Birth date",
+    "age_notice": "Strictly 18+ platform.",
+    "underage_error": "You must be at least 18 years old to register.",
+    "passwords_mismatch": "Passwords do not match.",
+    "login_submitting": "Logging in...",
+    "register_submitting": "Creating account...",
+    "dont_have_account": "Don't have an account? Sign up",
+    "already_have_account": "Already have an account? Log in",
+    "throttle_error": "Too many requests. Please wait a minute."
   },
   "post": {
+    "title": "New post",
     "placeholder": "What's on your mind?",
     "publish": "Post",
-    "chars_remaining": "{{count}} characters remaining"
+    "publishing": "Posting...",
+    "chars_remaining": "{{count}} characters remaining",
+    "too_long": "Character limit exceeded"
   },
   "feed": {
+    "title": "Following Timeline",
     "following": "Following",
     "for_you": "For you",
-    "empty": "No posts yet."
+    "load_more": "Load more",
+    "loading": "Loading posts...",
+    "empty": "No posts yet. Follow someone to see their updates!"
   },
   "profile": {
+    "title": "Profile",
+    "posts": "Posts",
+    "followers": "Followers",
+    "following": "Following",
     "follow": "Follow",
     "unfollow": "Unfollow",
-    "bio": "Bio"
+    "bio": "Bio",
+    "empty_posts": "No posts published by this user yet."
   },
   "notifications": {
     "title": "Notifications",
+    "mark_all_read": "Mark all as read",
     "empty": "No notifications yet."
   },
   "errors": {
     "generic": "Something went wrong. Please try again.",
     "not_found": "Page not found.",
-    "unauthorized": "You need to be signed in."
+    "unauthorized": "You need to be signed in.",
+    "required_field": "Required field"
   }
 }
-

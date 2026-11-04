@@ -385,3 +385,81 @@ class TestRefreshTokenRotation:
             HTTP_X_CSRFTOKEN="testcsrf",
         )
         assert response.status_code == 401, f"Token pós-logout deveria dar 401: {response.data}"
+
+
+@pytest.mark.django_db
+class TestThrottles:
+    """Valida rate limiting de produção (login 5/min e register 3/min)."""
+
+    def test_login_rate_throttle_bloqueia_na_sexta_tentativa(self):
+        from unittest.mock import patch
+
+        from django.core.cache import cache
+
+        from accounts.throttles import LoginRateThrottle
+
+        cache.clear()
+        try:
+            with patch.dict(LoginRateThrottle.THROTTLE_RATES, {"login": "5/min"}):
+                client = _make_client(enforce_csrf=True)
+                csrf = _get_csrf(client)
+                login_payload = {"email": "tentativa@example.com", "password": "wrongpassword"}
+
+                # 5 primeiras tentativas permitidas (retornam 400 ou 401)
+                for _ in range(5):
+                    resp = client.post(
+                        "/api/auth/login/",
+                        login_payload,
+                        format="json",
+                        HTTP_X_CSRFTOKEN=csrf,
+                    )
+                    assert resp.status_code != status.HTTP_429_TOO_MANY_REQUESTS
+
+                # 6ª tentativa deve ser bloqueada por rate limit
+                blocked_resp = client.post(
+                    "/api/auth/login/",
+                    login_payload,
+                    format="json",
+                    HTTP_X_CSRFTOKEN=csrf,
+                )
+                assert blocked_resp.status_code == status.HTTP_429_TOO_MANY_REQUESTS
+        finally:
+            cache.clear()
+
+    def test_register_rate_throttle_bloqueia_na_quarta_tentativa(self):
+        from unittest.mock import patch
+
+        from django.core.cache import cache
+
+        from accounts.throttles import RegisterRateThrottle
+
+        cache.clear()
+        try:
+            with patch.dict(RegisterRateThrottle.THROTTLE_RATES, {"register": "3/min"}):
+                client = _make_client(enforce_csrf=True)
+                csrf = _get_csrf(client)
+                register_payload = {
+                    "email": "invalid_register",
+                    "password": "short",
+                }
+
+                # 3 primeiras tentativas processadas
+                for _ in range(3):
+                    resp = client.post(
+                        "/api/auth/register/",
+                        register_payload,
+                        format="json",
+                        HTTP_X_CSRFTOKEN=csrf,
+                    )
+                    assert resp.status_code != status.HTTP_429_TOO_MANY_REQUESTS
+
+                # 4ª tentativa bloqueada por rate limit
+                blocked_resp = client.post(
+                    "/api/auth/register/",
+                    register_payload,
+                    format="json",
+                    HTTP_X_CSRFTOKEN=csrf,
+                )
+                assert blocked_resp.status_code == status.HTTP_429_TOO_MANY_REQUESTS
+        finally:
+            cache.clear()

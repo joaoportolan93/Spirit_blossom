@@ -1,38 +1,67 @@
 {
   "app": {
-    "name": "{{appName}}"
+    "name": "{{appName}}",
+    "tagline": "Rede social 18+ consciente e segura."
+  },
+  "nav": {
+    "feed": "Feed",
+    "profile": "Perfil",
+    "login": "Entrar",
+    "register": "Cadastrar"
   },
   "auth": {
     "login": "Entrar",
     "logout": "Sair",
-    "register": "Criar conta",
+    "register": "Criar conta (18+)",
     "email": "E-mail",
     "password": "Senha",
-    "username": "Nome de usuário"
+    "password_confirm": "Confirmar senha",
+    "username": "Nome de usuário",
+    "birth_date": "Data de nascimento",
+    "age_notice": "Plataforma estritamente para maiores de 18 anos.",
+    "underage_error": "Você precisa ter pelo menos 18 anos para se cadastrar.",
+    "passwords_mismatch": "As senhas não coincidem.",
+    "login_submitting": "Entrando...",
+    "register_submitting": "Cadastrando...",
+    "dont_have_account": "Não tem uma conta? Cadastre-se",
+    "already_have_account": "Já possui conta? Entre aqui",
+    "throttle_error": "Muitas tentativas. Aguarde um minuto."
   },
   "post": {
+    "title": "Nova publicação",
     "placeholder": "No que você está pensando?",
     "publish": "Publicar",
-    "chars_remaining": "{{count}} caracteres restantes"
+    "publishing": "Publicando...",
+    "chars_remaining": "{{count}} caracteres restantes",
+    "too_long": "Limite de caracteres excedido"
   },
   "feed": {
+    "title": "Timeline Seguindo",
     "following": "Seguindo",
     "for_you": "Para você",
-    "empty": "Nenhuma publicação ainda."
+    "load_more": "Carregar mais",
+    "loading": "Carregando publicações...",
+    "empty": "Nenhuma publicação ainda. Siga alguém para ver atualizações!"
   },
   "profile": {
+    "title": "Perfil",
+    "posts": "Publicações",
+    "followers": "Seguidores",
+    "following": "Seguindo",
     "follow": "Seguir",
     "unfollow": "Deixar de seguir",
-    "bio": "Biografia"
+    "bio": "Biografia",
+    "empty_posts": "Nenhuma publicação feita por este usuário."
   },
   "notifications": {
     "title": "Notificações",
+    "mark_all_read": "Marcar todas como lidas",
     "empty": "Sem notificações no momento."
   },
   "errors": {
     "generic": "Algo deu errado. Tente novamente.",
     "not_found": "Página não encontrada.",
-    "unauthorized": "Você precisa estar autenticado."
+    "unauthorized": "Você precisa estar autenticado.",
+    "required_field": "Campo obrigatório"
   }
 }
-
