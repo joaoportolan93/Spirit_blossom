@@ -19,7 +19,7 @@ ignore = [
 # Migrations: geradas pelo Django, não editamos manualmente
 "*/migrations/*.py" = ["RUF012", "E501"]
 # Settings: from config.settings import * é intencional no settings_ci
-"config/settings_ci.py" = ["F401", "F403", "E402"]
+"config/settings_ci.py" = ["F401", "F403", "E402", "F405"]
 # Testes: variáveis locais sem uso são normais em testes de efeito colateral; patch_sqlite precisa rodar antes
 "tests/*.py" = ["F841", "E402", "E501"]
 

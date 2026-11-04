@@ -70,7 +70,7 @@ jobs:
       - name: Migrations apply
         working-directory: apps/backend
         env:
-          SECRET_KEY: ci-secret-key-not-used-in-prod
+          SECRET_KEY: ci-secret-key-not-used-in-prod-minimum-32-bytes!
           DJANGO_SETTINGS_MODULE: config.settings
           DEBUG: "True"
           POSTGRES_HOST: localhost
@@ -89,7 +89,7 @@ jobs:
       - name: Testes
         working-directory: apps/backend
         env:
-          SECRET_KEY: ci-secret-key-not-used-in-prod
+          SECRET_KEY: ci-secret-key-not-used-in-prod-minimum-32-bytes!
           DJANGO_SETTINGS_MODULE: config.settings_ci
           DEBUG: "True"
           POSTGRES_HOST: localhost

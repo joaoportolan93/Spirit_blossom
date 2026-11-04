@@ -16,5 +16,16 @@ PASSWORD_HASHERS = [
     "django.contrib.auth.hashers.MD5PasswordHasher",
 ]
 
+# Throttles desabilitados/altos durante a suite de testes para evitar 429
+REST_FRAMEWORK = {
+    **REST_FRAMEWORK,
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": "10000/minute",
+        "user": "10000/minute",
+        "login": "10000/minute",
+        "register": "10000/minute",
+    },
+}
+
 CELERY_TASK_ALWAYS_EAGER = True
 CELERY_TASK_EAGER_PROPAGATES = True
