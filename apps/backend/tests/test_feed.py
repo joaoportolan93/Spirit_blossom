@@ -234,9 +234,9 @@ class TestSearch:
     def test_busca_ordena_por_relevancia(self):
         """Post com maior densidade do termo aparece antes do menos relevante.
 
-        post_baixo é criado primeiro (UUID menor) para que, em caso de empate
-        no rank, o tiebreaker -id ainda favoreça post_alto. Com 7× vs 1×
-        ocorrência, o rank de post_alto deve ser estritamente maior.
+        post_baixo e criado primeiro (UUID menor) para que, em caso de empate
+        no rank, o tiebreaker -id ainda favoreça post_alto. Com 7x vs 1x
+        ocorrencia, o rank de post_alto deve ser estritamente maior.
         """
         user = UserFactory()
         # Criado PRIMEIRO → UUID menor (tiebreaker desfavorável → rank precisa ser maior)
