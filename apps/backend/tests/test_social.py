@@ -170,3 +170,30 @@ class TestUserProfile:
         user.status = User.Status.SUSPENDED
         user.save()
         assert user.is_valid_for_auth is False
+
+
+@pytest.mark.django_db
+class TestProfileDetail:
+    def test_retorna_contadores_e_status_de_follow(self):
+        user = UserFactory()
+        target = UserFactory()
+        follower1 = UserFactory()
+        FollowFactory(follower=follower1, followed=target)
+        FollowFactory(follower=target, followed=follower1)
+
+        client = _client_for(user)
+        response = client.get(f"/api/social/profile/{target.username}/")
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert data["username"] == target.username
+        assert data["followers_count"] == 1
+        assert data["following_count"] == 1
+        assert data["is_following"] is False
+
+        # Agora o usuário logado segue o target
+        FollowFactory(follower=user, followed=target)
+        res2 = client.get(f"/api/social/profile/{target.username}/")
+        assert res2.status_code == status.HTTP_200_OK
+        assert res2.json()["followers_count"] == 2
+        assert res2.json()["is_following"] is True
+

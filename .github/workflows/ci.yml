@@ -187,8 +187,6 @@ jobs:
           sed -i "s|^ACCESS_LOG_HMAC_KEY=.*|ACCESS_LOG_HMAC_KEY=$(openssl rand -hex 32)|" .env
           sed -i "s|^APP_NAME=.*|APP_NAME=SpiritBlossom|" .env
           sed -i "s|^VITE_APP_NAME=.*|VITE_APP_NAME=SpiritBlossom|" .env
-          echo "AUTH_COOKIE_SECURE=False" >> .env
-          echo "CSRF_COOKIE_SECURE=False" >> .env
 
       - name: Build da Stack
         run: docker compose --env-file .env -f infra/docker-compose.yml build
@@ -252,14 +250,12 @@ jobs:
           sed -i "s|^ACCESS_LOG_HMAC_KEY=.*|ACCESS_LOG_HMAC_KEY=$(openssl rand -hex 32)|" .env
           sed -i "s|^APP_NAME=.*|APP_NAME=SpiritBlossom|" .env
           sed -i "s|^VITE_APP_NAME=.*|VITE_APP_NAME=SpiritBlossom|" .env
-          echo "AUTH_COOKIE_SECURE=False" >> .env
-          echo "CSRF_COOKIE_SECURE=False" >> .env
 
-      - name: Subir stack completa
-        run: docker compose --env-file .env -f infra/docker-compose.yml up -d --wait
+      - name: Subir stack completa (com override de cookies inseguros para HTTP)
+        run: docker compose --env-file .env -f infra/docker-compose.yml -f infra/docker-compose.e2e.yml up -d --wait
 
       - name: Aplicar migrations no container backend
-        run: docker compose --env-file .env -f infra/docker-compose.yml exec -T backend python manage.py migrate
+        run: docker compose --env-file .env -f infra/docker-compose.yml -f infra/docker-compose.e2e.yml exec -T backend python manage.py migrate
 
       - uses: actions/setup-node@v4
         with:
@@ -281,8 +277,8 @@ jobs:
 
       - name: Exibir logs em caso de falha
         if: failure()
-        run: docker compose --env-file .env -f infra/docker-compose.yml logs
+        run: docker compose --env-file .env -f infra/docker-compose.yml -f infra/docker-compose.e2e.yml logs
 
       - name: Parar stack
         if: always()
-        run: docker compose --env-file .env -f infra/docker-compose.yml down -v
+        run: docker compose --env-file .env -f infra/docker-compose.yml -f infra/docker-compose.e2e.yml down -v

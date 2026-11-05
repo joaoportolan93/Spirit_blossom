@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { formatDistanceToNow } from "../utils/date";
 
 export function PostCard({ post }) {
@@ -14,7 +15,12 @@ export function PostCard({ post }) {
           <div className="w-8 h-8 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center font-bold text-xs text-zinc-300">
             {authorName[0]?.toUpperCase()}
           </div>
-          <span className="font-semibold text-sm text-zinc-200">@{authorName}</span>
+          <Link
+            to={`/profile/${authorName}`}
+            className="font-semibold text-sm text-zinc-200 hover:text-white hover:underline transition"
+          >
+            @{authorName}
+          </Link>
         </div>
         {dateFormatted && (
           <time className="text-xs text-zinc-500">{dateFormatted}</time>

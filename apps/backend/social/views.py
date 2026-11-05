@@ -96,3 +96,28 @@ class BlockView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ProfileDetailView(APIView):
+    """
+    GET /api/social/profile/<username>/ → estatísticas do perfil (seguidores, seguindo)
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, username):
+        target = get_object_or_404(User, username=username)
+        followers_count = Follow.objects.filter(followed=target).count()
+        following_count = Follow.objects.filter(follower=target).count()
+        is_following = Follow.objects.filter(
+            follower=request.user, followed=target
+        ).exists()
+        return Response(
+            {
+                "username": target.username,
+                "followers_count": followers_count,
+                "following_count": following_count,
+                "is_following": is_following,
+            }
+        )
+

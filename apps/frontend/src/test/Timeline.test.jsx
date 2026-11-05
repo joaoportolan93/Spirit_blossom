@@ -1,8 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import { Feed } from "../pages/Feed";
 import { api } from "../services/api";
 import "../i18n";
+
+function renderWithRouter(ui) {
+  return render(<MemoryRouter>{ui}</MemoryRouter>);
+}
 
 describe("Timeline Component (3 testes)", () => {
   beforeEach(() => {
@@ -27,7 +32,7 @@ describe("Timeline Component (3 testes)", () => {
 
     vi.spyOn(api, "get").mockResolvedValueOnce({ data: mockPosts });
 
-    render(<Feed />);
+    renderWithRouter(<Feed />);
 
     expect(screen.getByTestId("feed-loading")).toBeInTheDocument();
 
@@ -42,7 +47,7 @@ describe("Timeline Component (3 testes)", () => {
   it("2. Exibe mensagem de estado vazio quando não há publicações", async () => {
     vi.spyOn(api, "get").mockResolvedValueOnce({ data: [] });
 
-    render(<Feed />);
+    renderWithRouter(<Feed />);
 
     await waitFor(() => {
       expect(screen.getByTestId("feed-empty")).toBeInTheDocument();
@@ -74,7 +79,8 @@ describe("Timeline Component (3 testes)", () => {
         ],
       });
 
-    render(<Feed />);
+    renderWithRouter(<Feed />);
+
 
     await waitFor(() => {
       expect(screen.getByTestId("load-more-btn")).toBeInTheDocument();

@@ -1,0 +1,9 @@
+# Compose override usado exclusivamente para o job de E2E no CI.
+# Permite que os cookies de autenticação trafeguem sobre HTTP em http://localhost:8000 no runner.
+# NUNCA utilizar em ambiente de produção (em produção, AUTH_COOKIE_SECURE é estritamente True).
+
+services:
+  backend:
+    environment:
+      AUTH_COOKIE_SECURE: "False"
+      CSRF_COOKIE_SECURE: "False"
