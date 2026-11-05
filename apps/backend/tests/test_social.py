@@ -196,4 +196,3 @@ class TestProfileDetail:
         assert res2.status_code == status.HTTP_200_OK
         assert res2.json()["followers_count"] == 2
         assert res2.json()["is_following"] is True
-

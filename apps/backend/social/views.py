@@ -109,9 +109,7 @@ class ProfileDetailView(APIView):
         target = get_object_or_404(User, username=username)
         followers_count = Follow.objects.filter(followed=target).count()
         following_count = Follow.objects.filter(follower=target).count()
-        is_following = Follow.objects.filter(
-            follower=request.user, followed=target
-        ).exists()
+        is_following = Follow.objects.filter(follower=request.user, followed=target).exists()
         return Response(
             {
                 "username": target.username,
@@ -120,4 +118,3 @@ class ProfileDetailView(APIView):
                 "is_following": is_following,
             }
         )
-
