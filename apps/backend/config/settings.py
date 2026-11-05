@@ -35,6 +35,21 @@ ALLOWED_HOSTS = [
 ]
 
 # ---------------------------------------------------------------------------
+# Startup security guard: recusa iniciar em produção com cookies inseguros.
+# Falha cedo (import-time) antes de aceitar qualquer request.
+# ---------------------------------------------------------------------------
+_AUTH_COOKIE_SECURE_RAW = os.environ.get("AUTH_COOKIE_SECURE", str(not DEBUG))
+AUTH_COOKIE_SECURE = _AUTH_COOKIE_SECURE_RAW.lower() in ("1", "true", "yes")
+_CSRF_COOKIE_SECURE_RAW = os.environ.get("CSRF_COOKIE_SECURE", str(not DEBUG))
+CSRF_COOKIE_SECURE_SETTING = _CSRF_COOKIE_SECURE_RAW.lower() in ("1", "true", "yes")
+
+if not DEBUG and (not AUTH_COOKIE_SECURE or not CSRF_COOKIE_SECURE_SETTING):
+    raise RuntimeError(
+        "STARTUP RECUSADO: DEBUG=False mas AUTH_COOKIE_SECURE ou CSRF_COOKIE_SECURE "
+        "estão desativados. Nunca execute em produção sem HTTPS nos cookies."
+    )
+
+# ---------------------------------------------------------------------------
 # Proxy reverso (Nginx)
 # Permite que o Django confie no X-Forwarded-Proto enviado pelo Nginx.
 # Sem isso, CSRF_TRUSTED_ORIGINS com https:// falha em produção.
@@ -208,11 +223,7 @@ REST_FRAMEWORK = {
 # ---------------------------------------------------------------------------
 # SimpleJWT
 # ---------------------------------------------------------------------------
-AUTH_COOKIE_SECURE = os.environ.get("AUTH_COOKIE_SECURE", str(not DEBUG)).lower() in (
-    "1",
-    "true",
-    "yes",
-)
+# AUTH_COOKIE_SECURE já calculado acima no startup guard.
 
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(
@@ -225,6 +236,7 @@ SIMPLE_JWT = {
     "BLACKLIST_AFTER_ROTATION": True,
     "AUTH_COOKIE": "access_token",
     "AUTH_COOKIE_REFRESH": "refresh_token",
+    # Ambos os cookies (access e refresh) compartilham a mesma flag Secure.
     "AUTH_COOKIE_SECURE": AUTH_COOKIE_SECURE,
     "AUTH_COOKIE_HTTP_ONLY": True,
     "AUTH_COOKIE_SAMESITE": "Lax",
@@ -242,11 +254,7 @@ CORS_ALLOW_CREDENTIALS = True
 # CSRF
 # ---------------------------------------------------------------------------
 CSRF_COOKIE_NAME = "csrftoken"
-CSRF_COOKIE_SECURE = os.environ.get("CSRF_COOKIE_SECURE", str(not DEBUG)).lower() in (
-    "1",
-    "true",
-    "yes",
-)
+CSRF_COOKIE_SECURE = CSRF_COOKIE_SECURE_SETTING  # definido no startup guard acima
 CSRF_COOKIE_SAMESITE = "Lax"
 CSRF_COOKIE_HTTPONLY = False  # frontend precisa ler o valor
 CSRF_TRUSTED_ORIGINS = [
