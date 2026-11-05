@@ -65,3 +65,4 @@ test.describe("Fluxo E2E: cadastro → post → seguir → ver", () => {
     await expect(page.locator(`text=${postContent}`)).toBeVisible();
   });
 });
+

@@ -178,28 +178,37 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup environment
+      - name: Criar .env a partir de .env.example com segredos openssl
         run: |
           cp .env.example .env
-          echo "SECRET_KEY=smoke-secret-key-at-least-32-chars-long!" >> .env
-          echo "ACCESS_LOG_HMAC_KEY=smoke-hmac-key-at-least-32-chars-long!" >> .env
-          echo "POSTGRES_PASSWORD=smoke_pass" >> .env
-          echo "REDIS_PASSWORD=smoke_redis" >> .env
-          echo "APP_NAME=SpiritBlossom" >> .env
-          echo "VITE_APP_NAME=SpiritBlossom" >> .env
+          sed -i "s|^SECRET_KEY=.*|SECRET_KEY=$(openssl rand -hex 32)|" .env
+          sed -i "s|^POSTGRES_PASSWORD=.*|POSTGRES_PASSWORD=$(openssl rand -hex 32)|" .env
+          sed -i "s|^REDIS_PASSWORD=.*|REDIS_PASSWORD=$(openssl rand -hex 32)|" .env
+          sed -i "s|^ACCESS_LOG_HMAC_KEY=.*|ACCESS_LOG_HMAC_KEY=$(openssl rand -hex 32)|" .env
+          sed -i "s|^APP_NAME=.*|APP_NAME=SpiritBlossom|" .env
+          sed -i "s|^VITE_APP_NAME=.*|VITE_APP_NAME=SpiritBlossom|" .env
 
-      - name: Build and Start Stack
-        run: |
-          docker compose -f infra/docker-compose.yml build
-          docker compose -f infra/docker-compose.yml up -d
+      - name: Build da Stack
+        run: docker compose --env-file .env -f infra/docker-compose.yml build
 
-      - name: Wait for /api/health/
+      - name: Subir Stack
+        run: docker compose --env-file .env -f infra/docker-compose.yml up -d
+
+      - name: Aplicar migrations no container backend
         run: |
-          timeout 60 bash -c 'until curl -sf http://localhost:8000/api/health/; do sleep 2; done'
+          docker compose --env-file .env -f infra/docker-compose.yml exec -T backend python manage.py migrate
+
+      - name: Aguardar /api/health/ via Nginx
+        run: |
+          timeout 90 bash -c 'until curl -sf http://localhost:8000/api/health/; do sleep 2; done'
+
+      - name: Exibir logs em caso de falha
+        if: failure()
+        run: docker compose --env-file .env -f infra/docker-compose.yml logs
 
       - name: Teardown
         if: always()
-        run: docker compose -f infra/docker-compose.yml down -v
+        run: docker compose --env-file .env -f infra/docker-compose.yml down -v
 
   # ─── ARM64 Backend Build Check ─────────────────────────────────────────
   arm64-build:
@@ -222,7 +231,7 @@ jobs:
           platforms: linux/arm64
           push: false
 
-  # ─── E2E (job separado, roda em push para main) ────────────────────────
+  # ─── E2E Playwright ───────────────────────────────────────────────────
   e2e:
     name: E2E Playwright
     runs-on: ubuntu-latest
@@ -232,16 +241,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Subir stack
+      - name: Criar .env a partir de .env.example com segredos openssl
         run: |
           cp .env.example .env
-          echo "SECRET_KEY=ci-e2e-secret-key-32bytes-secret!!" >> .env
-          echo "ACCESS_LOG_HMAC_KEY=ci-e2e-hmac-32bytes-secret-key!" >> .env
-          echo "POSTGRES_PASSWORD=e2e_pass" >> .env
-          echo "REDIS_PASSWORD=e2e_redis" >> .env
-          echo "APP_NAME=SpiritBlossom" >> .env
-          echo "VITE_APP_NAME=SpiritBlossom" >> .env
-          docker compose -f infra/docker-compose.yml up -d --wait
+          sed -i "s|^SECRET_KEY=.*|SECRET_KEY=$(openssl rand -hex 32)|" .env
+          sed -i "s|^POSTGRES_PASSWORD=.*|POSTGRES_PASSWORD=$(openssl rand -hex 32)|" .env
+          sed -i "s|^REDIS_PASSWORD=.*|REDIS_PASSWORD=$(openssl rand -hex 32)|" .env
+          sed -i "s|^ACCESS_LOG_HMAC_KEY=.*|ACCESS_LOG_HMAC_KEY=$(openssl rand -hex 32)|" .env
+          sed -i "s|^APP_NAME=.*|APP_NAME=SpiritBlossom|" .env
+          sed -i "s|^VITE_APP_NAME=.*|VITE_APP_NAME=SpiritBlossom|" .env
+
+      - name: Subir stack completa
+        run: docker compose --env-file .env -f infra/docker-compose.yml up -d --wait
+
+      - name: Aplicar migrations no container backend
+        run: docker compose --env-file .env -f infra/docker-compose.yml exec -T backend python manage.py migrate
 
       - uses: actions/setup-node@v4
         with:
@@ -255,10 +269,16 @@ jobs:
           npm ci
           npx playwright install --with-deps chromium
 
-      - name: Rodar E2E
+      - name: Rodar E2E Playwright
         working-directory: apps/frontend
+        env:
+          PLAYWRIGHT_BASE_URL: http://localhost:8000
         run: npx playwright test
+
+      - name: Exibir logs em caso de falha
+        if: failure()
+        run: docker compose --env-file .env -f infra/docker-compose.yml logs
 
       - name: Parar stack
         if: always()
-        run: docker compose -f infra/docker-compose.yml down -v
+        run: docker compose --env-file .env -f infra/docker-compose.yml down -v
