@@ -187,6 +187,8 @@ jobs:
           sed -i "s|^ACCESS_LOG_HMAC_KEY=.*|ACCESS_LOG_HMAC_KEY=$(openssl rand -hex 32)|" .env
           sed -i "s|^APP_NAME=.*|APP_NAME=SpiritBlossom|" .env
           sed -i "s|^VITE_APP_NAME=.*|VITE_APP_NAME=SpiritBlossom|" .env
+          echo "AUTH_COOKIE_SECURE=False" >> .env
+          echo "CSRF_COOKIE_SECURE=False" >> .env
 
       - name: Build da Stack
         run: docker compose --env-file .env -f infra/docker-compose.yml build
@@ -250,6 +252,8 @@ jobs:
           sed -i "s|^ACCESS_LOG_HMAC_KEY=.*|ACCESS_LOG_HMAC_KEY=$(openssl rand -hex 32)|" .env
           sed -i "s|^APP_NAME=.*|APP_NAME=SpiritBlossom|" .env
           sed -i "s|^VITE_APP_NAME=.*|VITE_APP_NAME=SpiritBlossom|" .env
+          echo "AUTH_COOKIE_SECURE=False" >> .env
+          echo "CSRF_COOKIE_SECURE=False" >> .env
 
       - name: Subir stack completa
         run: docker compose --env-file .env -f infra/docker-compose.yml up -d --wait

@@ -3,14 +3,14 @@ import { test, expect } from "@playwright/test";
 test.describe("Fluxo E2E: cadastro → post → seguir → ver", () => {
   const timestamp = Date.now();
   const user1 = {
-    username: `autor_${timestamp}`,
-    email: `autor_${timestamp}@example.com`,
+    username: `autor${timestamp}`,
+    email: `autor${timestamp}@example.com`,
     password: "Password123!",
     birthDate: "2000-01-01",
   };
   const user2 = {
-    username: `seguidor_${timestamp}`,
-    email: `seguidor_${timestamp}@example.com`,
+    username: `seguidor${timestamp}`,
+    email: `seguidor${timestamp}@example.com`,
     password: "Password123!",
     birthDate: "2002-05-15",
   };

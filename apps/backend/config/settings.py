@@ -208,6 +208,12 @@ REST_FRAMEWORK = {
 # ---------------------------------------------------------------------------
 # SimpleJWT
 # ---------------------------------------------------------------------------
+AUTH_COOKIE_SECURE = os.environ.get("AUTH_COOKIE_SECURE", str(not DEBUG)).lower() in (
+    "1",
+    "true",
+    "yes",
+)
+
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(
         minutes=int(os.environ.get("ACCESS_TOKEN_LIFETIME_MINUTES", "15"))
@@ -219,7 +225,7 @@ SIMPLE_JWT = {
     "BLACKLIST_AFTER_ROTATION": True,
     "AUTH_COOKIE": "access_token",
     "AUTH_COOKIE_REFRESH": "refresh_token",
-    "AUTH_COOKIE_SECURE": not DEBUG,
+    "AUTH_COOKIE_SECURE": AUTH_COOKIE_SECURE,
     "AUTH_COOKIE_HTTP_ONLY": True,
     "AUTH_COOKIE_SAMESITE": "Lax",
 }
@@ -236,7 +242,11 @@ CORS_ALLOW_CREDENTIALS = True
 # CSRF
 # ---------------------------------------------------------------------------
 CSRF_COOKIE_NAME = "csrftoken"
-CSRF_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = os.environ.get("CSRF_COOKIE_SECURE", str(not DEBUG)).lower() in (
+    "1",
+    "true",
+    "yes",
+)
 CSRF_COOKIE_SAMESITE = "Lax"
 CSRF_COOKIE_HTTPONLY = False  # frontend precisa ler o valor
 CSRF_TRUSTED_ORIGINS = [
