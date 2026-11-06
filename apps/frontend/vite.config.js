@@ -48,5 +48,17 @@ export default defineConfig({
     setupFiles: "./src/test/setup.js",
     include: ["src/**/*.{test,spec}.{js,jsx}"],
     exclude: ["e2e/**", "node_modules/**"],
+    coverage: {
+      provider: "v8",
+      reporter: ["text", "json"],
+      include: ["src/**/*.{js,jsx}"],
+      exclude: ["src/test/**", "src/main.jsx"],
+      thresholds: {
+        lines: 38,
+        statements: 38,
+        functions: 54,
+        branches: 69,
+      },
+    },
   },
 });

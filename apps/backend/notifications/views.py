@@ -1,44 +1,47 @@
 """
-View de notificações (polling 30s — VAPID push em M2+).
+Views de notificações (ADR-N2: finas, delegando para services e selectors).
 """
 
+from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Notification
+from .selectors import get_user_notifications
 from .serializers import NotificationSerializer
+from .services import mark_all_notifications_as_read, mark_notification_as_read
 
 
 class NotificationListView(APIView):
     """
-    GET   /api/notifications/         → lista notificações não lidas do usuário
-    PATCH /api/notifications/<id>/read/ → marca como lida
+    GET   /api/notifications/               → lista notificações do usuário via selector
+    POST  /api/notifications/mark-all-read/ → marca todas como lidas via service
     """
 
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        qs = (
-            Notification.objects.filter(
-                recipient=request.user,
-            )
-            .select_related("sender")
-            .order_by("-created_at")[:50]
-        )
+        qs = get_user_notifications(user=request.user, limit=50)
         serializer = NotificationSerializer(qs, many=True)
         return Response(serializer.data)
 
+    def post(self, request):
+        count = mark_all_notifications_as_read(user=request.user)
+        return Response({"detail": f"{count} notificações marcadas como lidas."})
+
 
 class NotificationMarkReadView(APIView):
-    """PATCH /api/notifications/<id>/read/"""
+    """
+    PATCH /api/notifications/<id>/read/ → marca uma notificação como lida via service
+    """
 
     permission_classes = [IsAuthenticated]
 
     def patch(self, request, pk):
-        from django.shortcuts import get_object_or_404
-
-        notif = get_object_or_404(Notification, pk=pk, recipient=request.user)
-        notif.read = True
-        notif.save(update_fields=["read"])
+        updated = mark_notification_as_read(notification_id=pk, user=request.user)
+        if not updated:
+            return Response(
+                {"detail": "Notificação não encontrada."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
         return Response({"detail": "Notificação marcada como lida."})

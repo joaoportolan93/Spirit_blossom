@@ -6,5 +6,6 @@ app_name = "notifications"
 
 urlpatterns = [
     path("", NotificationListView.as_view(), name="notification_list"),
+    path("mark-all-read/", NotificationListView.as_view(), name="notification_mark_all_read"),
     path("<int:pk>/read/", NotificationMarkReadView.as_view(), name="notification_read"),
 ]

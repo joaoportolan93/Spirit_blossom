@@ -1,13 +1,15 @@
 """
-Queries de visibilidade e filtros sociais.
+Queries de visibilidade e filtros sociais (ADR-N2).
 """
+
+from typing import Dict
 
 from django.db import models
 from django.db.models import Exists, OuterRef, QuerySet
 
 from posts.models import Post
 
-from .models import Block
+from .models import Block, Follow, Mute
 
 
 def get_visible_posts_queryset(user) -> QuerySet:
@@ -20,7 +22,6 @@ def get_visible_posts_queryset(user) -> QuerySet:
     if user.is_anonymous:
         return Post.objects.filter(visibility=Post.Visibility.PUBLIC)
 
-    # Bloqueio bidirecional: NOT EXISTS em ambas as direções
     blocked_by_user = Block.objects.filter(
         blocker=user,
         blocked=OuterRef("author"),
@@ -32,14 +33,41 @@ def get_visible_posts_queryset(user) -> QuerySet:
 
     qs = Post.objects.exclude(Exists(blocked_by_user)).exclude(Exists(blocker_of_user))
 
-    # Visibilidade: posts de seguidores visíveis apenas se o user segue o autor
-    from .models import Follow
-
     following_ids = Follow.objects.filter(follower=user).values("followed_id")
     qs = qs.filter(
         models.Q(visibility=Post.Visibility.PUBLIC)
         | models.Q(author__in=following_ids, visibility=Post.Visibility.FOLLOWERS)
-        | models.Q(author=user)  # próprios posts sempre visíveis
+        | models.Q(author=user)
     )
 
     return qs.select_related("author", "author__profile")
+
+
+def get_profile_counters(*, target_user) -> Dict[str, int]:
+    """Retorna os contadores públicos de um perfil de usuário."""
+    posts_count = Post.objects.filter(
+        author=target_user,
+        visibility=Post.Visibility.PUBLIC,
+    ).count()
+    followers_count = Follow.objects.filter(followed=target_user).count()
+    following_count = Follow.objects.filter(follower=target_user).count()
+    return {
+        "posts_count": posts_count,
+        "followers_count": followers_count,
+        "following_count": following_count,
+    }
+
+
+def get_relationship_status(*, source_user, target_user) -> Dict[str, bool]:
+    """Retorna status de relacionamento entre dois usuários."""
+    if not source_user.is_authenticated:
+        return {"is_following": False, "is_blocked": False, "is_muting": False}
+
+    is_following = Follow.objects.filter(follower=source_user, followed=target_user).exists()
+    is_blocked = Block.objects.filter(blocker=source_user, blocked=target_user).exists()
+    is_muting = Mute.objects.filter(muter=source_user, muted=target_user).exists()
+    return {
+        "is_following": is_following,
+        "is_blocked": is_blocked,
+        "is_muting": is_muting,
+    }
