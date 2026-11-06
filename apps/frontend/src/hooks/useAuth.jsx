@@ -44,13 +44,14 @@ export function AuthProvider({ children }) {
   }, []);
 
   const register = useCallback(
-    async ({ email, username, password, password_confirm, birth_date }) => {
+    async ({ email, username, password, password_confirm, birth_date, terms_accepted = true }) => {
       const response = await api.post("/api/auth/register/", {
         email,
         username,
         password,
         password_confirm,
         birth_date,
+        terms_accepted,
       });
       setUser({ email, username, birth_date, is_authenticated: true });
       return response.data;

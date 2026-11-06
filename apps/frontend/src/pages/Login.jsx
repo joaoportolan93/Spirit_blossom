@@ -2,11 +2,12 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../hooks/useAuth";
+import { api } from "../services/api";
 import { APP_NAME } from "../config/brand";
 
 export function Login() {
   const { t } = useTranslation();
-  const { login } = useAuth();
+  const { login, setUser } = useAuth();
   const navigate = useNavigate();
 
   const [email, setEmail] = useState("");
@@ -37,6 +38,45 @@ export function Login() {
           t("errors.generic");
         setErrorMessage(detail);
       }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleGoogleLogin = async (googleIdToken) => {
+    setIsSubmitting(true);
+    setErrorMessage("");
+
+    try {
+      // Se não passado token diretamente, solicita via prompt para facilitar testes manuais em dev
+      const idToken =
+        googleIdToken ||
+        window.__GOOGLE_TEST_TOKEN__ ||
+        prompt("Cole seu Google ID Token para autenticar:") ||
+        "";
+
+      if (!idToken) {
+        setIsSubmitting(false);
+        return;
+      }
+
+      const res = await api.post("/api/auth/google/", { id_token: idToken });
+      if (res.data.status === "needs_signup") {
+        navigate("/complete-signup", {
+          state: {
+            onboarding_token: res.data.onboarding_token,
+            email: res.data.email,
+          },
+        });
+      } else {
+        setUser({ is_authenticated: true });
+        navigate("/");
+      }
+    } catch (err) {
+      const detail =
+        err.response?.data?.detail ||
+        "Falha na autenticação com Google. Tente novamente.";
+      setErrorMessage(detail);
     } finally {
       setIsSubmitting(false);
     }
@@ -78,12 +118,21 @@ export function Login() {
         </div>
 
         <div>
-          <label
-            htmlFor="login-password"
-            className="block text-xs font-medium text-zinc-300 mb-1"
-          >
-            {t("auth.password")}
-          </label>
+          <div className="flex justify-between items-center mb-1">
+            <label
+              htmlFor="login-password"
+              className="block text-xs font-medium text-zinc-300"
+            >
+              {t("auth.password")}
+            </label>
+            <Link
+              to="/forgot-password"
+              data-testid="forgot-password-link"
+              className="text-xs text-zinc-400 hover:text-zinc-200 transition"
+            >
+              Esqueci a senha
+            </Link>
+          </div>
           <input
             id="login-password"
             type="password"
@@ -102,6 +151,25 @@ export function Login() {
           className="w-full bg-white text-zinc-950 font-semibold py-2 rounded-lg text-sm hover:bg-zinc-200 transition disabled:opacity-50"
         >
           {isSubmitting ? t("auth.login_submitting") : t("auth.login")}
+        </button>
+
+        <div className="relative my-4">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-zinc-800" />
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-zinc-900 px-2 text-zinc-500">ou</span>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          data-testid="google-login-button"
+          onClick={() => handleGoogleLogin()}
+          disabled={isSubmitting}
+          className="w-full border border-zinc-700 bg-zinc-950 text-zinc-200 font-medium py-2 rounded-lg text-sm hover:bg-zinc-800 transition disabled:opacity-50 flex items-center justify-center gap-2"
+        >
+          <span>Entrar com Google</span>
         </button>
       </form>
 

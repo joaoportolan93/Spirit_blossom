@@ -4,6 +4,9 @@ import { Navbar } from "./components/Navbar";
 import { Feed } from "./pages/Feed";
 import { Login } from "./pages/Login";
 import { Register } from "./pages/Register";
+import { ForgotPassword } from "./pages/ForgotPassword";
+import { ResetPassword } from "./pages/ResetPassword";
+import { CompleteSignup } from "./pages/CompleteSignup";
 import { Profile } from "./pages/Profile";
 
 function ProtectedRoute({ children }) {
@@ -42,6 +45,9 @@ export function App() {
               />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/complete-signup" element={<CompleteSignup />} />
               <Route
                 path="/profile"
                 element={

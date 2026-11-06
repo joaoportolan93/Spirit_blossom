@@ -11,6 +11,8 @@ os.environ.setdefault("ACCESS_LOG_HMAC_KEY", "ci-hmac-key-32bytes-not-for-prod!"
 
 from config.settings import *
 
+TESTING = True
+
 # Sobrescreve apenas o necessário para CI
 PASSWORD_HASHERS = [
     "django.contrib.auth.hashers.MD5PasswordHasher",
@@ -24,6 +26,7 @@ REST_FRAMEWORK = {
         "user": "10000/minute",
         "login": "10000/minute",
         "register": "10000/minute",
+        "password_reset": "10000/minute",
     },
 }
 

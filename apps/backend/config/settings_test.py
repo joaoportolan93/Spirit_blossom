@@ -6,7 +6,8 @@ NÃO usar em produção.
 
 from datetime import timedelta
 
-SECRET_KEY = "test-secret-key-only-for-tests"
+SECRET_KEY = "test-secret-key-only-for-tests-32chars!"
+TESTING = True
 ACCESS_LOG_HMAC_KEY = "test-hmac-key-exactly-32-bytes!!"  # 32 chars, apenas para testes
 DEBUG = True
 ALLOWED_HOSTS = ["*"]
@@ -87,6 +88,7 @@ REST_FRAMEWORK = {
         "user": "1000/minute",
         "login": "1000/minute",
         "register": "1000/minute",
+        "password_reset": "1000/minute",
     },
 }
 

@@ -81,6 +81,11 @@ class UserProfile(models.Model):
         blank=True,
         help_text=_("Data de nascimento — usada para verificação de idade mínima."),
     )
+    terms_accepted_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text=_("Momento em que o usuário aceitou os Termos de Uso e Política de Privacidade."),
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -90,6 +95,52 @@ class UserProfile(models.Model):
 
     def __str__(self):
         return f"Perfil de {self.user.username}"
+
+
+class PasswordResetToken(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="password_resets",
+    )
+    token_hash = models.CharField(max_length=64, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField(db_index=True)
+    used_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = "accounts_password_reset_token"
+        verbose_name = _("token de recuperação de senha")
+        verbose_name_plural = _("tokens de recuperação de senha")
+
+    def __str__(self):
+        return f"ResetToken({self.user_id}, used={self.used_at is not None})"
+
+    @property
+    def is_valid(self) -> bool:
+        from django.utils import timezone
+
+        return self.used_at is None and self.expires_at > timezone.now()
+
+
+class OAuthAccount(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="oauth_accounts",
+    )
+    provider = models.CharField(max_length=30, default="google")
+    uid = models.CharField(max_length=255, db_index=True)  # google_sub
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "accounts_oauth_account"
+        verbose_name = _("conta oauth")
+        verbose_name_plural = _("contas oauth")
+        unique_together = ("provider", "uid")
+
+    def __str__(self):
+        return f"{self.provider}:{self.uid} -> {self.user.username}"
 
 
 class AccessLog(models.Model):

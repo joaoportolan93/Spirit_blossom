@@ -14,6 +14,7 @@ export function Register() {
   const [birthDate, setBirthDate] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -49,6 +50,11 @@ export function Register() {
       return;
     }
 
+    if (!termsAccepted) {
+      setErrorMessage("Você deve aceitar os Termos de Uso e Política de Privacidade.");
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -58,6 +64,7 @@ export function Register() {
         birth_date: birthDate,
         password,
         password_confirm: passwordConfirm,
+        terms_accepted: termsAccepted,
       });
       navigate("/");
     } catch (err) {
@@ -171,6 +178,21 @@ export function Register() {
             className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-600"
             required
           />
+        </div>
+
+        <div className="flex items-start gap-2 pt-2">
+          <input
+            id="reg-terms"
+            type="checkbox"
+            data-testid="register-terms"
+            checked={termsAccepted}
+            onChange={(e) => setTermsAccepted(e.target.checked)}
+            className="mt-0.5 rounded border-zinc-700 bg-zinc-950 text-white focus:ring-zinc-600"
+            required
+          />
+          <label htmlFor="reg-terms" className="text-xs text-zinc-300">
+            Declaro ter 18 anos ou mais e aceito os Termos de Uso e Política de Privacidade.
+          </label>
         </div>
 
         <button

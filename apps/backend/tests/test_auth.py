@@ -52,6 +52,7 @@ class TestRegister:
             "password": "senhaforte123",
             "password_confirm": "senhaforte123",
             "birth_date": "2000-01-01",
+            "terms_accepted": True,
         }
         response = client.post(
             "/api/auth/register/",
@@ -63,8 +64,29 @@ class TestRegister:
         user = User.objects.filter(email="novo@example.com").first()
         assert user is not None
         assert user.profile.birth_date.isoformat() == "2000-01-01"
+        assert user.profile.terms_accepted_at is not None
         assert "access_token" in response.cookies
         assert "refresh_token" in response.cookies
+
+    def test_register_sem_terms_accepted_retorna_400(self):
+        client = _make_client(enforce_csrf=True)
+        csrf = _get_csrf(client)
+        data = {
+            "email": "semtermos@example.com",
+            "username": "semtermos",
+            "password": "senhaforte123",
+            "password_confirm": "senhaforte123",
+            "birth_date": "2000-01-01",
+            "terms_accepted": False,
+        }
+        response = client.post(
+            "/api/auth/register/",
+            data,
+            format="json",
+            HTTP_X_CSRFTOKEN=csrf,
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "terms_accepted" in response.data
 
     def test_register_senha_diferente_retorna_400(self):
         client = _make_client(enforce_csrf=True)

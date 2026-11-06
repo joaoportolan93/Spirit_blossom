@@ -15,3 +15,9 @@ class RegisterRateThrottle(AnonRateThrottle):
     """3 registros por minuto por IP."""
 
     scope = "register"
+
+
+class PasswordResetRateThrottle(AnonRateThrottle):
+    """5 tentativas de recuperação de senha por minuto por IP."""
+
+    scope = "password_reset"
