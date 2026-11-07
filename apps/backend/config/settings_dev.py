@@ -5,7 +5,7 @@ Usa SQLite local (db.sqlite3) com compatibilidade via patch.
 
 from pathlib import Path
 
-from tests.sqlite_compat import patch_sqlite
+from config.sqlite_compat import patch_sqlite
 
 patch_sqlite()
 

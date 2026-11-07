@@ -23,6 +23,8 @@ ignore = [
 "config/settings_dev.py" = ["F401", "F403", "E402", "F405"]
 # Testes: variáveis locais sem uso são normais em testes de efeito colateral; patch_sqlite precisa rodar antes
 "tests/*.py" = ["F841", "E402", "E501"]
+"core/tests_*.py" = ["F841", "E402", "E501"]
+"conftest.py" = ["E402"]
 
 [format]
 quote-style = "double"

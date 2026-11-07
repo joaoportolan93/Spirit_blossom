@@ -17,17 +17,14 @@ INSTALLED_APPS = [
     "django.contrib.auth",
     "django.contrib.sessions",
     "django.contrib.admin",
+    "django.contrib.messages",
     "django.contrib.staticfiles",
     "rest_framework",
     "rest_framework_simplejwt",
     "rest_framework_simplejwt.token_blacklist",
     "corsheaders",
     # Domínio
-    "accounts",
-    "posts",
-    "social",
-    "feed",
-    "notifications",
+    "core",
 ]
 
 MIDDLEWARE = [
@@ -37,6 +34,23 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+]
+
+TEMPLATES = [
+    {
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.debug",
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
+            ],
+        },
+    },
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -51,7 +65,7 @@ DATABASES = {
 SESSION_ENGINE = "django.contrib.sessions.backends.db"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-AUTH_USER_MODEL = "accounts.User"
+AUTH_USER_MODEL = "core.User"
 
 # Desabilita cache real para testes
 CACHES = {
@@ -75,7 +89,7 @@ SIMPLE_JWT = {
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
-        "accounts.authentication.CookieJWTAuthentication",
+        "core.authentication.CookieJWTAuthentication",
     ],
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",

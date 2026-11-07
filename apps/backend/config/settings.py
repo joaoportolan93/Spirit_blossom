@@ -80,11 +80,7 @@ INSTALLED_APPS = [
     "corsheaders",
     "django_celery_beat",
     # Domínio
-    "accounts",
-    "posts",
-    "social",
-    "feed",
-    "notifications",
+    "core",
 ]
 
 # ---------------------------------------------------------------------------
@@ -171,7 +167,7 @@ CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 
 CELERY_BEAT_SCHEDULE = {
     "flush-expired-tokens-daily": {
-        "task": "accounts.flush_expired_tokens",
+        "task": "core.flush_expired_tokens",
         "schedule": crontab(hour=3, minute=0),  # 03:00 America/Sao_Paulo todo dia
     },
 }
@@ -179,7 +175,7 @@ CELERY_BEAT_SCHEDULE = {
 # ---------------------------------------------------------------------------
 # Autenticação
 # ---------------------------------------------------------------------------
-AUTH_USER_MODEL = "accounts.User"  # ativo em M1a
+AUTH_USER_MODEL = "core.User"  # consolidado em core
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
@@ -198,7 +194,7 @@ PASSWORD_HASHERS = [
 # ---------------------------------------------------------------------------
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
-        "accounts.authentication.CookieJWTAuthentication",
+        "core.authentication.CookieJWTAuthentication",
     ],
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",

@@ -18,7 +18,7 @@ app.conf.beat_schedule = {
     # Limpa tokens JWT expirados da blacklist do SimpleJWT (Postgres).
     # Evita crescimento ilimitado das tabelas OutstandingToken/BlacklistedToken.
     "flush-expired-jwt-tokens": {
-        "task": "accounts.tasks.flush_expired_tokens",
+        "task": "core.flush_expired_tokens",
         "schedule": crontab(hour=3, minute=30),  # 03:30 America/Sao_Paulo
     },
 }

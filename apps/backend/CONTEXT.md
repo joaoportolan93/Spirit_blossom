@@ -2,24 +2,36 @@
 
 Aplicativo principal: Django 5.2 + DRF + SimpleJWT + Celery.
 
-## Estrutura de apps (criados em M1a)
+## Estrutura do Backend (estilo Lumem)
+
+O backend é organizado em um único app de domínio (`core`), estruturado por pastas de responsabilidade:
 
 ```
-config/         Configurações, URLs raiz, Celery
-accounts/       Usuários, autenticação, autorização
-posts/          Publicações, busca FTS
-social/         Follow, Block, Mute
-feed/           Seletor de feed "Seguindo" (chrono M1a, Rev3 M4)
-notifications/  Notificações (polling M1, VAPID M2+)
+apps/backend/
+├── config/             Configurações Django, URLs raiz, Celery
+└── core/               Único app de domínio
+    ├── models.py       Modelos consolidados (User, Post, Follow, Block, Mute, Notification, etc.)
+    ├── admin.py        Administração Django consolidada
+    ├── authentication.py Cookie JWT + CSRF
+    ├── throttles.py    Limitadores de taxa
+    ├── tasks.py        Tarefas assíncronas Celery
+    ├── factories.py    Fábricas para testes (FactoryBoy)
+    ├── urls.py         URLs centralizadas sob /api/*
+    ├── migrations/     0001_initial.py
+    ├── views/          Divididas por assunto (auth, posts, social, feed, notifications)
+    ├── serializers/    Divididos por assunto (auth, posts, social, feed, notifications)
+    ├── services/       Lógica de escrita e seletores divididos por assunto
+    ├── utils/          Utilitários de visibilidade central (visibility.py)
+    └── tests_*.py      Testes por assunto (auth, csrf, feed, interactions, posts, search, social, visibility, etc.)
 ```
 
 ## Convenções
 
-- **Modelos**: English, snake_case. `User`, `Post`, `Follow`, `Block`, `Mute`, `Notification`, `AccessLog`.
-- **UUID7** via biblioteca `uuid6` (campo `pk = models.UUIDField(default=uuid6.uuid7, primary_key=True)`).
-- **Serviço / Seletor**: lógica de negócio em `selectors.py` e `services.py`, nunca em models ou views.
+- **Modelos**: English, snake_case. `User`, `UserProfile`, `Post`, `PostLike`, `PostBookmark`, `Draft`, `Follow`, `Block`, `Mute`, `Notification`, `AccessLog`.
+- **UUID7** via biblioteca `uuid6` (`pk = models.UUIDField(default=uuid6.uuid7, primary_key=True)`).
+- **Serviço / Seletor**: lógica de negócio em `core/services/` e `core/utils/visibility.py`, nunca em models ou views.
 - **FTS**: sempre `websearch_to_tsquery` com config `'simple'` (bilíngue pt-BR / EN).
-- **CSRF**: veja `accounts/authentication.py` para o fluxo completo.
+- **CSRF**: veja `core/authentication.py` para o fluxo completo.
 
 ## Variáveis de ambiente obrigatórias
 
@@ -34,4 +46,3 @@ cp ../../.env.example .env  # preencha os valores
 python manage.py migrate
 python manage.py runserver
 ```
-
