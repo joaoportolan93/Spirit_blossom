@@ -48,4 +48,3 @@ class NotificationMarkReadView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
         return Response({"detail": "Notificação marcada como lida."})
-

@@ -152,4 +152,3 @@ class TestPostContrato:
         response = client.post("/api/posts/", {"content_text": "Teste de contrato."})
         assert response.status_code == 201
         jsonschema.validate(instance=response.data, schema=POST_SCHEMA)
-

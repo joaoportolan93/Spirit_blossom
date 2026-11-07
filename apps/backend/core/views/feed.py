@@ -90,4 +90,3 @@ class ExploreFeedView(APIView):
 
         next_cursor = str(post_list[-1].id) if len(post_list) == limit else None
         return Response({"items": items, "next_cursor": next_cursor})
-

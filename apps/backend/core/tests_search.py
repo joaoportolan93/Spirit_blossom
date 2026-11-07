@@ -173,4 +173,3 @@ class TestSearchPostsSecurity:
         sig = inspect.signature(search_posts)
         assert "user" in sig.parameters
         assert sig.parameters["user"].default == inspect.Parameter.empty
-

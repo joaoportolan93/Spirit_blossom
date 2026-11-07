@@ -567,4 +567,3 @@ class TestAuthenticationEdgeCases:
         with pytest.raises(Exception) as exc_inactive:
             auth.authenticate(req_inactive)
         assert "Conta inativa ou suspensa" in str(exc_inactive.value)
-

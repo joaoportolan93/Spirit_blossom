@@ -65,4 +65,3 @@ def get_csrf_token(client):
         if hasattr(client.cookies.get("csrftoken", {}), "value")
         else response.cookies.get("csrftoken", "")
     )
-

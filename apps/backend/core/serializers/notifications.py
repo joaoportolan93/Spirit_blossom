@@ -19,4 +19,3 @@ class NotificationSerializer(serializers.ModelSerializer):
             "created_at",
         )
         read_only_fields = fields
-

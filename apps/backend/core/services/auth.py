@@ -436,4 +436,3 @@ def complete_google_signup(
     log_user_access(user=user, request=request)
     refresh = RefreshToken.for_user(user)
     return user, refresh
-

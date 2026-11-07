@@ -10,4 +10,3 @@ from django.core.management import call_command
 def flush_expired_tokens():
     """Remove tokens expirados da blacklist do SimpleJWT (tabela Postgres)."""
     call_command("flushexpiredtokens")
-

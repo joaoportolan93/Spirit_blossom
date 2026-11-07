@@ -145,4 +145,3 @@ def remove_from_close_friends(*, user, target_user) -> bool:
         is_close_friend=True,
     ).update(is_close_friend=False)
     return bool(updated)
-

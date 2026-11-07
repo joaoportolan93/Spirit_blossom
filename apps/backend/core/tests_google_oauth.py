@@ -253,4 +253,3 @@ class TestGoogleOAuthFlow:
         )
         assert step.status_code == status.HTTP_400_BAD_REQUEST
         assert "inválido ou expirado" in str(step.data)
-

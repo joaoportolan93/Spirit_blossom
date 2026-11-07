@@ -21,4 +21,3 @@ class PasswordResetRateThrottle(AnonRateThrottle):
     """5 tentativas de recuperação de senha por minuto por IP."""
 
     scope = "password_reset"
-

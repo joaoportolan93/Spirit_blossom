@@ -386,4 +386,3 @@ class TestSocialCoverageAndSerializers:
 
         status_anon = get_relationship_status(source_user=AnonymousUser(), target_user=target)
         assert status_anon["is_following"] is False
-

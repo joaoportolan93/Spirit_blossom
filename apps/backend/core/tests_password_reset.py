@@ -204,4 +204,3 @@ class TestPasswordResetFlow:
         )
         assert resp.status_code == status.HTTP_400_BAD_REQUEST
         assert "não conferem" in str(resp.data)
-
