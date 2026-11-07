@@ -239,3 +239,4 @@ class TestNotificationsServicesSelectors:
         count = mark_all_notifications_as_read(user=u1)
         assert count == 2
         assert get_unread_notifications_count(user=u1) == 0
+

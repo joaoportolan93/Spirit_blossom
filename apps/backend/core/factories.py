@@ -76,3 +76,4 @@ class BlockFactory(factory.django.DjangoModelFactory):
 
     blocker = factory.SubFactory(UserFactory)
     blocked = factory.SubFactory(UserFactory)
+

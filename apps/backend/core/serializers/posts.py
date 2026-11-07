@@ -90,3 +90,4 @@ class DraftSerializer(serializers.ModelSerializer):
                 f"Conteúdo excede o limite de {max_chars} caracteres."
             )
         return value
+

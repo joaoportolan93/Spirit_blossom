@@ -101,3 +101,4 @@ urlpatterns = [
     path("feed/", include((feed_patterns, "feed"))),
     path("notifications/", include((notifications_patterns, "notifications"))),
 ]
+

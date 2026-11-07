@@ -80,3 +80,4 @@ class NotificationAdmin(admin.ModelAdmin):
     list_filter = ("notification_type", "read")
     raw_id_fields = ("recipient", "sender")
     readonly_fields = ("created_at",)
+

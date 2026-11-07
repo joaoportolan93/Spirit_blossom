@@ -213,3 +213,4 @@ class TestDrafts:
         client = _client_for(user)
         res = client.post("/api/posts/drafts/", {"content_text": "x" * 3001})
         assert res.status_code == status.HTTP_400_BAD_REQUEST
+

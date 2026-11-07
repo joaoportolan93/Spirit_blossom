@@ -66,3 +66,4 @@ def get_explore_feed(*, user, cursor: str | None = None, limit: int = 20) -> Que
         qs = qs.filter(id__lt=cursor_uuid)
 
     return qs.order_by("-id")[:limit]
+

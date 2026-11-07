@@ -84,3 +84,4 @@ class CookieJWTAuthentication(BaseAuthentication):
 
     def authenticate_header(self, request):
         return "Cookie"
+

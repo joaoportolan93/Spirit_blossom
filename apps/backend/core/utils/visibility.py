@@ -184,3 +184,4 @@ def get_relationship_status(*, source_user, target_user) -> Dict[str, Any]:
         "is_blocked": is_blocked,
         "is_muting": is_muting,
     }
+

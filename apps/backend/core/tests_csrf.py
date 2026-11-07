@@ -174,3 +174,4 @@ class TestCSRFLogout:
         csrf2 = _get_csrf_token(client2)
         r_refresh = client2.post("/api/auth/refresh/", HTTP_X_CSRFTOKEN=csrf2)
         assert r_refresh.status_code == status.HTTP_401_UNAUTHORIZED
+
