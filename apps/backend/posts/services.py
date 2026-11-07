@@ -50,6 +50,7 @@ def like_post(*, user, post_id) -> bool:
     if created:
         Post.objects.filter(pk=post.pk).update(likes_count=F("likes_count") + 1)
         from notifications.services import notify_post_liked
+
         notify_post_liked(sender=user, post=post)
     return True
 

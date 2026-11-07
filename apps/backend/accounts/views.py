@@ -191,9 +191,7 @@ class PasswordResetRequestView(APIView):
             email=serializer.validated_data["email"],
             base_frontend_url=frontend_url,
         )
-        return Response(
-            {"detail": "Se o e-mail estiver cadastrado, as instruções foram enviadas."}
-        )
+        return Response({"detail": "Se o e-mail estiver cadastrado, as instruções foram enviadas."})
 
 
 class PasswordResetConfirmView(APIView):
@@ -244,9 +242,7 @@ class GoogleAuthView(APIView):
             return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
 
         if auth_status == "logged_in":
-            response = Response(
-                {"status": "logged_in", "detail": "Login realizado com sucesso."}
-            )
+            response = Response({"status": "logged_in", "detail": "Login realizado com sucesso."})
             issue_auth_cookies(response, data["refresh"])
             return response
 
@@ -326,17 +322,18 @@ class UserSearchView(APIView):
             profile = getattr(u, "profile", None)
             follow_status = None
             from social.models import Follow
+
             follow = Follow.objects.filter(follower=request.user, followed=u).first()
             if follow:
                 follow_status = follow.status
 
-            results.append({
-                "username": u.username,
-                "avatar": (
-                    profile.avatar.url if profile and profile.avatar else None
-                ),
-                "is_private": getattr(profile, "is_private", False),
-                "follow_status": follow_status,
-            })
+            results.append(
+                {
+                    "username": u.username,
+                    "avatar": (profile.avatar.url if profile and profile.avatar else None),
+                    "is_private": getattr(profile, "is_private", False),
+                    "follow_status": follow_status,
+                }
+            )
 
         return Response({"results": results})

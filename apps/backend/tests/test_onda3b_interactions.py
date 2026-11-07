@@ -34,6 +34,7 @@ def _client_for(user):
 # Curtidas (PostLike)
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.django_db(transaction=True)
 class TestPostLike:
     def test_curtir_post_publico_incrementa_contador_e_gera_notificacao(self):
@@ -51,7 +52,9 @@ class TestPostLike:
         assert PostLike.objects.filter(post=post, user=viewer).exists()
 
         # Verifica se gerou notificação para o autor
-        notif = Notification.objects.filter(recipient=author, notification_type=Notification.Type.LIKE).first()
+        notif = Notification.objects.filter(
+            recipient=author, notification_type=Notification.Type.LIKE
+        ).first()
         assert notif is not None
         assert notif.sender == viewer
         assert notif.ref_id == post.id
@@ -66,7 +69,9 @@ class TestPostLike:
 
         post.refresh_from_db()
         assert post.likes_count == 1
-        assert not Notification.objects.filter(recipient=author, notification_type=Notification.Type.LIKE).exists()
+        assert not Notification.objects.filter(
+            recipient=author, notification_type=Notification.Type.LIKE
+        ).exists()
 
     def test_curtir_post_inacessivel_retorna_404(self):
         author = UserFactory()
@@ -118,6 +123,7 @@ class TestPostLike:
 # ---------------------------------------------------------------------------
 # Favoritos (PostBookmark)
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.django_db(transaction=True)
 class TestPostBookmark:
@@ -177,6 +183,7 @@ class TestPostBookmark:
 # Rascunhos (Draft)
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.django_db
 class TestDrafts:
     def test_crud_rascunho_isolado_por_autor(self):
@@ -217,6 +224,7 @@ class TestDrafts:
 # Motor de Notificações e Privacidade
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.django_db(transaction=True)
 class TestNotificationEnginePrivacy:
     def test_curtir_post_com_bloqueio_mutuo_nao_gera_notificacao(self):
@@ -229,6 +237,7 @@ class TestNotificationEnginePrivacy:
 
         # Tentar curtir diretamente via serviço
         from posts.services import like_post
+
         success = like_post(user=viewer, post_id=post.id)
         assert success is False
         assert not Notification.objects.filter(recipient=author).exists()
@@ -263,6 +272,7 @@ class TestNotificationEnginePrivacy:
 
     def test_notificacao_idempotencia(self):
         from notifications.services import create_notification
+
         user1 = UserFactory()
         user2 = UserFactory()
         post = PostFactory(author=user1)
@@ -283,15 +293,16 @@ class TestNotificationEnginePrivacy:
         assert Notification.objects.filter(recipient=user1, ref_id=post.id).count() == 1
 
 
-
 # ---------------------------------------------------------------------------
 # Testes complementares para cobertura > 93% (Serializers e Views)
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.django_db
 class TestCoverageEnhancements:
     def test_follow_serializer(self):
         from social.serializers import FollowSerializer
+
         u1 = UserFactory(username="f_user1")
         u2 = UserFactory(username="f_user2")
         f = Follow.objects.create(follower=u1, followed=u2, is_close_friend=True)
@@ -303,8 +314,12 @@ class TestCoverageEnhancements:
     def test_notification_views_mark_read_and_mark_all(self):
         user = UserFactory()
         other = UserFactory()
-        n1 = Notification.objects.create(recipient=user, sender=other, notification_type=Notification.Type.FOLLOW)
-        n2 = Notification.objects.create(recipient=user, sender=other, notification_type=Notification.Type.FOLLOW)
+        n1 = Notification.objects.create(
+            recipient=user, sender=other, notification_type=Notification.Type.FOLLOW
+        )
+        n2 = Notification.objects.create(
+            recipient=user, sender=other, notification_type=Notification.Type.FOLLOW
+        )
 
         client = _client_for(user)
 

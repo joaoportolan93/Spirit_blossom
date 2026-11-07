@@ -130,11 +130,7 @@ class ProfileDetailView(APIView):
 
         # 3. Perfil completo
         counters = get_profile_counters(target_user=target, viewer=request.user)
-        posts_qs = (
-            visible_posts_for(request.user)
-            .filter(author=target)
-            .order_by("-id")[:20]
-        )
+        posts_qs = visible_posts_for(request.user).filter(author=target).order_by("-id")[:20]
         posts_data = PostSerializer(posts_qs, many=True, context={"request": request}).data
 
         return Response(

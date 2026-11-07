@@ -163,9 +163,7 @@ def logout_user(*, raw_refresh_token: Optional[str]) -> None:
             pass
 
 
-def request_password_reset(
-    *, email: str, base_frontend_url: str = "http://localhost:3001"
-) -> None:
+def request_password_reset(*, email: str, base_frontend_url: str = "http://localhost:3001") -> None:
     """
     Solicita redefinição de senha com token de uso único (15 min).
     Sempre responde sem vazar se o usuário existe (anti-enumeração).

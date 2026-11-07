@@ -63,14 +63,14 @@ def _follow_pending(follower, followed):
 def _follow_circle(follower, followed):
     """Cria follow ativo com is_close_friend=True."""
     return Follow.objects.create(
-        follower=follower, followed=followed,
-        status=Follow.Status.ACTIVE, is_close_friend=True
+        follower=follower, followed=followed, status=Follow.Status.ACTIVE, is_close_friend=True
     )
 
 
 # ---------------------------------------------------------------------------
 # Teste de arquitetura: uso direto de Post.objects em listagem
 # ---------------------------------------------------------------------------
+
 
 class TestArchitecturePostObjectsDirect:
     """
@@ -80,6 +80,7 @@ class TestArchitecturePostObjectsDirect:
 
     def _get_source(self, module_path):
         import pathlib
+
         return pathlib.Path(module_path).read_text(encoding="utf-8")
 
     def test_post_objects_apenas_em_modulos_permitidos_ast(self):
@@ -118,6 +119,7 @@ class TestArchitecturePostObjectsDirect:
     def test_repositorio_inteiro_nao_usa_get_visible_posts_queryset(self):
         """get_visible_posts_queryset foi descontinuado; todo o repositório deve usar visible_posts_for."""
         import pathlib
+
         backend_dir = pathlib.Path(__file__).parent.parent
         for py_file in backend_dir.rglob("*.py"):
             if "migrations" in str(py_file) or "tests" in str(py_file):
@@ -130,6 +132,7 @@ class TestArchitecturePostObjectsDirect:
     def test_serializers_sem_all(self):
         """Nenhum serializer de posts ou social pode usar fields = '__all__'."""
         import os
+
         for rel_path in ["posts/serializers.py", "social/serializers.py"]:
             path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", rel_path))
             src = self._get_source(path)
@@ -139,6 +142,7 @@ class TestArchitecturePostObjectsDirect:
 # ---------------------------------------------------------------------------
 # Matriz: post público
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.django_db
 class TestPublicPost:
@@ -153,7 +157,9 @@ class TestPublicPost:
 
     def test_post_publico_visivel_em_busca(self):
         """Post público aparece na busca full-text. NÃO VERIFICADO em SQLite (search_vector Postgres-only)."""
-        pytest.skip("NÃO VERIFICADO: search_vector GeneratedField requer Postgres 16 — não pode ser testado em SQLite")
+        pytest.skip(
+            "NÃO VERIFICADO: search_vector GeneratedField requer Postgres 16 — não pode ser testado em SQLite"
+        )
 
     def test_post_publico_visivel_em_detalhe_por_id(self):
         """GET /api/posts/<id>/ funciona para post público."""
@@ -200,6 +206,7 @@ class TestPublicPost:
 # ---------------------------------------------------------------------------
 # Matriz: post de círculo
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.django_db
 class TestCirclePost:
@@ -276,6 +283,7 @@ class TestCirclePost:
 # Matriz: conta privada (perfil)
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.django_db
 class TestPrivateAccountProfile:
     def test_perfil_privado_visivel_para_seguidor_ativo(self):
@@ -351,6 +359,7 @@ class TestPrivateAccountProfile:
 # Matriz: bloqueio
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.django_db
 class TestBlockVisibilityMatrix:
     def test_viewer_bloqueado_pelo_autor_nao_ve_post_publico_no_feed(self):
@@ -394,6 +403,7 @@ class TestBlockVisibilityMatrix:
 # Matriz: mute (silenciamento não bloqueia posts)
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.django_db
 class TestMuteDoesNotHidePosts:
     def test_mute_nao_oculta_posts_no_feed(self):
@@ -411,6 +421,7 @@ class TestMuteDoesNotHidePosts:
 # ---------------------------------------------------------------------------
 # Matriz: post excluído
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.django_db
 class TestDeletedPost:
@@ -445,10 +456,12 @@ class TestDeletedPost:
 # can_view_profile / can_view_post unitários
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.django_db
 class TestCanViewFunctions:
     def test_can_view_post_publico(self):
         from social.selectors import can_view_post
+
         author = UserFactory()
         viewer = UserFactory()
         post = PostFactory(author=author, visibility="public")
@@ -456,6 +469,7 @@ class TestCanViewFunctions:
 
     def test_can_view_post_circulo_sem_ser_membro(self):
         from social.selectors import can_view_post
+
         author = UserFactory()
         viewer = UserFactory()
         post = PostFactory(author=author, visibility="circle")
@@ -463,11 +477,13 @@ class TestCanViewFunctions:
 
     def test_can_view_post_none_retorna_false(self):
         from social.selectors import can_view_post
+
         viewer = UserFactory()
         assert can_view_post(viewer, None) is False
 
     def test_can_view_profile_bloqueio_bilateral(self):
         from social.selectors import can_view_profile
+
         a = UserFactory()
         b = UserFactory()
         BlockFactory(blocker=a, blocked=b)
@@ -476,6 +492,7 @@ class TestCanViewFunctions:
 
     def test_can_view_profile_conta_privada_sem_follow(self):
         from social.selectors import can_view_profile
+
         author = UserFactory()
         _make_private(author)
         viewer = UserFactory()
@@ -483,6 +500,7 @@ class TestCanViewFunctions:
 
     def test_can_view_profile_conta_privada_com_follow_ativo(self):
         from social.selectors import can_view_profile
+
         author = UserFactory()
         _make_private(author)
         viewer = UserFactory()
@@ -491,6 +509,7 @@ class TestCanViewFunctions:
 
     def test_can_view_profile_proprio_usuario(self):
         from social.selectors import can_view_profile
+
         user = UserFactory()
         _make_private(user)
         assert can_view_profile(user, user) is True
@@ -499,6 +518,7 @@ class TestCanViewFunctions:
 # ---------------------------------------------------------------------------
 # Matriz: Conta Privada (nao-seguidor e seguidor pendente) x Superficies
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.django_db
 class TestPrivateAccountSurfaces:
@@ -576,6 +596,7 @@ class TestPrivateAccountSurfaces:
 # Matriz: Post Excluido x Todas as Superficies
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.django_db
 class TestDeletedPostAllSurfaces:
     def test_post_excluido_oculto_no_feed(self):
@@ -628,6 +649,7 @@ class TestDeletedPostAllSurfaces:
     def test_post_excluido_oculto_nos_favoritos(self):
         """Post salvo antes da exclusão desaparece dos favoritos."""
         from posts.models import PostBookmark
+
         author = UserFactory()
         viewer = UserFactory()
         post = PostFactory(author=author, visibility="public")
@@ -665,6 +687,7 @@ class TestDeletedPostAllSurfaces:
 # ---------------------------------------------------------------------------
 # Matriz: Visitante Anonimo x Todos os Endpoints (deve ser negado 401)
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.django_db
 class TestAnonymousVisitorDeniedAllEndpoints:

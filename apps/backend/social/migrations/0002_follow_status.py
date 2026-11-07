@@ -4,15 +4,18 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('social', '0001_initial'),
+        ("social", "0001_initial"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='follow',
-            name='status',
-            field=models.CharField(choices=[('active', 'Ativo'), ('pending', 'Pendente')], default='active', max_length=10),
+            model_name="follow",
+            name="status",
+            field=models.CharField(
+                choices=[("active", "Ativo"), ("pending", "Pendente")],
+                default="active",
+                max_length=10,
+            ),
         ),
     ]

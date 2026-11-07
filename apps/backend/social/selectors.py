@@ -69,13 +69,7 @@ def visible_posts_for(user) -> QuerySet:
         author__in=close_friends_active_ids,
     )
 
-    qs = qs.filter(
-        is_self
-        | is_public_open
-        | is_public_private_follower
-        | is_followers
-        | is_circle
-    )
+    qs = qs.filter(is_self | is_public_open | is_public_private_follower | is_followers | is_circle)
 
     return qs.select_related("author", "author__profile")
 
@@ -126,9 +120,8 @@ def can_view_profile(viewer, target_user) -> bool:
     if profile is not None:
         # Busca is_private diretamente do DB para evitar cache stale
         from accounts.models import UserProfile
-        is_private = (
-            UserProfile.objects.filter(user=target_user, is_private=True).exists()
-        )
+
+        is_private = UserProfile.objects.filter(user=target_user, is_private=True).exists()
     if is_private:
         if not viewer or not getattr(viewer, "is_authenticated", False):
             return False

@@ -82,7 +82,9 @@ class TestNamedAdversarialSecurity:
         assert resp1.json()["detail"] == "Não encontrado."
 
         # Post de círculo para seguidor comum (fora do círculo)
-        Follow.objects.create(follower=attacker, followed=author, status="active", is_close_friend=False)
+        Follow.objects.create(
+            follower=attacker, followed=author, status="active", is_close_friend=False
+        )
         resp2 = client.get(f"/api/posts/{circle_post.pk}/")
         assert resp2.status_code == status.HTTP_404_NOT_FOUND
 
@@ -138,7 +140,9 @@ class TestNamedAdversarialSecurity:
         attacker = UserFactory()
 
         # Post com termo específico em conta privada
-        PostFactory(author=author, content_text="segredo confidencial absoluto", visibility="public")
+        PostFactory(
+            author=author, content_text="segredo confidencial absoluto", visibility="public"
+        )
 
         # Chama seletor central com o usuário atacante
         qs = search_posts(query="confidencial", user=attacker)

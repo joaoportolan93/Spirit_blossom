@@ -6,47 +6,74 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('accounts', '0002_userprofile_birth_date'),
+        ("accounts", "0002_userprofile_birth_date"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='userprofile',
-            name='terms_accepted_at',
-            field=models.DateTimeField(blank=True, help_text='Momento em que o usuário aceitou os Termos de Uso e Política de Privacidade.', null=True),
+            model_name="userprofile",
+            name="terms_accepted_at",
+            field=models.DateTimeField(
+                blank=True,
+                help_text="Momento em que o usuário aceitou os Termos de Uso e Política de Privacidade.",
+                null=True,
+            ),
         ),
         migrations.CreateModel(
-            name='PasswordResetToken',
+            name="PasswordResetToken",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('token_hash', models.CharField(db_index=True, max_length=64)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('expires_at', models.DateTimeField(db_index=True)),
-                ('used_at', models.DateTimeField(blank=True, null=True)),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='password_resets', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                ("token_hash", models.CharField(db_index=True, max_length=64)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("expires_at", models.DateTimeField(db_index=True)),
+                ("used_at", models.DateTimeField(blank=True, null=True)),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="password_resets",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'token de recuperação de senha',
-                'verbose_name_plural': 'tokens de recuperação de senha',
-                'db_table': 'accounts_password_reset_token',
+                "verbose_name": "token de recuperação de senha",
+                "verbose_name_plural": "tokens de recuperação de senha",
+                "db_table": "accounts_password_reset_token",
             },
         ),
         migrations.CreateModel(
-            name='OAuthAccount',
+            name="OAuthAccount",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('provider', models.CharField(default='google', max_length=30)),
-                ('uid', models.CharField(db_index=True, max_length=255)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='oauth_accounts', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                ("provider", models.CharField(default="google", max_length=30)),
+                ("uid", models.CharField(db_index=True, max_length=255)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="oauth_accounts",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'conta oauth',
-                'verbose_name_plural': 'contas oauth',
-                'db_table': 'accounts_oauth_account',
-                'unique_together': {('provider', 'uid')},
+                "verbose_name": "conta oauth",
+                "verbose_name_plural": "contas oauth",
+                "db_table": "accounts_oauth_account",
+                "unique_together": {("provider", "uid")},
             },
         ),
     ]

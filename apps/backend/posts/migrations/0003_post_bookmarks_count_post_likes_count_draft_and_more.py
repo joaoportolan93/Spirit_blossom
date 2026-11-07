@@ -7,67 +7,120 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('posts', '0002_alter_post_visibility'),
+        ("posts", "0002_alter_post_visibility"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='post',
-            name='bookmarks_count',
+            model_name="post",
+            name="bookmarks_count",
             field=models.PositiveIntegerField(default=0),
         ),
         migrations.AddField(
-            model_name='post',
-            name='likes_count',
+            model_name="post",
+            name="likes_count",
             field=models.PositiveIntegerField(default=0),
         ),
         migrations.CreateModel(
-            name='Draft',
+            name="Draft",
             fields=[
-                ('id', models.UUIDField(default=uuid6.uuid7, editable=False, primary_key=True, serialize=False)),
-                ('content_text', models.TextField(max_length=3000)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('author', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='drafts', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.UUIDField(
+                        default=uuid6.uuid7, editable=False, primary_key=True, serialize=False
+                    ),
+                ),
+                ("content_text", models.TextField(max_length=3000)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "author",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="drafts",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'rascunho',
-                'verbose_name_plural': 'rascunhos',
-                'db_table': 'posts_draft',
-                'ordering': ['-updated_at'],
+                "verbose_name": "rascunho",
+                "verbose_name_plural": "rascunhos",
+                "db_table": "posts_draft",
+                "ordering": ["-updated_at"],
             },
         ),
         migrations.CreateModel(
-            name='PostBookmark',
+            name="PostBookmark",
             fields=[
-                ('id', models.UUIDField(default=uuid6.uuid7, editable=False, primary_key=True, serialize=False)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('post', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='bookmarks', to='posts.post')),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='post_bookmarks', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.UUIDField(
+                        default=uuid6.uuid7, editable=False, primary_key=True, serialize=False
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "post",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="bookmarks",
+                        to="posts.post",
+                    ),
+                ),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="post_bookmarks",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'favorito de publicação',
-                'verbose_name_plural': 'favoritos de publicação',
-                'db_table': 'posts_postbookmark',
-                'constraints': [models.UniqueConstraint(fields=('post', 'user'), name='unique_post_bookmark')],
+                "verbose_name": "favorito de publicação",
+                "verbose_name_plural": "favoritos de publicação",
+                "db_table": "posts_postbookmark",
+                "constraints": [
+                    models.UniqueConstraint(fields=("post", "user"), name="unique_post_bookmark")
+                ],
             },
         ),
         migrations.CreateModel(
-            name='PostLike',
+            name="PostLike",
             fields=[
-                ('id', models.UUIDField(default=uuid6.uuid7, editable=False, primary_key=True, serialize=False)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('post', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='likes', to='posts.post')),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='post_likes', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.UUIDField(
+                        default=uuid6.uuid7, editable=False, primary_key=True, serialize=False
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "post",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="likes",
+                        to="posts.post",
+                    ),
+                ),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="post_likes",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'curtida de publicação',
-                'verbose_name_plural': 'curtidas de publicação',
-                'db_table': 'posts_postlike',
-                'constraints': [models.UniqueConstraint(fields=('post', 'user'), name='unique_post_like')],
+                "verbose_name": "curtida de publicação",
+                "verbose_name_plural": "curtidas de publicação",
+                "db_table": "posts_postlike",
+                "constraints": [
+                    models.UniqueConstraint(fields=("post", "user"), name="unique_post_like")
+                ],
             },
         ),
     ]

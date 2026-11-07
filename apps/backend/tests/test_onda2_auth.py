@@ -371,7 +371,9 @@ class TestGoogleOAuthFlow:
         csrf = _get_csrf(client)
 
         token = "mock-google-token:sub_alpha:alpha@example.com:true"
-        resp = client.post("/api/auth/google/", {"id_token": token}, format="json", HTTP_X_CSRFTOKEN=csrf)
+        resp = client.post(
+            "/api/auth/google/", {"id_token": token}, format="json", HTTP_X_CSRFTOKEN=csrf
+        )
         onboarding_token = resp.data["onboarding_token"]
 
         step = client.post(
@@ -394,7 +396,9 @@ class TestGoogleOAuthFlow:
         csrf = _get_csrf(client)
 
         token = "mock-google-token:sub_taken:taken@example.com:true"
-        resp = client.post("/api/auth/google/", {"id_token": token}, format="json", HTTP_X_CSRFTOKEN=csrf)
+        resp = client.post(
+            "/api/auth/google/", {"id_token": token}, format="json", HTTP_X_CSRFTOKEN=csrf
+        )
         onboarding_token = resp.data["onboarding_token"]
 
         step = client.post(

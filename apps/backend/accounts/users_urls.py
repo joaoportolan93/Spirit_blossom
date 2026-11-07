@@ -11,4 +11,3 @@ app_name = "users"
 urlpatterns = [
     path("search/", UserSearchView.as_view(), name="search"),
 ]
-

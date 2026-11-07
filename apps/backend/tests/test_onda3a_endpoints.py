@@ -31,6 +31,7 @@ def _client_for(user):
 # Close Friends Endpoints
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.django_db
 class TestCloseFriendsEndpoints:
     def test_add_close_friend_success(self):
@@ -105,9 +106,15 @@ class TestCloseFriendsEndpoints:
         f2 = UserFactory(username="amigo2")
         f3 = UserFactory(username="outro")
 
-        Follow.objects.create(follower=user, followed=f1, is_close_friend=True, status=Follow.Status.ACTIVE)
-        Follow.objects.create(follower=user, followed=f2, is_close_friend=True, status=Follow.Status.ACTIVE)
-        Follow.objects.create(follower=user, followed=f3, is_close_friend=False, status=Follow.Status.ACTIVE)
+        Follow.objects.create(
+            follower=user, followed=f1, is_close_friend=True, status=Follow.Status.ACTIVE
+        )
+        Follow.objects.create(
+            follower=user, followed=f2, is_close_friend=True, status=Follow.Status.ACTIVE
+        )
+        Follow.objects.create(
+            follower=user, followed=f3, is_close_friend=False, status=Follow.Status.ACTIVE
+        )
 
         client = _client_for(user)
         res = client.get("/api/social/close-friends/")
@@ -122,6 +129,7 @@ class TestCloseFriendsEndpoints:
 # ---------------------------------------------------------------------------
 # Mute Endpoints
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.django_db
 class TestMuteEndpoints:
@@ -173,6 +181,7 @@ class TestMuteEndpoints:
 # User Search Endpoint
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.django_db
 class TestUserSearchEndpoint:
     def test_search_requires_at_least_two_chars(self):
@@ -220,6 +229,7 @@ class TestUserSearchEndpoint:
 # Explore Feed Endpoint
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.django_db
 class TestExploreFeedEndpoint:
     def test_explore_returns_public_posts_with_reason(self):
@@ -232,7 +242,10 @@ class TestExploreFeedEndpoint:
         assert res.status_code == status.HTTP_200_OK
         data = res.json()
         assert "items" in data
-        assert any(item["post_id"] == str(post.id) and item["reason"] == "explore" for item in data["items"])
+        assert any(
+            item["post_id"] == str(post.id) and item["reason"] == "explore"
+            for item in data["items"]
+        )
 
     def test_explore_excludes_private_accounts_and_non_public_posts(self):
         viewer = UserFactory()

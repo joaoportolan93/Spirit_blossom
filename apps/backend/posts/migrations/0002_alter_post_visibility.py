@@ -4,15 +4,22 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('posts', '0001_initial'),
+        ("posts", "0001_initial"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='post',
-            name='visibility',
-            field=models.CharField(choices=[('public', 'Público'), ('followers', 'Seguidores'), ('circle', 'Círculo de Amigos')], default='public', max_length=10),
+            model_name="post",
+            name="visibility",
+            field=models.CharField(
+                choices=[
+                    ("public", "Público"),
+                    ("followers", "Seguidores"),
+                    ("circle", "Círculo de Amigos"),
+                ],
+                default="public",
+                max_length=10,
+            ),
         ),
     ]
