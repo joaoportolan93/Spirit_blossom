@@ -125,9 +125,9 @@ class TestArchitecturePostObjectsDirect:
             if "migrations" in str(py_file) or "tests" in str(py_file):
                 continue
             src = py_file.read_text(encoding="utf-8")
-            assert "get_visible_posts_queryset" not in src, (
-                f"{py_file} ainda usa get_visible_posts_queryset — deve usar visible_posts_for"
-            )
+            assert (
+                "get_visible_posts_queryset" not in src
+            ), f"{py_file} ainda usa get_visible_posts_queryset — deve usar visible_posts_for"
 
     def test_serializers_sem_all(self):
         """Nenhum serializer de posts ou social pode usar fields = '__all__'."""

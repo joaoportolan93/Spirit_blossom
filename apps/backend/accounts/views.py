@@ -300,7 +300,6 @@ class UserSearchView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-
         from .selectors import search_users
 
         query = request.query_params.get("q", "").strip()

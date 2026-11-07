@@ -256,13 +256,13 @@ class TestAllRoutesRequireAuthenticationForAnonymous:
 
             # Executa requisição anônima GET e POST
             resp_get = client.get(resolved_url)
-            assert resp_get.status_code == status.HTTP_401_UNAUTHORIZED, (
-                f"Endpoint {resolved_url} (GET) permitiu anônimo ou retornou {resp_get.status_code}"
-            )
+            assert (
+                resp_get.status_code == status.HTTP_401_UNAUTHORIZED
+            ), f"Endpoint {resolved_url} (GET) permitiu anônimo ou retornou {resp_get.status_code}"
             resp_post = client.post(resolved_url, {})
-            assert resp_post.status_code == status.HTTP_401_UNAUTHORIZED, (
-                f"Endpoint {resolved_url} (POST) permitiu anônimo ou retornou {resp_post.status_code}"
-            )
+            assert (
+                resp_post.status_code == status.HTTP_401_UNAUTHORIZED
+            ), f"Endpoint {resolved_url} (POST) permitiu anônimo ou retornou {resp_post.status_code}"
             tested_count += 1
 
         assert tested_count >= 15, "Deve haver pelo menos 15 endpoints privados testados"
