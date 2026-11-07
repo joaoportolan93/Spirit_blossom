@@ -68,3 +68,18 @@ apps/frontend/coverage/
 *.egg
 build/
 dist/
+
+# ── Segredos / chaves ────────────────────────────────────────────────────────
+*.pem
+*.key
+id_rsa*
+id_ed25519*
+*serviceAccount*.json
+firebase*.json
+
+# ── Testes / relatórios ──────────────────────────────────────────────────────
+playwright-report/
+test-results/
+
+# ── Operação noturna ─────────────────────────────────────────────────────────
+.overnight/

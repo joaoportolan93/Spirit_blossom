@@ -23,6 +23,10 @@ def follow_user(*, follower, target_user) -> Tuple[Follow, bool]:
     )
     if not created:
         raise ValueError("Já está seguindo este usuário.")
+
+    from notifications.services import notify_user_followed
+
+    notify_user_followed(follower=follower, followed=target_user)
     return follow, created
 
 
@@ -86,3 +90,37 @@ def unmute_user(*, muter, target_user) -> bool:
         muted=target_user,
     ).delete()
     return bool(deleted)
+
+
+def add_to_close_friends(*, user, target_user) -> bool:
+    """
+    Adiciona target_user ao círculo de amigos de user.
+    Requires: user segue target_user com status=active.
+    Returns True se adicionado, False se já estava.
+    Raises ValueError se não houver follow ativo.
+    """
+    follow = Follow.objects.filter(
+        follower=user,
+        followed=target_user,
+        status=Follow.Status.ACTIVE,
+    ).first()
+    if not follow:
+        raise ValueError("Você precisa seguir este usuário para adicioná-lo ao círculo.")
+    if follow.is_close_friend:
+        return False  # já estava no círculo
+    follow.is_close_friend = True
+    follow.save(update_fields=["is_close_friend"])
+    return True
+
+
+def remove_from_close_friends(*, user, target_user) -> bool:
+    """
+    Remove target_user do círculo de amigos de user.
+    Returns True se removido, False se não estava no círculo.
+    """
+    updated = Follow.objects.filter(
+        follower=user,
+        followed=target_user,
+        is_close_friend=True,
+    ).update(is_close_friend=False)
+    return bool(updated)

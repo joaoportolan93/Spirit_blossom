@@ -5,6 +5,10 @@
   },
   "nav": {
     "feed": "Feed",
+    "explore": "Explorar",
+    "search": "Buscar",
+    "close_friends": "Círculo",
+    "bookmarks": "Salvos",
     "profile": "Perfil",
     "login": "Entrar",
     "register": "Cadastrar"
@@ -33,7 +37,46 @@
     "publish": "Publicar",
     "publishing": "Publicando...",
     "chars_remaining": "{{count}} caracteres restantes",
-    "too_long": "Limite de caracteres excedido"
+    "too_long": "Limite de caracteres excedido",
+    "visibility": "Visibilidade",
+    "visibility_public": "Público",
+    "visibility_circle": "Círculo de Amigos",
+    "drafts": "Rascunhos",
+    "save_draft": "Salvar rascunho",
+    "load_draft": "Usar",
+    "delete_draft": "Excluir",
+    "draft_saved": "Rascunho salvo!",
+    "empty_drafts": "Nenhum rascunho salvo.",
+    "drafts_modal_title": "Meus rascunhos"
+  },
+  "bookmarks": {
+    "title": "Itens salvos",
+    "subtitle": "Publicações que você salvou para ver depois.",
+    "empty": "Nenhuma publicação salva ainda."
+  },
+  "close_friends": {
+    "title": "Círculo de Amigos",
+    "subtitle": "Apenas as pessoas nesta lista podem ver seus posts com visibilidade Círculo.",
+    "add_placeholder": "Nome de usuário para adicionar",
+    "add_button": "Adicionar",
+    "empty": "Ninguém no seu círculo ainda. Adicione amigos que você segue!",
+    "remove": "Remover",
+    "added_success": "Adicionado ao círculo.",
+    "removed_success": "Removido do círculo."
+  },
+  "search": {
+    "title": "Buscar",
+    "placeholder": "Buscar pessoas ou posts...",
+    "tab_people": "Pessoas",
+    "tab_posts": "Posts",
+    "empty_people": "Nenhuma pessoa encontrada.",
+    "empty_posts": "Nenhum post encontrado.",
+    "min_chars": "Digite pelo menos 2 caracteres para buscar."
+  },
+  "explore": {
+    "title": "Explorar",
+    "subtitle": "Descubra publicações recentes da comunidade.",
+    "empty": "Nenhuma publicação para explorar no momento."
   },
   "feed": {
     "title": "Timeline Seguindo",
@@ -50,6 +93,8 @@
     "following": "Seguindo",
     "follow": "Seguir",
     "unfollow": "Deixar de seguir",
+    "mute": "Silenciar",
+    "unmute": "Desilenciar",
     "bio": "Biografia",
     "empty_posts": "Nenhuma publicação feita por este usuário."
   },

@@ -5,6 +5,10 @@ from django.utils.translation import gettext_lazy as _
 
 
 class Follow(models.Model):
+    class Status(models.TextChoices):
+        ACTIVE = "active", _("Ativo")
+        PENDING = "pending", _("Pendente")
+
     follower = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -17,6 +21,11 @@ class Follow(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True)
     is_close_friend = models.BooleanField(default=False)
+    status = models.CharField(
+        max_length=10,
+        choices=Status.choices,
+        default=Status.ACTIVE,
+    )
 
     class Meta:
         db_table = "social_follow"

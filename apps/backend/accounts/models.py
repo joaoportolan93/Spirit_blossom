@@ -81,6 +81,10 @@ class UserProfile(models.Model):
         blank=True,
         help_text=_("Data de nascimento — usada para verificação de idade mínima."),
     )
+    is_private = models.BooleanField(
+        default=False,
+        help_text=_("Indica se a conta é privada."),
+    )
     terms_accepted_at = models.DateTimeField(
         null=True,
         blank=True,

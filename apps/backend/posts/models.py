@@ -11,6 +11,7 @@ class Post(models.Model):
     class Visibility(models.TextChoices):
         PUBLIC = "public", _("Público")
         FOLLOWERS = "followers", _("Seguidores")
+        CIRCLE = "circle", _("Círculo de Amigos")
 
     id = models.UUIDField(primary_key=True, default=uuid6.uuid7, editable=False)
     author = models.ForeignKey(
@@ -24,6 +25,8 @@ class Post(models.Model):
         choices=Visibility.choices,
         default=Visibility.PUBLIC,
     )
+    likes_count = models.PositiveIntegerField(default=0)
+    bookmarks_count = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
 
     # Plano A confirmado pelo spike do E3:
@@ -47,3 +50,76 @@ class Post(models.Model):
 
     def __str__(self):
         return f"{self.author_id} @ {self.created_at:%Y-%m-%d %H:%M}"
+
+
+class PostLike(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid6.uuid7, editable=False)
+    post = models.ForeignKey(
+        Post,
+        on_delete=models.CASCADE,
+        related_name="likes",
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="post_likes",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "posts_postlike"
+        verbose_name = _("curtida de publicação")
+        verbose_name_plural = _("curtidas de publicação")
+        constraints = [
+            models.UniqueConstraint(fields=["post", "user"], name="unique_post_like"),
+        ]
+
+    def __str__(self):
+        return f"{self.user_id} ♥ {self.post_id}"
+
+
+class PostBookmark(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid6.uuid7, editable=False)
+    post = models.ForeignKey(
+        Post,
+        on_delete=models.CASCADE,
+        related_name="bookmarks",
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="post_bookmarks",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "posts_postbookmark"
+        verbose_name = _("favorito de publicação")
+        verbose_name_plural = _("favoritos de publicação")
+        constraints = [
+            models.UniqueConstraint(fields=["post", "user"], name="unique_post_bookmark"),
+        ]
+
+    def __str__(self):
+        return f"{self.user_id} 🔖 {self.post_id}"
+
+
+class Draft(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid6.uuid7, editable=False)
+    author = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="drafts",
+    )
+    content_text = models.TextField(max_length=3000)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "posts_draft"
+        verbose_name = _("rascunho")
+        verbose_name_plural = _("rascunhos")
+        ordering = ["-updated_at"]
+
+    def __str__(self):
+        return f"Draft({self.author_id}, {self.id})"

@@ -6,6 +6,7 @@ from django.utils.translation import gettext_lazy as _
 class Notification(models.Model):
     class Type(models.TextChoices):
         FOLLOW = "follow", _("Novo seguidor")
+        LIKE = "like", _("Curtida")
         MENTION = "mention", _("Menção")
         REPLY = "reply", _("Resposta")
         REPOST = "repost", _("Repost")

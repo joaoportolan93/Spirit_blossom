@@ -20,6 +20,8 @@ export function Profile() {
     following_count: 0,
     is_following: false,
   });
+  const [isMuting, setIsMuting] = useState(false);
+  const [muteLoading, setMuteLoading] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -46,6 +48,7 @@ export function Profile() {
               following_count: profileRes.value.data.following_count ?? 0,
               is_following: Boolean(profileRes.value.data.is_following),
             });
+            setIsMuting(Boolean(profileRes.value.data.is_muting));
           }
         }
       } finally {
@@ -69,6 +72,25 @@ export function Profile() {
     }));
   };
 
+  const handleMuteToggle = async () => {
+    if (muteLoading) return;
+    setMuteLoading(true);
+    const prevMuting = isMuting;
+    setIsMuting(!prevMuting);
+
+    try {
+      if (prevMuting) {
+        await api.delete(`/api/social/mute/${currentUsername}/`);
+      } else {
+        await api.post(`/api/social/mute/${currentUsername}/`);
+      }
+    } catch {
+      setIsMuting(prevMuting);
+    } finally {
+      setMuteLoading(false);
+    }
+  };
+
   return (
     <div className="max-w-2xl mx-auto py-8 px-4">
       {/* Header do perfil */}
@@ -85,12 +107,27 @@ export function Profile() {
           </div>
 
           {!isOwnProfile && (
-            <FollowButton
-              key={`${currentUsername}-${stats.is_following}`}
-              username={currentUsername}
-              isFollowing={stats.is_following}
-              onToggle={handleFollowToggle}
-            />
+            <div className="flex items-center gap-2">
+              <FollowButton
+                key={`${currentUsername}-${stats.is_following}`}
+                username={currentUsername}
+                isFollowing={stats.is_following}
+                onToggle={handleFollowToggle}
+              />
+              <button
+                type="button"
+                data-testid="mute-button"
+                onClick={handleMuteToggle}
+                disabled={muteLoading}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
+                  isMuting
+                    ? "bg-rose-950/40 text-rose-400 border border-rose-800/60 hover:bg-rose-900/40"
+                    : "bg-zinc-800 text-zinc-300 border border-zinc-700 hover:bg-zinc-700 hover:text-white"
+                }`}
+              >
+                {isMuting ? t("profile.unmute") : t("profile.mute")}
+              </button>
+            </div>
           )}
         </div>
 

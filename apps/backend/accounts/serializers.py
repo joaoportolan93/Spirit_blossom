@@ -3,6 +3,7 @@ Serializers de autenticação: login, registro, recuperação de senha e Google 
 """
 
 from datetime import date
+
 from django.contrib.auth import authenticate, get_user_model
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
@@ -51,7 +52,11 @@ class RegisterSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         if not attrs.get("terms_accepted"):
             raise serializers.ValidationError(
-                {"terms_accepted": _("Você deve aceitar os Termos de Uso e Política de Privacidade.")}
+                {
+                    "terms_accepted": _(
+                        "Você deve aceitar os Termos de Uso e Política de Privacidade."
+                    )
+                }
             )
         if attrs["password"] != attrs.pop("password_confirm"):
             raise serializers.ValidationError({"password_confirm": _("As senhas não conferem.")})
@@ -147,6 +152,10 @@ class GoogleCompleteSignupSerializer(serializers.Serializer):
     def validate(self, attrs):
         if not attrs.get("terms_accepted"):
             raise serializers.ValidationError(
-                {"terms_accepted": _("Você deve aceitar os Termos de Uso e Política de Privacidade.")}
+                {
+                    "terms_accepted": _(
+                        "Você deve aceitar os Termos de Uso e Política de Privacidade."
+                    )
+                }
             )
         return attrs

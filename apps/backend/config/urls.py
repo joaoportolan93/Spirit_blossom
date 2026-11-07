@@ -11,6 +11,7 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/health/", health_check, name="health"),
     path("api/auth/", include("accounts.urls", namespace="accounts")),
+    path("api/users/", include("accounts.users_urls", namespace="users")),
     path("api/posts/", include("posts.urls", namespace="posts")),
     path("api/social/", include("social.urls", namespace="social")),
     path("api/feed/", include("feed.urls", namespace="feed")),

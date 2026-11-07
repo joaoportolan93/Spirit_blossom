@@ -8,7 +8,7 @@ from django.conf import settings
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import ensure_csrf_cookie
 from rest_framework import status
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import TokenError
@@ -275,7 +275,7 @@ class GoogleCompleteSignupView(APIView):
         serializer.is_valid(raise_exception=True)
 
         try:
-            user, refresh = complete_google_signup(
+            _user, refresh = complete_google_signup(
                 onboarding_token=serializer.validated_data["onboarding_token"],
                 username=serializer.validated_data["username"],
                 birth_date=serializer.validated_data["birth_date"],
@@ -291,3 +291,52 @@ class GoogleCompleteSignupView(APIView):
         )
         issue_auth_cookies(response, refresh)
         return response
+
+
+class UserSearchView(APIView):
+    """
+    GET /api/users/search/?q=<prefix>&limit=<int>
+    Busca usuários por prefixo de username (ADR-N21 / ADR-N22).
+    Mínimo 2 caracteres. Exclui bloqueados em ambas as direções.
+    Nunca busca por e-mail.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+
+        from .selectors import search_users
+
+        query = request.query_params.get("q", "").strip()
+        if len(query) < 2:
+            return Response(
+                {"detail": "O parâmetro 'q' deve ter pelo menos 2 caracteres."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            limit = min(int(request.query_params.get("limit", 20)), 50)
+        except (ValueError, TypeError):
+            limit = 20
+
+        users = search_users(query=query, viewer=request.user, limit=limit)
+
+        results = []
+        for u in users:
+            profile = getattr(u, "profile", None)
+            follow_status = None
+            from social.models import Follow
+            follow = Follow.objects.filter(follower=request.user, followed=u).first()
+            if follow:
+                follow_status = follow.status
+
+            results.append({
+                "username": u.username,
+                "avatar": (
+                    profile.avatar.url if profile and profile.avatar else None
+                ),
+                "is_private": getattr(profile, "is_private", False),
+                "follow_status": follow_status,
+            })
+
+        return Response({"results": results})

@@ -27,6 +27,18 @@ export function Navbar() {
               <Link to="/" className="text-sm text-zinc-300 hover:text-white">
                 {t("nav.feed")}
               </Link>
+              <Link to="/explore" className="text-sm text-zinc-300 hover:text-white">
+                {t("nav.explore")}
+              </Link>
+              <Link to="/search" className="text-sm text-zinc-300 hover:text-white">
+                {t("nav.search")}
+              </Link>
+              <Link to="/close-friends" className="text-sm text-zinc-300 hover:text-white">
+                {t("nav.close_friends")}
+              </Link>
+              <Link to="/bookmarks" className="text-sm text-zinc-300 hover:text-white">
+                {t("nav.bookmarks")}
+              </Link>
               <Link to="/profile" className="text-sm text-zinc-300 hover:text-white">
                 {t("nav.profile")}
               </Link>

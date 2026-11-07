@@ -8,6 +8,10 @@ import { ForgotPassword } from "./pages/ForgotPassword";
 import { ResetPassword } from "./pages/ResetPassword";
 import { CompleteSignup } from "./pages/CompleteSignup";
 import { Profile } from "./pages/Profile";
+import { Explore } from "./pages/Explore";
+import { Search } from "./pages/Search";
+import { CloseFriends } from "./pages/CloseFriends";
+import { Bookmarks } from "./pages/Bookmarks";
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -48,6 +52,38 @@ export function App() {
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/complete-signup" element={<CompleteSignup />} />
+              <Route
+                path="/explore"
+                element={
+                  <ProtectedRoute>
+                    <Explore />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/search"
+                element={
+                  <ProtectedRoute>
+                    <Search />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/close-friends"
+                element={
+                  <ProtectedRoute>
+                    <CloseFriends />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/bookmarks"
+                element={
+                  <ProtectedRoute>
+                    <Bookmarks />
+                  </ProtectedRoute>
+                }
+              />
               <Route
                 path="/profile"
                 element={

@@ -6,9 +6,10 @@ Testes de autenticação da Onda 2:
 """
 
 from datetime import date, timedelta
+
+import pytest
 from django.core import mail
 from django.utils import timezone
-import pytest
 from rest_framework import status
 from rest_framework.test import APIClient
 

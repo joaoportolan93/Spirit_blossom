@@ -5,6 +5,10 @@
   },
   "nav": {
     "feed": "Feed",
+    "explore": "Explore",
+    "search": "Search",
+    "close_friends": "Close Friends",
+    "bookmarks": "Saved",
     "profile": "Profile",
     "login": "Login",
     "register": "Register"
@@ -33,7 +37,46 @@
     "publish": "Post",
     "publishing": "Posting...",
     "chars_remaining": "{{count}} characters remaining",
-    "too_long": "Character limit exceeded"
+    "too_long": "Character limit exceeded",
+    "visibility": "Visibility",
+    "visibility_public": "Public",
+    "visibility_circle": "Close Friends",
+    "drafts": "Drafts",
+    "save_draft": "Save draft",
+    "load_draft": "Use",
+    "delete_draft": "Delete",
+    "draft_saved": "Draft saved!",
+    "empty_drafts": "No saved drafts.",
+    "drafts_modal_title": "My drafts"
+  },
+  "bookmarks": {
+    "title": "Saved posts",
+    "subtitle": "Posts you have saved for later.",
+    "empty": "No saved posts yet."
+  },
+  "close_friends": {
+    "title": "Close Friends Circle",
+    "subtitle": "Only people in this list can see posts with Circle visibility.",
+    "add_placeholder": "Username to add",
+    "add_button": "Add",
+    "empty": "No one in your circle yet. Add friends you follow!",
+    "remove": "Remove",
+    "added_success": "Added to circle.",
+    "removed_success": "Removed from circle."
+  },
+  "search": {
+    "title": "Search",
+    "placeholder": "Search people or posts...",
+    "tab_people": "People",
+    "tab_posts": "Posts",
+    "empty_people": "No people found.",
+    "empty_posts": "No posts found.",
+    "min_chars": "Type at least 2 characters to search."
+  },
+  "explore": {
+    "title": "Explore",
+    "subtitle": "Discover recent community posts.",
+    "empty": "No posts to explore right now."
   },
   "feed": {
     "title": "Following Timeline",
@@ -50,6 +93,8 @@
     "following": "Following",
     "follow": "Follow",
     "unfollow": "Unfollow",
+    "mute": "Mute",
+    "unmute": "Unmute",
     "bio": "Bio",
     "empty_posts": "No posts published by this user yet."
   },

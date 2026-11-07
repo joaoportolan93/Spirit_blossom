@@ -7,9 +7,23 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .selectors import get_post_detail_for_user, list_posts_keyset, search_posts
-from .serializers import PostSerializer
-from .services import delete_post
+from .selectors import (
+    get_post_detail_for_user,
+    list_bookmarked_posts,
+    list_drafts,
+    list_posts_keyset,
+    search_posts,
+)
+from .serializers import DraftSerializer, PostSerializer
+from .services import (
+    bookmark_post,
+    create_draft,
+    delete_draft,
+    delete_post,
+    like_post,
+    unbookmark_post,
+    unlike_post,
+)
 
 
 class PostListCreateView(APIView):
@@ -85,3 +99,106 @@ class PostSearchView(APIView):
         qs = search_posts(query=query, user=request.user)
         serializer = PostSerializer(qs[:20], many=True, context={"request": request})
         return Response(serializer.data)
+
+
+class PostLikeView(APIView):
+    """
+    POST   /api/posts/<id>/like/  → curtir publicação
+    DELETE /api/posts/<id>/like/  → descurtir publicação
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        success = like_post(user=request.user, post_id=pk)
+        if not success:
+            return Response({"detail": "Não encontrado."}, status=status.HTTP_404_NOT_FOUND)
+        return Response({"detail": "Publicação curtida."}, status=status.HTTP_201_CREATED)
+
+    def delete(self, request, pk):
+        success = unlike_post(user=request.user, post_id=pk)
+        if not success:
+            return Response(
+                {"detail": "Não estava curtido."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class PostBookmarkView(APIView):
+    """
+    POST   /api/posts/<id>/bookmark/  → salvar publicação
+    DELETE /api/posts/<id>/bookmark/  → remover publicação dos salvos
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        success = bookmark_post(user=request.user, post_id=pk)
+        if not success:
+            return Response({"detail": "Não encontrado."}, status=status.HTTP_404_NOT_FOUND)
+        return Response({"detail": "Publicação salva."}, status=status.HTTP_201_CREATED)
+
+    def delete(self, request, pk):
+        success = unbookmark_post(user=request.user, post_id=pk)
+        if not success:
+            return Response(
+                {"detail": "Não estava salva."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class BookmarkedPostListView(APIView):
+    """
+    GET /api/posts/bookmarks/  → lista publicações salvas visíveis
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        cursor = request.query_params.get("cursor")
+        try:
+            qs = list_bookmarked_posts(user=request.user, cursor=cursor, limit=20)
+        except ValueError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer = PostSerializer(qs, many=True, context={"request": request})
+        return Response(serializer.data)
+
+
+class DraftListCreateView(APIView):
+    """
+    GET  /api/posts/drafts/  → lista rascunhos do usuário
+    POST /api/posts/drafts/  → cria novo rascunho
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        qs = list_drafts(author=request.user)
+        serializer = DraftSerializer(qs, many=True)
+        return Response(serializer.data)
+
+    def post(self, request):
+        serializer = DraftSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        draft = create_draft(
+            author=request.user,
+            content_text=serializer.validated_data["content_text"],
+        )
+        return Response(DraftSerializer(draft).data, status=status.HTTP_201_CREATED)
+
+
+class DraftDetailView(APIView):
+    """
+    DELETE /api/posts/drafts/<id>/  → exclui rascunho do usuário
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, pk):
+        deleted = delete_draft(author=request.user, draft_id=pk)
+        if not deleted:
+            return Response({"detail": "Não encontrado."}, status=status.HTTP_404_NOT_FOUND)
+        return Response(status=status.HTTP_204_NO_CONTENT)

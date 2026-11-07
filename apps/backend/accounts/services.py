@@ -2,10 +2,10 @@
 Operações de escrita / mutação para accounts (ADR-N2).
 """
 
-from datetime import timedelta
 import hashlib
 import logging
 import secrets
+from datetime import timedelta
 from typing import Optional, Tuple
 
 from django.conf import settings
@@ -314,7 +314,8 @@ def authenticate_with_google(*, id_token_str: str, request=None) -> Tuple[str, d
     # 2. Se não vinculado, checa se e-mail já existe na base
     if User.objects.filter(email=email).exists():
         raise ValueError(
-            "Este e-mail já está cadastrado. Faça login com sua senha e vincule sua conta Google nas configurações de segurança."
+            "Este e-mail já está cadastrado. Faça login com sua senha e vincule sua conta Google "
+            "nas configurações de segurança."
         )
 
     # 3. Novo usuário: emite onboarding_token
