@@ -159,3 +159,9 @@ class GoogleCompleteSignupSerializer(serializers.Serializer):
                 }
             )
         return attrs
+
+
+class UserProfilePrivacySerializer(serializers.Serializer):
+    """Serializer para PATCH /api/users/profile/ — altera apenas is_private."""
+
+    is_private = serializers.BooleanField(required=True)

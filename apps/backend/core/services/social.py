@@ -2,11 +2,13 @@
 Operações de escrita e consultas para interações sociais (ADR-N2).
 """
 
-from typing import Tuple
+from typing import Optional, Tuple
 
 from django.db import transaction
+from django.db.models import Exists, OuterRef, Q, QuerySet
+from django.http import Http404
 
-from core.models import Block, Follow, Mute
+from core.models import Block, Follow, Mute, UserProfile
 from core.utils.visibility import (
     can_view_profile,
     get_profile_counters,
@@ -27,27 +29,41 @@ __all__ = [
     "get_profile_counters",
     "get_relationship_status",
     "is_user_blocked",
+    "update_user_privacy",
+    "list_follow_requests",
+    "accept_follow_request",
+    "reject_follow_request",
 ]
 
 
 def follow_user(*, follower, target_user) -> Tuple[Follow, bool]:
     """
     Seguir usuário.
-    Raises ValueError se tentar seguir a si mesmo ou já estiver seguindo.
+    Se a conta do usuário for privada, status inicia como 'pending'.
+    Raises ValueError se tentar seguir a si mesmo ou já estiver seguindo / pedido pendente.
     """
     if follower == target_user:
         raise ValueError("Não é possível seguir a si mesmo.")
 
+    profile = getattr(target_user, "profile", None)
+    is_private = getattr(profile, "is_private", False)
+    status_initial = Follow.Status.PENDING if is_private else Follow.Status.ACTIVE
+
     follow, created = Follow.objects.get_or_create(
         follower=follower,
         followed=target_user,
+        defaults={"status": status_initial},
     )
     if not created:
+        if follow.status == Follow.Status.PENDING:
+            raise ValueError("Pedido para seguir já enviado e pendente.")
         raise ValueError("Já está seguindo este usuário.")
 
-    from core.services.notifications import notify_user_followed
+    if status_initial == Follow.Status.ACTIVE:
+        from core.services.notifications import notify_user_followed
 
-    notify_user_followed(follower=follower, followed=target_user)
+        notify_user_followed(follower=follower, followed=target_user)
+
     return follow, created
 
 
@@ -145,3 +161,112 @@ def remove_from_close_friends(*, user, target_user) -> bool:
         is_close_friend=True,
     ).update(is_close_friend=False)
     return bool(updated)
+
+
+@transaction.atomic
+def update_user_privacy(*, user, is_private: bool) -> UserProfile:
+    """
+    Atualiza a privacidade da conta do usuário (Onda 3c).
+    - Privada para pública: todos os pedidos pending do alvo viram active
+      numa única transação atômica, de forma idempotente, sem notificações em massa.
+    - Pública para privada: seguidores ativos continuam ativos; novos seguidores viram pending.
+    """
+    profile, _ = UserProfile.objects.get_or_create(user=user)
+    if profile.is_private == is_private:
+        return profile
+
+    if not is_private:
+        Follow.objects.filter(
+            followed=user,
+            status=Follow.Status.PENDING,
+        ).update(status=Follow.Status.ACTIVE)
+
+    profile.is_private = is_private
+    profile.save(update_fields=["is_private"])
+
+    if hasattr(user, "__dict__") and "profile" in user.__dict__:
+        del user.__dict__["profile"]
+
+    return profile
+
+
+def list_follow_requests(*, user, cursor: Optional[int] = None, limit: int = 20) -> QuerySet:
+    """
+    Lista pedidos de seguir pendentes direcionados ao usuário.
+    Exclui usuários bloqueados em qualquer direção.
+    Keyset pagination por id decrescente.
+    """
+    blocked_subquery = Block.objects.filter(
+        Q(blocker=user, blocked=OuterRef("follower"))
+        | Q(blocker=OuterRef("follower"), blocked=user)
+    )
+    qs = (
+        Follow.objects.filter(
+            followed=user,
+            status=Follow.Status.PENDING,
+            follower__is_active=True,
+        )
+        .exclude(Exists(blocked_subquery))
+        .select_related("follower", "follower__profile")
+        .order_by("-id")
+    )
+    if cursor is not None:
+        try:
+            cursor_id = int(cursor)
+        except (ValueError, TypeError):
+            raise ValueError("Cursor inválido.")
+        qs = qs.filter(id__lt=cursor_id)
+
+    return qs[:limit]
+
+
+@transaction.atomic
+def accept_follow_request(*, user, follower_username: str) -> Follow:
+    """
+    Aceita pedido de seguir pendente direcionado a user.
+    - 404 se não houver pedido pendente ou se houver bloqueio.
+    - Idempotente.
+    - Notifica o solicitante (follower) pelo motor de notificações.
+    """
+    follow = (
+        Follow.objects.select_for_update()
+        .filter(
+            followed=user,
+            follower__username=follower_username,
+            status=Follow.Status.PENDING,
+        )
+        .first()
+    )
+    if not follow:
+        raise Http404("Solicitação de seguir pendente não encontrada.")
+
+    if is_user_blocked(user, follow.follower):
+        raise Http404("Solicitação de seguir pendente não encontrada.")
+
+    follow.status = Follow.Status.ACTIVE
+    follow.save(update_fields=["status"])
+
+    from core.services.notifications import notify_follow_request_accepted
+
+    notify_follow_request_accepted(follower=follow.follower, followed=user)
+    return follow
+
+
+@transaction.atomic
+def reject_follow_request(*, user, follower_username: str) -> bool:
+    """
+    Recusa pedido de seguir pendente direcionado a user.
+    - 404 se não houver pedido pendente.
+    - Idempotente.
+    - Remove em silêncio (sem notificação).
+    """
+    follow = Follow.objects.filter(
+        followed=user,
+        follower__username=follower_username,
+        status=Follow.Status.PENDING,
+    ).first()
+    if not follow:
+        raise Http404("Solicitação de seguir pendente não encontrada.")
+
+    deleted, _ = follow.delete()
+    return bool(deleted)

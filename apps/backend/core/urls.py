@@ -15,6 +15,7 @@ from core.views.auth import (
     PasswordResetRequestView,
     RegisterView,
     TokenRefreshView,
+    UserProfileUpdateView,
     UserSearchView,
 )
 from core.views.feed import ExploreFeedView, FollowingFeedView
@@ -33,6 +34,9 @@ from core.views.social import (
     BlockView,
     CloseFriendsListView,
     CloseFriendsView,
+    FollowRequestAcceptView,
+    FollowRequestListView,
+    FollowRequestRejectView,
     FollowView,
     MuteView,
     ProfileDetailView,
@@ -59,6 +63,7 @@ auth_patterns = [
 ]
 
 users_patterns = [
+    path("profile/", UserProfileUpdateView.as_view(), name="profile_update"),
     path("search/", UserSearchView.as_view(), name="search"),
 ]
 
@@ -75,6 +80,17 @@ posts_patterns = [
 
 social_patterns = [
     path("follow/<str:username>/", FollowView.as_view(), name="follow"),
+    path("follow-requests/", FollowRequestListView.as_view(), name="follow_requests_list"),
+    path(
+        "follow-requests/<str:username>/accept/",
+        FollowRequestAcceptView.as_view(),
+        name="follow_request_accept",
+    ),
+    path(
+        "follow-requests/<str:username>/reject/",
+        FollowRequestRejectView.as_view(),
+        name="follow_request_reject",
+    ),
     path("block/<str:username>/", BlockView.as_view(), name="block"),
     path("mute/<str:username>/", MuteView.as_view(), name="mute"),
     path("close-friends/", CloseFriendsListView.as_view(), name="close-friends-list"),

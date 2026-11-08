@@ -3,19 +3,25 @@ Views sociais (ADR-N2: finas, delegando para services e selectors).
 """
 
 from django.contrib.auth import get_user_model
+from django.http import Http404
 from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.throttling import UserRateThrottle
 from rest_framework.views import APIView
 
 from core.models import Follow
 from core.serializers.posts import PostSerializer
+from core.serializers.social import FollowRequestSerializer
 from core.services.social import (
+    accept_follow_request,
     add_to_close_friends,
     block_user,
     follow_user,
+    list_follow_requests,
     mute_user,
+    reject_follow_request,
     remove_from_close_friends,
     unblock_user,
     unfollow_user,
@@ -43,10 +49,11 @@ class FollowView(APIView):
     def post(self, request, username):
         target = get_object_or_404(User, username=username)
         try:
-            follow_user(follower=request.user, target_user=target)
+            follow, created = follow_user(follower=request.user, target_user=target)
         except ValueError as exc:
             return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
-        return Response({"detail": "Seguindo."}, status=status.HTTP_201_CREATED)
+        msg = "Pedido de seguir enviado." if follow.status == Follow.Status.PENDING else "Seguindo."
+        return Response({"detail": msg, "status": follow.status}, status=status.HTTP_201_CREATED)
 
     def delete(self, request, username):
         target = get_object_or_404(User, username=username)
@@ -235,3 +242,76 @@ class MuteView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class FollowRequestListView(APIView):
+    """
+    GET /api/social/follow-requests/
+    Lista pedidos de seguir pendentes direcionados ao usuário autenticado.
+    Suporta keyset pagination via ?cursor=<id>&limit=<int>.
+    """
+
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [UserRateThrottle]
+
+    def get(self, request):
+        cursor = request.query_params.get("cursor")
+        try:
+            limit = min(int(request.query_params.get("limit", 20)), 50)
+        except (ValueError, TypeError):
+            limit = 20
+
+        try:
+            qs = list_follow_requests(user=request.user, cursor=cursor, limit=limit)
+        except ValueError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+        items = FollowRequestSerializer(qs, many=True).data
+        next_cursor = str(items[-1]["id"]) if len(items) == limit else None
+        return Response({"results": items, "next_cursor": next_cursor}, status=status.HTTP_200_OK)
+
+
+class FollowRequestAcceptView(APIView):
+    """
+    POST /api/social/follow-requests/<username>/accept/
+    Aceita pedido de seguir pendente. 404 se não houver pedido pendente ou bloqueado.
+    """
+
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [UserRateThrottle]
+
+    def post(self, request, username):
+        try:
+            accept_follow_request(user=request.user, follower_username=username)
+        except Http404:
+            return Response(
+                {"detail": "Solicitação de seguir pendente não encontrada."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        return Response(
+            {"detail": "Solicitação de seguir aceita.", "status": "active"},
+            status=status.HTTP_200_OK,
+        )
+
+
+class FollowRequestRejectView(APIView):
+    """
+    POST /api/social/follow-requests/<username>/reject/
+    Recusa pedido de seguir pendente em silêncio. 404 se não houver pedido pendente.
+    """
+
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [UserRateThrottle]
+
+    def post(self, request, username):
+        try:
+            reject_follow_request(user=request.user, follower_username=username)
+        except Http404:
+            return Response(
+                {"detail": "Solicitação de seguir pendente não encontrada."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        return Response(
+            {"detail": "Solicitação de seguir recusada."},
+            status=status.HTTP_200_OK,
+        )

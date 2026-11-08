@@ -988,3 +988,105 @@ class TestVisibilityEdgeCases:
         viewer = UserFactory()
         assert can_view_post(viewer, None) is False
         assert can_view_post(viewer, object()) is False
+
+
+# ---------------------------------------------------------------------------
+# Transições de Conta Privada (Onda 3c)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db(transaction=True)
+class TestPrivateAccountTransitions:
+    def test_transicao_privada_para_publica_aprova_pedidos_pendentes_idempotente(self):
+        author = UserFactory()
+        _make_private(author)
+
+        pending_user_b = UserFactory()
+        pending_user_c = UserFactory()
+        _follow_pending(pending_user_b, author)
+        _follow_pending(pending_user_c, author)
+
+        post_followers = PostFactory(author=author, visibility="followers")
+        post_circle = PostFactory(author=author, visibility="circle")
+
+        # Antes: pendentes não veem post_followers
+        client_b = _client_for(pending_user_b)
+        res_before = client_b.get("/api/posts/")
+        assert str(post_followers.pk) not in [p["id"] for p in res_before.json()]
+
+        # Autor transiciona para conta pública via PATCH /api/users/profile/
+        client_author = _client_for(author)
+        res_patch = client_author.patch("/api/users/profile/", {"is_private": False}, format="json")
+        assert res_patch.status_code == status.HTTP_200_OK
+        assert res_patch.json() == {"username": author.username, "is_private": False}
+
+        # Pedidos pending viraram active
+        follow_b = Follow.objects.get(follower=pending_user_b, followed=author)
+        follow_c = Follow.objects.get(follower=pending_user_c, followed=author)
+        assert follow_b.status == Follow.Status.ACTIVE
+        assert follow_c.status == Follow.Status.ACTIVE
+
+        # Sem notificações em massa
+        assert Notification.objects.filter(sender=author).count() == 0
+
+        # Post de followers agora é visível para os novos seguidores ativos
+        res_after = client_b.get("/api/posts/")
+        assert str(post_followers.pk) in [p["id"] for p in res_after.json()]
+
+        # Post de círculo continua restrito (eles não são amigos próximos)
+        assert str(post_circle.pk) not in [p["id"] for p in res_after.json()]
+
+        # Repetir PATCH com is_private=False é idempotente
+        res_patch_again = client_author.patch(
+            "/api/users/profile/", {"is_private": False}, format="json"
+        )
+        assert res_patch_again.status_code == status.HTTP_200_OK
+        assert res_patch_again.json() == {"username": author.username, "is_private": False}
+
+    def test_transicao_publica_para_privada_mantem_seguidores_e_bloqueia_novos(self):
+        author = UserFactory()
+        active_follower = UserFactory()
+        non_follower = UserFactory()
+
+        _follow_active(active_follower, author)
+
+        post_public = PostFactory(author=author, visibility="public")
+
+        # Antes: non_follower vê post público
+        client_non = _client_for(non_follower)
+        res_before = client_non.get("/api/posts/")
+        assert str(post_public.pk) in [p["id"] for p in res_before.json()]
+
+        # Autor transiciona para conta privada
+        client_author = _client_for(author)
+        res_patch = client_author.patch("/api/users/profile/", {"is_private": True}, format="json")
+        assert res_patch.status_code == status.HTTP_200_OK
+        assert res_patch.json() == {"username": author.username, "is_private": True}
+
+        # Seguidor ativo continua ativo e continua vendo
+        follow_act = Follow.objects.get(follower=active_follower, followed=author)
+        assert follow_act.status == Follow.Status.ACTIVE
+        client_active = _client_for(active_follower)
+        res_act = client_active.get("/api/posts/")
+        assert str(post_public.pk) in [p["id"] for p in res_act.json()]
+
+        # Non-follower agora NÃO vê post público (feed, explorar e perfil)
+        res_feed = client_non.get("/api/posts/")
+        assert str(post_public.pk) not in [p["id"] for p in res_feed.json()]
+
+        res_explore = client_non.get("/api/feed/explore/")
+        explore_ids = [item["post_id"] for item in res_explore.json().get("items", [])]
+        assert str(post_public.pk) not in explore_ids
+
+        res_prof = client_non.get(f"/api/social/profile/{author.username}/")
+        assert res_prof.status_code == status.HTTP_200_OK
+        assert res_prof.json()["posts"] == []
+
+        # Novo seguidor que tenta seguir vira pending
+        new_requester = UserFactory()
+        client_req = _client_for(new_requester)
+        res_follow = client_req.post(f"/api/social/follow/{author.username}/")
+        assert res_follow.status_code == status.HTTP_201_CREATED
+        assert res_follow.json()["status"] == "pending"
+        new_follow = Follow.objects.get(follower=new_requester, followed=author)
+        assert new_follow.status == Follow.Status.PENDING

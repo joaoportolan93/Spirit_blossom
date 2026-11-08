@@ -39,6 +39,9 @@ export function Navbar() {
               <Link to="/bookmarks" className="text-sm text-zinc-300 hover:text-white">
                 {t("nav.bookmarks")}
               </Link>
+              <Link to="/follow-requests" className="text-sm text-zinc-300 hover:text-white">
+                {t("nav.follow_requests")}
+              </Link>
               <Link to="/profile" className="text-sm text-zinc-300 hover:text-white">
                 {t("nav.profile")}
               </Link>

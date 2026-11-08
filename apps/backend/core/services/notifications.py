@@ -89,6 +89,37 @@ def notify_user_followed(*, follower, followed) -> None:
     transaction.on_commit(_dispatch)
 
 
+def notify_follow_request_accepted(*, follower, followed) -> None:
+    """
+    Notifica o solicitante (follower) que o usuário (followed) aceitou o pedido de seguir.
+    Regras:
+    - Executa em transaction.on_commit
+    - Não notifica a si mesmo
+    - Não notifica se houver bloqueio bilateral
+    - Não notifica se recipient (follower) silenciou sender (followed)
+    """
+    if follower == followed:
+        return
+
+    if Block.objects.filter(
+        Q(blocker=follower, blocked=followed) | Q(blocker=followed, blocked=follower)
+    ).exists():
+        return
+
+    if Mute.objects.filter(muter=follower, muted=followed).exists():
+        return
+
+    def _dispatch():
+        create_notification(
+            recipient=follower,
+            sender=followed,
+            notification_type=Notification.Type.FOLLOW,
+            ref_id=None,
+        )
+
+    transaction.on_commit(_dispatch)
+
+
 def notify_post_liked(*, sender, post) -> None:
     """
     Gera notificação de curtida em publicação.

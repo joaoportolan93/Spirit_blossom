@@ -10,6 +10,7 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.throttling import UserRateThrottle
 from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -23,6 +24,7 @@ from core.serializers.auth import (
     PasswordResetConfirmSerializer,
     PasswordResetRequestSerializer,
     RegisterSerializer,
+    UserProfilePrivacySerializer,
 )
 from core.services.auth import (
     authenticate_user,
@@ -38,6 +40,7 @@ from core.services.auth import (
     set_access_cookie,
     set_refresh_cookie,
 )
+from core.services.social import update_user_privacy
 from core.throttles import (
     LoginRateThrottle,
     PasswordResetRateThrottle,
@@ -334,3 +337,29 @@ class UserSearchView(APIView):
             )
 
         return Response({"results": results})
+
+
+class UserProfileUpdateView(APIView):
+    """
+    PATCH /api/users/profile/
+    Atualiza configurações de privacidade do perfil do usuário autenticado.
+    Exige autenticação, CSRF e throttle.
+    """
+
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [UserRateThrottle]
+
+    def patch(self, request):
+        serializer = UserProfilePrivacySerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        is_private = serializer.validated_data["is_private"]
+
+        profile = update_user_privacy(user=request.user, is_private=is_private)
+
+        return Response(
+            {
+                "username": request.user.username,
+                "is_private": profile.is_private,
+            },
+            status=status.HTTP_200_OK,
+        )

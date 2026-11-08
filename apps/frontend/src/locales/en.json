@@ -9,6 +9,7 @@
     "search": "Search",
     "close_friends": "Close Friends",
     "bookmarks": "Saved",
+    "follow_requests": "Requests",
     "profile": "Profile",
     "login": "Login",
     "register": "Register"
@@ -96,7 +97,23 @@
     "mute": "Mute",
     "unmute": "Unmute",
     "bio": "Bio",
+    "private_account": "Private Account",
+    "private_account_help": "Only approved followers can see your posts.",
+    "private_account_toggle_success": "Account privacy updated successfully.",
+    "private_account_toggle_error": "Error updating account privacy.",
     "empty_posts": "No posts published by this user yet."
+  },
+  "follow_requests": {
+    "title": "Follow Requests",
+    "subtitle": "Manage who requested to follow your private account.",
+    "empty": "No pending follow requests.",
+    "accept": "Accept",
+    "reject": "Reject",
+    "accepting": "Accepting...",
+    "rejecting": "Rejecting...",
+    "accepted": "Follow request accepted.",
+    "rejected": "Follow request rejected.",
+    "load_error": "Error loading requests."
   },
   "notifications": {
     "title": "Notifications",

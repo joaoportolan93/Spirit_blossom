@@ -11,8 +11,9 @@ from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from core.factories import BlockFactory, FollowFactory, UserFactory
-from core.models import Block, Follow, Mute, UserProfile
-from core.serializers.social import FollowSerializer
+from core.models import Block, Follow, Mute, Notification, UserProfile
+from core.serializers.auth import UserProfilePrivacySerializer
+from core.serializers.social import FollowRequestSerializer, FollowSerializer
 from core.utils.visibility import can_view_profile, get_profile_counters, get_relationship_status
 
 User = get_user_model()
@@ -386,3 +387,243 @@ class TestSocialCoverageAndSerializers:
 
         status_anon = get_relationship_status(source_user=AnonymousUser(), target_user=target)
         assert status_anon["is_following"] is False
+
+
+@pytest.mark.django_db(transaction=True)
+class TestFollowRequests:
+    def test_list_follow_requests_apenas_dono(self):
+        user = UserFactory()
+        requester1 = UserFactory()
+        requester2 = UserFactory()
+        other_user = UserFactory()
+
+        Follow.objects.create(follower=requester1, followed=user, status=Follow.Status.PENDING)
+        Follow.objects.create(follower=requester2, followed=user, status=Follow.Status.PENDING)
+
+        client_user = _client_for(user)
+        res = client_user.get("/api/social/follow-requests/")
+        assert res.status_code == status.HTTP_200_OK
+        results = res.json()["results"]
+        usernames = [r["username"] for r in results]
+        assert requester1.username in usernames
+        assert requester2.username in usernames
+
+        # Outro usuário não vê pedidos direcionados a `user`
+        client_other = _client_for(other_user)
+        res_other = client_other.get("/api/social/follow-requests/")
+        assert res_other.status_code == status.HTTP_200_OK
+        assert len(res_other.json()["results"]) == 0
+
+    def test_list_follow_requests_cursor_pagination_e_invalido(self):
+        user = UserFactory()
+        r1 = UserFactory()
+        r2 = UserFactory()
+        f1 = Follow.objects.create(follower=r1, followed=user, status=Follow.Status.PENDING)
+        f2 = Follow.objects.create(follower=r2, followed=user, status=Follow.Status.PENDING)
+
+        client = _client_for(user)
+        res_page1 = client.get("/api/social/follow-requests/?limit=1")
+        assert res_page1.status_code == status.HTTP_200_OK
+        data1 = res_page1.json()
+        assert len(data1["results"]) == 1
+        assert data1["next_cursor"] is not None
+
+        # Segunda página com cursor válido
+        res_page2 = client.get(
+            f"/api/social/follow-requests/?cursor={data1['next_cursor']}&limit=1"
+        )
+        assert res_page2.status_code == status.HTTP_200_OK
+        data2 = res_page2.json()
+        assert len(data2["results"]) == 1
+
+        # Cursor inválido retorna 400
+        res_invalid = client.get("/api/social/follow-requests/?cursor=nao_e_numero")
+        assert res_invalid.status_code == status.HTTP_400_BAD_REQUEST
+        assert "Cursor inválido" in res_invalid.json()["detail"]
+
+    def test_list_follow_requests_exclui_bloqueados_bilateral(self):
+        user = UserFactory()
+        blocked_by_user = UserFactory()
+        blocker_of_user = UserFactory()
+
+        Follow.objects.create(follower=blocked_by_user, followed=user, status=Follow.Status.PENDING)
+        Follow.objects.create(follower=blocker_of_user, followed=user, status=Follow.Status.PENDING)
+
+        BlockFactory(blocker=user, blocked=blocked_by_user)
+        BlockFactory(blocker=blocker_of_user, blocked=user)
+
+        client = _client_for(user)
+        res = client.get("/api/social/follow-requests/")
+        assert res.status_code == status.HTTP_200_OK
+        results = res.json()["results"]
+        usernames = [r["username"] for r in results]
+        assert blocked_by_user.username not in usernames
+        assert blocker_of_user.username not in usernames
+
+    def test_accept_follow_request_sucesso_e_notifica(self):
+        user = UserFactory()
+        follower = UserFactory()
+        Follow.objects.create(follower=follower, followed=user, status=Follow.Status.PENDING)
+
+        client = _client_for(user, enforce_csrf=True)
+        csrf = _csrf_token(client)
+        res = client.post(
+            f"/api/social/follow-requests/{follower.username}/accept/",
+            HTTP_X_CSRFTOKEN=csrf,
+        )
+        assert res.status_code == status.HTTP_200_OK
+        assert res.json()["status"] == "active"
+
+        follow = Follow.objects.get(follower=follower, followed=user)
+        assert follow.status == Follow.Status.ACTIVE
+
+        # Notificação enviada para quem pediu (follower)
+        notif = Notification.objects.filter(
+            recipient=follower, sender=user, notification_type=Notification.Type.FOLLOW
+        ).first()
+        assert notif is not None
+
+    def test_accept_follow_request_duas_vezes_segunda_retorna_404_sem_duplicar_notificacao(self):
+        user = UserFactory()
+        follower = UserFactory()
+        Follow.objects.create(follower=follower, followed=user, status=Follow.Status.PENDING)
+
+        client = _client_for(user, enforce_csrf=True)
+        csrf = _csrf_token(client)
+
+        res1 = client.post(
+            f"/api/social/follow-requests/{follower.username}/accept/",
+            HTTP_X_CSRFTOKEN=csrf,
+        )
+        assert res1.status_code == status.HTTP_200_OK
+
+        # Segunda chamada: não há mais pedido pendente -> 404
+        res2 = client.post(
+            f"/api/social/follow-requests/{follower.username}/accept/",
+            HTTP_X_CSRFTOKEN=csrf,
+        )
+        assert res2.status_code == status.HTTP_404_NOT_FOUND
+
+        # Efeitos colaterais mantidos: apenas 1 notificação no DB
+        assert (
+            Notification.objects.filter(
+                recipient=follower, sender=user, notification_type=Notification.Type.FOLLOW
+            ).count()
+            == 1
+        )
+
+    def test_accept_follow_request_idor_usuario_c_nao_consegue_aceitar(self):
+        user_a = UserFactory()
+        user_b = UserFactory()
+        user_c = UserFactory()
+
+        Follow.objects.create(follower=user_b, followed=user_a, status=Follow.Status.PENDING)
+
+        # Usuário C tenta aceitar o pedido feito para A
+        client_c = _client_for(user_c, enforce_csrf=True)
+        csrf_c = _csrf_token(client_c)
+        res = client_c.post(
+            f"/api/social/follow-requests/{user_b.username}/accept/",
+            HTTP_X_CSRFTOKEN=csrf_c,
+        )
+        assert res.status_code == status.HTTP_404_NOT_FOUND
+
+        # Pedido de B para A permanece pendente
+        follow = Follow.objects.get(follower=user_b, followed=user_a)
+        assert follow.status == Follow.Status.PENDING
+
+    def test_reject_follow_request_sucesso_em_silencio(self):
+        user = UserFactory()
+        follower = UserFactory()
+        Follow.objects.create(follower=follower, followed=user, status=Follow.Status.PENDING)
+
+        client = _client_for(user, enforce_csrf=True)
+        csrf = _csrf_token(client)
+        res = client.post(
+            f"/api/social/follow-requests/{follower.username}/reject/",
+            HTTP_X_CSRFTOKEN=csrf,
+        )
+        assert res.status_code == status.HTTP_200_OK
+        assert not Follow.objects.filter(follower=follower, followed=user).exists()
+
+        # Nenhuma notificação criada para follower
+        assert Notification.objects.filter(recipient=follower).count() == 0
+
+    def test_reject_follow_request_idor_usuario_c_nao_consegue_recusar(self):
+        user_a = UserFactory()
+        user_b = UserFactory()
+        user_c = UserFactory()
+
+        Follow.objects.create(follower=user_b, followed=user_a, status=Follow.Status.PENDING)
+
+        client_c = _client_for(user_c, enforce_csrf=True)
+        csrf_c = _csrf_token(client_c)
+        res = client_c.post(
+            f"/api/social/follow-requests/{user_b.username}/reject/",
+            HTTP_X_CSRFTOKEN=csrf_c,
+        )
+        assert res.status_code == status.HTTP_404_NOT_FOUND
+        assert Follow.objects.filter(follower=user_b, followed=user_a).exists()
+
+    def test_bloquear_remove_pedidos_pendentes_em_ambas_direcoes(self):
+        user_a = UserFactory()
+        user_b = UserFactory()
+
+        Follow.objects.create(follower=user_a, followed=user_b, status=Follow.Status.PENDING)
+        Follow.objects.create(follower=user_b, followed=user_a, status=Follow.Status.PENDING)
+
+        client_a = _client_for(user_a, enforce_csrf=True)
+        csrf = _csrf_token(client_a)
+        res = client_a.post(f"/api/social/block/{user_b.username}/", HTTP_X_CSRFTOKEN=csrf)
+        assert res.status_code == status.HTTP_201_CREATED
+
+        assert not Follow.objects.filter(follower=user_a, followed=user_b).exists()
+        assert not Follow.objects.filter(follower=user_b, followed=user_a).exists()
+
+    def test_follow_request_serializer_campos_restritos(self):
+        user = UserFactory()
+        follower = UserFactory()
+        f = Follow.objects.create(follower=follower, followed=user, status=Follow.Status.PENDING)
+
+        data = FollowRequestSerializer(f).data
+        assert set(data.keys()) == {"id", "username", "avatar", "created_at"}
+        assert "email" not in data
+        assert "birth_date" not in data
+        assert "password" not in data
+
+
+@pytest.mark.django_db
+class TestProfilePrivacyToggle:
+    def test_toggle_privacy_patch_exige_login_e_csrf(self):
+        user = UserFactory()
+        # Sem login
+        client_anon = APIClient()
+        r_anon = client_anon.patch("/api/users/profile/", {"is_private": True})
+        assert r_anon.status_code == status.HTTP_401_UNAUTHORIZED
+
+        # Logado sem CSRF em client que exige CSRF
+        client = _client_for(user, enforce_csrf=True)
+        r_no_csrf = client.patch("/api/users/profile/", {"is_private": True})
+        assert r_no_csrf.status_code == status.HTTP_403_FORBIDDEN
+
+        # Logado com CSRF
+        csrf = _csrf_token(client)
+        r_ok = client.patch(
+            "/api/users/profile/",
+            {"is_private": True},
+            format="json",
+            HTTP_X_CSRFTOKEN=csrf,
+        )
+        assert r_ok.status_code == status.HTTP_200_OK
+        assert r_ok.json() == {"username": user.username, "is_private": True}
+
+    def test_toggle_privacy_invalido_retorna_400(self):
+        user = UserFactory()
+        client = _client_for(user)
+        res = client.patch("/api/users/profile/", {"is_private": "nao_booleano"}, format="json")
+        assert res.status_code == status.HTTP_400_BAD_REQUEST
+
+    def test_serializer_privacidade_campos_restritos(self):
+        s = UserProfilePrivacySerializer(data={"is_private": True, "extra_field": "hack"})
+        assert s.is_valid()
+        assert set(s.validated_data.keys()) == {"is_private"}

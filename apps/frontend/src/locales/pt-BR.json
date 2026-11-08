@@ -9,6 +9,7 @@
     "search": "Buscar",
     "close_friends": "Círculo",
     "bookmarks": "Salvos",
+    "follow_requests": "Pedidos",
     "profile": "Perfil",
     "login": "Entrar",
     "register": "Cadastrar"
@@ -96,7 +97,23 @@
     "mute": "Silenciar",
     "unmute": "Desilenciar",
     "bio": "Biografia",
+    "private_account": "Conta Privada",
+    "private_account_help": "Apenas seguidores aprovados podem ver suas publicações.",
+    "private_account_toggle_success": "Privacidade da conta atualizada com sucesso.",
+    "private_account_toggle_error": "Erro ao atualizar privacidade da conta.",
     "empty_posts": "Nenhuma publicação feita por este usuário."
+  },
+  "follow_requests": {
+    "title": "Pedidos de Seguir",
+    "subtitle": "Gerencie quem solicitou seguir sua conta privada.",
+    "empty": "Nenhum pedido de seguir pendente.",
+    "accept": "Aceitar",
+    "reject": "Recusar",
+    "accepting": "Aceitando...",
+    "rejecting": "Recusando...",
+    "accepted": "Pedido aceito com sucesso.",
+    "rejected": "Pedido recusado.",
+    "load_error": "Erro ao carregar pedidos."
   },
   "notifications": {
     "title": "Notificações",

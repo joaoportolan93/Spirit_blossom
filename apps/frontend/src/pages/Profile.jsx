@@ -22,6 +22,9 @@ export function Profile() {
   });
   const [isMuting, setIsMuting] = useState(false);
   const [muteLoading, setMuteLoading] = useState(false);
+  const [isPrivate, setIsPrivate] = useState(false);
+  const [privacyLoading, setPrivacyLoading] = useState(false);
+  const [privacyError, setPrivacyError] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -49,6 +52,7 @@ export function Profile() {
               is_following: Boolean(profileRes.value.data.is_following),
             });
             setIsMuting(Boolean(profileRes.value.data.is_muting));
+            setIsPrivate(Boolean(profileRes.value.data.is_private));
           }
         }
       } finally {
@@ -88,6 +92,20 @@ export function Profile() {
       setIsMuting(prevMuting);
     } finally {
       setMuteLoading(false);
+    }
+  };
+
+  const handlePrivacyToggle = async (e) => {
+    const nextState = e.target.checked;
+    setPrivacyLoading(true);
+    setPrivacyError("");
+    try {
+      const res = await api.patch("/api/users/profile/", { is_private: nextState });
+      setIsPrivate(Boolean(res.data.is_private));
+    } catch {
+      setPrivacyError(t("profile.private_account_toggle_error"));
+    } finally {
+      setPrivacyLoading(false);
     }
   };
 
@@ -146,6 +164,33 @@ export function Profile() {
             <span className="text-zinc-400">{t("profile.following")}</span>
           </div>
         </div>
+
+        {/* Interruptor de Conta Privada (apenas próprio perfil) */}
+        {isOwnProfile && (
+          <div className="mt-6 pt-6 border-t border-zinc-800">
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                data-testid="private-account-toggle"
+                checked={isPrivate}
+                disabled={privacyLoading}
+                onChange={handlePrivacyToggle}
+                className="w-4 h-4 rounded bg-zinc-800 border-zinc-700 text-indigo-600 focus:ring-0 cursor-pointer"
+              />
+              <div>
+                <span className="text-sm font-medium text-white">
+                  {t("profile.private_account")}
+                </span>
+                <p className="text-xs text-zinc-400">
+                  {t("profile.private_account_help")}
+                </p>
+              </div>
+            </label>
+            {privacyError && (
+              <p data-testid="privacy-error" className="text-xs text-rose-400 mt-2">{privacyError}</p>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Lista de publicações */}

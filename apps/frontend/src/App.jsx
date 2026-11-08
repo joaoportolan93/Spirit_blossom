@@ -12,6 +12,7 @@ import { Explore } from "./pages/Explore";
 import { Search } from "./pages/Search";
 import { CloseFriends } from "./pages/CloseFriends";
 import { Bookmarks } from "./pages/Bookmarks";
+import { FollowRequests } from "./pages/FollowRequests";
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -81,6 +82,14 @@ export function App() {
                 element={
                   <ProtectedRoute>
                     <Bookmarks />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/follow-requests"
+                element={
+                  <ProtectedRoute>
+                    <FollowRequests />
                   </ProtectedRoute>
                 }
               />
