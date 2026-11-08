@@ -6,6 +6,7 @@ import logging
 
 from django.conf import settings
 from django.utils.decorators import method_decorator
+from django.utils.translation import gettext as _
 from django.views.decorators.csrf import ensure_csrf_cookie
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -81,7 +82,7 @@ class RegisterView(APIView):
 
         refresh = RefreshToken.for_user(user)
         response = Response(
-            {"detail": "Conta criada com sucesso."},
+            {"detail": _("Account created successfully.")},
             status=status.HTTP_201_CREATED,
         )
         issue_auth_cookies(response, refresh)
@@ -195,8 +196,9 @@ class PasswordResetRequestView(APIView):
         request_password_reset(
             email=serializer.validated_data["email"],
             base_frontend_url=frontend_url,
+            language=getattr(request, "LANGUAGE_CODE", "pt-br"),
         )
-        return Response({"detail": "Se o e-mail estiver cadastrado, as instruções foram enviadas."})
+        return Response({"detail": _("If the email is registered, instructions have been sent.")})
 
 
 class PasswordResetConfirmView(APIView):
@@ -221,7 +223,7 @@ class PasswordResetConfirmView(APIView):
         except ValueError as exc:
             return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
 
-        return Response({"detail": "Senha redefinida com sucesso."})
+        return Response({"detail": _("Password reset successfully.")})
 
 
 class GoogleAuthView(APIView):

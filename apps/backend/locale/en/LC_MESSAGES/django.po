@@ -1,0 +1,161 @@
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: 1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-11-08 18:00+0000\n"
+"PO-Revision-Date: 2026-11-08 18:00+0000\n"
+"Last-Translator: \n"
+"Language-Team: en\n"
+"Language: en\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid "Account created successfully."
+msgstr "Account created successfully."
+
+msgid "Invalid credentials."
+msgstr "Invalid credentials."
+
+msgid "Logged out successfully."
+msgstr "Logged out successfully."
+
+msgid "Password reset successfully."
+msgstr "Password reset successfully."
+
+msgid "If the email is registered, instructions have been sent."
+msgstr "If the email is registered, instructions have been sent."
+
+msgid "Added to close friends."
+msgstr "Added to close friends."
+
+msgid "Already in close friends."
+msgstr "Already in close friends."
+
+msgid "Not in close friends."
+msgstr "Not in close friends."
+
+msgid "Apenas seguidores ativos podem ser adicionados ao círculo."
+msgstr "Only active followers can be added to close friends."
+
+msgid "Only active followers can be added to close friends."
+msgstr "Only active followers can be added to close friends."
+
+msgid "User muted."
+msgstr "User muted."
+
+msgid "Usuário silenciado."
+msgstr "User muted."
+
+msgid "Following."
+msgstr "Following."
+
+msgid "Follow request sent."
+msgstr "Follow request sent."
+
+msgid "Follow request accepted."
+msgstr "Follow request accepted."
+
+msgid "Follow request rejected."
+msgstr "Follow request rejected."
+
+msgid "Não encontrado."
+msgstr "Not found."
+
+msgid "Not found."
+msgstr "Not found."
+
+msgid "Você precisa estar autenticado."
+msgstr "You must be authenticated."
+
+msgid "Publicação criada com sucesso."
+msgstr "Post created successfully."
+
+msgid "Publicação removida com sucesso."
+msgstr "Post deleted successfully."
+
+msgid "Rascunho salvo com sucesso."
+msgstr "Draft saved successfully."
+
+msgid "Rascunho removido com sucesso."
+msgstr "Draft deleted successfully."
+
+msgid "Cursor inválido. Deve ser um ID inteiro."
+msgstr "Cursor invalid. Must be an integer ID."
+
+msgid "Não é possível bloquear a si mesmo."
+msgstr "You cannot block yourself."
+
+msgid "Já bloqueou este usuário."
+msgstr "You have already blocked this user."
+
+msgid "Não é possível silenciar a si mesmo."
+msgstr "You cannot mute yourself."
+
+msgid "Já silenciou este usuário."
+msgstr "You have already muted this user."
+
+msgid "Não é possível seguir a si mesmo."
+msgstr "You cannot follow yourself."
+
+msgid "Você já segue este usuário."
+msgstr "You already follow this user."
+
+msgid "Pedido para seguir já enviado e pendente."
+msgstr "Follow request already sent and pending."
+
+msgid "[%(app_name)s] Password reset"
+msgstr "[%(app_name)s] Password reset"
+
+msgid ""
+"Hello %(username)s,\n"
+"\n"
+"You requested a password reset on %(app_name)s.\n"
+"Access the link below within 15 minutes to set a new password:\n"
+"\n"
+"%(reset_url)s\n"
+"\n"
+"If you did not request this, no action is needed."
+msgstr ""
+"Hello %(username)s,\n"
+"\n"
+"You requested a password reset on %(app_name)s.\n"
+"Access the link below within 15 minutes to set a new password:\n"
+"\n"
+"%(reset_url)s\n"
+"\n"
+"If you did not request this, no action is needed."
+
+msgid "usuário"
+msgstr "user"
+
+msgid "usuários"
+msgstr "users"
+
+msgid "endereço de e-mail"
+msgstr "email address"
+
+msgid "nome de usuário"
+msgstr "username"
+
+msgid "Ativo"
+msgstr "Active"
+
+msgid "Suspenso"
+msgstr "Suspended"
+
+msgid "Desativado"
+msgstr "Deactivated"
+
+msgid "Público"
+msgstr "Public"
+
+msgid "Círculo de Amigos"
+msgstr "Close Friends"
+
+msgid "publicação"
+msgstr "post"
+
+msgid "publicações"
+msgstr "posts"

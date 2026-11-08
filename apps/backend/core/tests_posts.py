@@ -140,7 +140,7 @@ class TestPostContrato:
                 },
                 "content_text": {"type": "string"},
                 "content_length": {"type": "integer"},
-                "visibility": {"type": "string", "enum": ["public", "followers"]},
+                "visibility": {"type": "string", "enum": ["public", "circle"]},
                 "created_at": {"type": "string"},
             },
         }

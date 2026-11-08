@@ -132,17 +132,30 @@ def unmute_user(*, muter, target_user) -> bool:
 def add_to_close_friends(*, user, target_user) -> bool:
     """
     Adiciona target_user ao círculo de amigos de user.
-    Requires: user segue target_user com status=active.
-    Returns True se adicionado, False se já estava.
-    Raises ValueError se não houver follow ativo.
+    Requires: target_user segue user com status=active (seguidor ativo do dono, estilo Lumem).
+    Raises Http404 se não for seguidor ativo ou se houver bloqueio.
+    Returns True se adicionado, False se já estava no círculo.
     """
+    if is_user_blocked(user, target_user):
+        raise Http404("Usuário inacessível ou bloqueado.")
+
     follow = Follow.objects.filter(
-        follower=user,
-        followed=target_user,
+        follower=target_user,
+        followed=user,
         status=Follow.Status.ACTIVE,
     ).first()
+
+    # Compatibilidade: se user segue target_user de forma ativa
     if not follow:
-        raise ValueError("Você precisa seguir este usuário para adicioná-lo ao círculo.")
+        follow = Follow.objects.filter(
+            follower=user,
+            followed=target_user,
+            status=Follow.Status.ACTIVE,
+        ).first()
+
+    if not follow:
+        raise Http404("Apenas seguidores ativos podem ser adicionados ao círculo.")
+
     if follow.is_close_friend:
         return False
     follow.is_close_friend = True
@@ -156,8 +169,7 @@ def remove_from_close_friends(*, user, target_user) -> bool:
     Returns True se removido, False se não estava no círculo.
     """
     updated = Follow.objects.filter(
-        follower=user,
-        followed=target_user,
+        (Q(follower=target_user, followed=user) | Q(follower=user, followed=target_user)),
         is_close_friend=True,
     ).update(is_close_friend=False)
     return bool(updated)

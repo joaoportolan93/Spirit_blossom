@@ -48,6 +48,8 @@ agents/
 docs/*
 !docs/api/
 !docs/api/feed-contract.json
+!docs/adr/
+!docs/adr/**
 
 # ── macOS / Windows ───────────────────────────────────────────────────────────
 .DS_Store

@@ -1,4 +1,5 @@
 import axios from "axios";
+import i18n from "../i18n";
 
 /**
  * Lê o cookie csrftoken definido pelo Django.
@@ -17,8 +18,11 @@ export const api = axios.create({
   },
 });
 
-// Interceptor para injetar X-CSRFToken em requisições mutativas
+// Interceptor para injetar X-CSRFToken em requisições mutativas e Accept-Language com idioma atual
 api.interceptors.request.use((config) => {
+  if (i18n && i18n.language) {
+    config.headers["Accept-Language"] = i18n.language;
+  }
   const method = (config.method || "").toUpperCase();
   if (["POST", "PUT", "PATCH", "DELETE"].includes(method)) {
     const csrfToken = getCsrfTokenFromCookie();

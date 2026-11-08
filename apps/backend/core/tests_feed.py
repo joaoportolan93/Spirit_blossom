@@ -177,7 +177,6 @@ class TestExploreFeedEndpoint:
         post_private_author = PostFactory(author=private_author, visibility=Post.Visibility.PUBLIC)
         normal_author = UserFactory()
         post_circle = PostFactory(author=normal_author, visibility=Post.Visibility.CIRCLE)
-        post_followers = PostFactory(author=normal_author, visibility=Post.Visibility.FOLLOWERS)
 
         client = _client_for(viewer)
         res = client.get("/api/feed/explore/")
@@ -185,7 +184,6 @@ class TestExploreFeedEndpoint:
         post_ids = [item["post_id"] for item in res.json()["items"]]
         assert str(post_private_author.id) not in post_ids
         assert str(post_circle.id) not in post_ids
-        assert str(post_followers.id) not in post_ids
 
     def test_explore_excludes_blocked_and_muted_users(self):
         viewer = UserFactory()

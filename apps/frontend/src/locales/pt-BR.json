@@ -10,6 +10,7 @@
     "close_friends": "Círculo",
     "bookmarks": "Salvos",
     "follow_requests": "Pedidos",
+    "settings": "Configurações",
     "profile": "Perfil",
     "login": "Entrar",
     "register": "Cadastrar"
@@ -117,8 +118,21 @@
   },
   "notifications": {
     "title": "Notificações",
+    "tab_all": "Todas",
+    "tab_requests": "Pedidos de seguir",
     "mark_all_read": "Marcar todas como lidas",
     "empty": "Sem notificações no momento."
+  },
+  "settings": {
+    "title": "Configurações",
+    "privacy": "Privacidade",
+    "circle": "Círculo de amigos",
+    "circle_subtitle": "Adicione seguidores ativos ao seu círculo de amigos para verem publicações exclusivas.",
+    "search_followers_placeholder": "Buscar seguidores...",
+    "no_candidates": "Nenhum seguidor encontrado.",
+    "in_circle": "No círculo",
+    "add_to_circle": "Adicionar",
+    "remove_from_circle": "Remover"
   },
   "errors": {
     "generic": "Algo deu errado. Tente novamente.",

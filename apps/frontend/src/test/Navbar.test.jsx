@@ -31,16 +31,17 @@ describe("Navbar Component", () => {
     vi.clearAllMocks();
   });
 
-  it("1. Renderiza links para usuário autenticado incluindo pedidos e perfil", () => {
+  it("1. Renderiza links para usuário autenticado incluindo configurações e perfil", () => {
     renderNavbar({ username: "alice" });
 
     expect(screen.getByText("Feed")).toBeInTheDocument();
     expect(screen.getByText("Explorar")).toBeInTheDocument();
     expect(screen.getByText("Buscar")).toBeInTheDocument();
-    expect(screen.getByText("Círculo")).toBeInTheDocument();
     expect(screen.getByText("Salvos")).toBeInTheDocument();
-    expect(screen.getByText("Pedidos")).toBeInTheDocument();
+    expect(screen.getByText("Configurações")).toBeInTheDocument();
     expect(screen.getByText("Perfil")).toBeInTheDocument();
+    expect(screen.queryByText("Círculo")).not.toBeInTheDocument();
+    expect(screen.queryByText("Pedidos")).not.toBeInTheDocument();
     expect(screen.getByText("Sair")).toBeInTheDocument();
     expect(screen.getByTestId("mock-notification-bell")).toBeInTheDocument();
   });

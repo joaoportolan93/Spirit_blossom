@@ -59,16 +59,12 @@ def visible_posts_for(user) -> QuerySet:
         author__profile__is_private=True,
         author__in=following_active_ids,
     )
-    is_followers = Q(
-        visibility=Post.Visibility.FOLLOWERS,
-        author__in=following_active_ids,
-    )
     is_circle = Q(
         visibility=Post.Visibility.CIRCLE,
         author__in=close_friends_active_ids,
     )
 
-    qs = qs.filter(is_self | is_public_open | is_public_private_follower | is_followers | is_circle)
+    qs = qs.filter(is_self | is_public_open | is_public_private_follower | is_circle)
 
     return qs.select_related("author", "author__profile")
 

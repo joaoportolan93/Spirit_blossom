@@ -2,11 +2,12 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { Profile } from "../pages/Profile";
+import { SettingsPrivacy } from "../pages/settings/SettingsPrivacy";
 import { api } from "../services/api";
 import { AuthContext } from "../hooks/useAuth";
 import "../i18n";
 
-function renderProfile(user = { username: "me" }, route = "/profile/me") {
+function renderWithAuth(ui, user = { username: "me" }, route = "/") {
   const authValue = {
     user,
     loading: false,
@@ -17,21 +18,18 @@ function renderProfile(user = { username: "me" }, route = "/profile/me") {
   return render(
     <AuthContext.Provider value={authValue}>
       <MemoryRouter initialEntries={[route]}>
-        <Routes>
-          <Route path="/profile/:username" element={<Profile />} />
-          <Route path="/profile" element={<Profile />} />
-        </Routes>
+        {ui}
       </MemoryRouter>
     </AuthContext.Provider>
   );
 }
 
-describe("Profile Privacy Toggle (Onda 3c)", () => {
+describe("Profile Privacy & Settings Privacy (Onda 3d)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("1. Exibe interruptor de conta privada no próprio perfil e lê estado inicial", async () => {
+  it("1. Exibe selo de conta privada no próprio perfil quando is_private = true", async () => {
     vi.spyOn(api, "get").mockImplementation((url) => {
       if (url.includes("/api/social/profile/me/")) {
         return Promise.resolve({
@@ -47,58 +45,28 @@ describe("Profile Privacy Toggle (Onda 3c)", () => {
       return Promise.resolve({ data: [] });
     });
 
-    renderProfile({ username: "me" }, "/profile/me");
+    renderWithAuth(
+      <Routes>
+        <Route path="/profile/:username" element={<Profile />} />
+        <Route path="/profile" element={<Profile />} />
+      </Routes>,
+      { username: "me" },
+      "/profile/me"
+    );
 
     await waitFor(() => {
-      const toggle = screen.getByTestId("private-account-toggle");
-      expect(toggle).toBeInTheDocument();
-      expect(toggle).toBeChecked();
+      expect(screen.getByTestId("private-account-badge")).toBeInTheDocument();
       expect(screen.getByText("Conta Privada")).toBeInTheDocument();
     });
   });
 
-  it("2. Alterna conta privada para pública via PATCH /api/users/profile/", async () => {
-    vi.spyOn(api, "get").mockImplementation((url) => {
-      if (url.includes("/api/social/profile/me/")) {
-        return Promise.resolve({
-          data: {
-            username: "me",
-            is_private: true,
-            followers_count: 5,
-            following_count: 2,
-            posts: [],
-          },
-        });
-      }
-      return Promise.resolve({ data: [] });
-    });
-
-    vi.spyOn(api, "patch").mockResolvedValueOnce({
-      data: { username: "me", is_private: false },
-    });
-
-    renderProfile({ username: "me" }, "/profile/me");
-
-    await waitFor(() => {
-      expect(screen.getByTestId("private-account-toggle")).toBeChecked();
-    });
-
-    const toggle = screen.getByTestId("private-account-toggle");
-    fireEvent.click(toggle);
-
-    await waitFor(() => {
-      expect(api.patch).toHaveBeenCalledWith("/api/users/profile/", { is_private: false });
-      expect(toggle).not.toBeChecked();
-    });
-  });
-
-  it("3. Não exibe interruptor de privacidade ao visualizar perfil de outro usuário", async () => {
+  it("2. Não exibe selo de conta privada nem interruptor ao visualizar perfil de outro usuário", async () => {
     vi.spyOn(api, "get").mockImplementation((url) => {
       if (url.includes("/api/social/profile/other/")) {
         return Promise.resolve({
           data: {
             username: "other",
-            is_private: false,
+            is_private: true,
             followers_count: 10,
             following_count: 5,
             is_following: false,
@@ -109,33 +77,72 @@ describe("Profile Privacy Toggle (Onda 3c)", () => {
       return Promise.resolve({ data: [] });
     });
 
-    renderProfile({ username: "me" }, "/profile/other");
+    renderWithAuth(
+      <Routes>
+        <Route path="/profile/:username" element={<Profile />} />
+      </Routes>,
+      { username: "me" },
+      "/profile/other"
+    );
 
     await waitFor(() => {
       expect(screen.getByText("@other")).toBeInTheDocument();
+      expect(screen.queryByTestId("private-account-badge")).not.toBeInTheDocument();
       expect(screen.queryByTestId("private-account-toggle")).not.toBeInTheDocument();
     });
   });
 
-  it("4. Exibe mensagem de erro se a requisição PATCH falhar", async () => {
+  it("3. SettingsPrivacy: exibe interruptor de privacidade e altera estado via PATCH", async () => {
+    vi.spyOn(api, "get").mockImplementation((url) => {
+      if (url.includes("/api/social/profile/me/")) {
+        return Promise.resolve({
+          data: {
+            username: "me",
+            is_private: true,
+          },
+        });
+      }
+      return Promise.resolve({ data: {} });
+    });
+
+    vi.spyOn(api, "patch").mockResolvedValueOnce({
+      data: { username: "me", is_private: false },
+    });
+
+    renderWithAuth(<SettingsPrivacy />, { username: "me" }, "/settings/privacy");
+
+    await waitFor(() => {
+      const toggle = screen.getByTestId("private-account-toggle");
+      expect(toggle).toBeInTheDocument();
+      expect(toggle).toBeChecked();
+    });
+
+    const toggle = screen.getByTestId("private-account-toggle");
+    fireEvent.click(toggle);
+
+    await waitFor(() => {
+      expect(api.patch).toHaveBeenCalledWith("/api/users/profile/", { is_private: false });
+      expect(toggle).not.toBeChecked();
+      expect(screen.getByTestId("privacy-success")).toBeInTheDocument();
+    });
+  });
+
+  it("4. SettingsPrivacy: exibe erro ao falhar PATCH", async () => {
     vi.spyOn(api, "get").mockImplementation((url) => {
       if (url.includes("/api/social/profile/me/")) {
         return Promise.resolve({
           data: {
             username: "me",
             is_private: false,
-            followers_count: 0,
-            following_count: 0,
-            posts: [],
           },
         });
       }
-      return Promise.resolve({ data: [] });
+      return Promise.resolve({ data: {} });
     });
 
     vi.spyOn(api, "patch").mockRejectedValueOnce(new Error("Falha na atualização"));
 
-    renderProfile({ username: "me" }, "/profile/me");
+    renderWithAuth(<SettingsPrivacy />, { username: "me" }, "/settings/privacy");
 
     await waitFor(() => {
       expect(screen.getByTestId("private-account-toggle")).not.toBeChecked();
@@ -150,4 +157,3 @@ describe("Profile Privacy Toggle (Onda 3c)", () => {
     });
   });
 });
-

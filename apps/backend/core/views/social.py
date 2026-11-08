@@ -3,6 +3,7 @@ Views sociais (ADR-N2: finas, delegando para services e selectors).
 """
 
 from django.contrib.auth import get_user_model
+from django.db.models import Exists, OuterRef, Q
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from rest_framework import status
@@ -11,7 +12,7 @@ from rest_framework.response import Response
 from rest_framework.throttling import UserRateThrottle
 from rest_framework.views import APIView
 
-from core.models import Follow
+from core.models import Block, Follow
 from core.serializers.posts import PostSerializer
 from core.serializers.social import FollowRequestSerializer
 from core.services.social import (
@@ -163,8 +164,15 @@ class CloseFriendsView(APIView):
 
     def post(self, request, username):
         target = get_object_or_404(User, username=username)
+        if is_user_blocked(request.user, target):
+            return Response({"detail": "Não encontrado."}, status=status.HTTP_404_NOT_FOUND)
         try:
             added = add_to_close_friends(user=request.user, target_user=target)
+        except Http404:
+            return Response(
+                {"detail": "Apenas seguidores ativos podem ser adicionados ao círculo."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
         except ValueError as exc:
             return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
         if not added:
@@ -195,26 +203,100 @@ class CloseFriendsListView(APIView):
     def get(self, request):
         follows = (
             Follow.objects.filter(
-                follower=request.user,
+                (Q(follower=request.user) | Q(followed=request.user)),
                 is_close_friend=True,
                 status=Follow.Status.ACTIVE,
             )
-            .select_related("followed", "followed__profile")
-            .order_by("followed__username")
+            .select_related("follower", "followed", "follower__profile", "followed__profile")
+            .order_by("-id")
         )
+        results = []
+        for f in follows:
+            member = f.follower if f.followed_id == request.user.id else f.followed
+            avatar = (
+                member.profile.avatar.url
+                if hasattr(member, "profile") and member.profile.avatar
+                else None
+            )
+            results.append(
+                {
+                    "username": member.username,
+                    "avatar": avatar,
+                    "follow_since": f.created_at,
+                }
+            )
+        return Response({"results": results})
+
+
+class CloseFriendsCandidatesView(APIView):
+    """
+    GET /api/social/close-friends/candidates/?q=&cursor=&limit=
+    Retorna apenas seguidores ativos do usuário autenticado (Lumem),
+    com filtro de busca opcional por q, excluindo usuários bloqueados.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        q = request.query_params.get("q", "").strip()
+        cursor = request.query_params.get("cursor", None)
+        try:
+            limit = min(int(request.query_params.get("limit", 20)), 50)
+        except ValueError:
+            limit = 20
+
+        blocked_subquery_1 = Block.objects.filter(
+            blocker=request.user, blocked=OuterRef("follower")
+        )
+        blocked_subquery_2 = Block.objects.filter(
+            blocker=OuterRef("follower"), blocked=request.user
+        )
+
+        qs = (
+            Follow.objects.filter(
+                followed=request.user,
+                status=Follow.Status.ACTIVE,
+            )
+            .exclude(Exists(blocked_subquery_1))
+            .exclude(Exists(blocked_subquery_2))
+            .select_related("follower", "follower__profile")
+            .order_by("-id")
+        )
+
+        if q:
+            qs = qs.filter(follower__username__icontains=q)
+
+        if cursor:
+            try:
+                cursor_id = int(cursor)
+                qs = qs.filter(id__lt=cursor_id)
+            except (ValueError, TypeError):
+                return Response(
+                    {"detail": "Cursor inválido. Deve ser um ID inteiro."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+        items = list(qs[: limit + 1])
+        has_next = len(items) > limit
+        if has_next:
+            items = items[:limit]
+
+        next_cursor = str(items[-1].id) if (has_next and items) else None
+
         results = [
             {
-                "username": f.followed.username,
+                "username": f.follower.username,
                 "avatar": (
-                    f.followed.profile.avatar.url
-                    if hasattr(f.followed, "profile") and f.followed.profile.avatar
+                    f.follower.profile.avatar.url
+                    if hasattr(f.follower, "profile") and f.follower.profile.avatar
                     else None
                 ),
-                "follow_since": f.created_at,
+                "is_close_friend": bool(f.is_close_friend),
             }
-            for f in follows
+            for f in items
         ]
-        return Response({"results": results})
+
+        return Response({"results": results, "next_cursor": next_cursor})
 
 
 class MuteView(APIView):

@@ -246,7 +246,12 @@ def logout_user(*, raw_refresh_token: Optional[str]) -> None:
 # -----------------------------------------------------------------------------
 
 
-def request_password_reset(*, email: str, base_frontend_url: str = "http://localhost:3001") -> None:
+def request_password_reset(
+    *,
+    email: str,
+    base_frontend_url: str = "http://localhost:3001",
+    language: Optional[str] = None,
+) -> None:
     """
     Solicita redefinição de senha com token de uso único (15 min).
     Sempre responde sem vazar se o usuário existe (anti-enumeração).
@@ -274,23 +279,29 @@ def request_password_reset(*, email: str, base_frontend_url: str = "http://local
 
     def _send():
         from django.core.mail import send_mail
+        from django.utils import translation
+        from django.utils.translation import gettext as _
 
-        app_name = getattr(settings, "APP_NAME", "Spirit Blossom")
-        subject = f"[{app_name}] Recuperação de senha"
-        message = (
-            f"Olá {user.username},\n\n"
-            f"Você solicitou a recuperação da sua senha na {app_name}.\n"
-            f"Acesse o link abaixo em até 15 minutos para definir uma nova senha:\n\n"
-            f"{reset_url}\n\n"
-            f"Se você não solicitou, nenhuma ação é necessária."
+        user_lang = (
+            language or getattr(getattr(user, "profile", None), "language", "pt-br") or "pt-br"
         )
-        send_mail(
-            subject=subject,
-            message=message,
-            from_email=getattr(settings, "DEFAULT_FROM_EMAIL", "noreply@spiritblossom.local"),
-            recipient_list=[user.email],
-            fail_silently=False,
-        )
+        with translation.override(user_lang):
+            app_name = getattr(settings, "APP_NAME", "Spirit Blossom")
+            subject = _("[%(app_name)s] Password reset") % {"app_name": app_name}
+            message = _(
+                "Hello %(username)s,\n\n"
+                "You requested a password reset on %(app_name)s.\n"
+                "Access the link below within 15 minutes to set a new password:\n\n"
+                "%(reset_url)s\n\n"
+                "If you did not request this, no action is needed."
+            ) % {"username": user.username, "app_name": app_name, "reset_url": reset_url}
+            send_mail(
+                subject=str(subject),
+                message=str(message),
+                from_email=getattr(settings, "DEFAULT_FROM_EMAIL", "noreply@spiritblossom.local"),
+                recipient_list=[user.email],
+                fail_silently=False,
+            )
 
     transaction.on_commit(_send)
 

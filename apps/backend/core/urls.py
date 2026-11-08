@@ -32,6 +32,7 @@ from core.views.posts import (
 )
 from core.views.social import (
     BlockView,
+    CloseFriendsCandidatesView,
     CloseFriendsListView,
     CloseFriendsView,
     FollowRequestAcceptView,
@@ -94,6 +95,11 @@ social_patterns = [
     path("block/<str:username>/", BlockView.as_view(), name="block"),
     path("mute/<str:username>/", MuteView.as_view(), name="mute"),
     path("close-friends/", CloseFriendsListView.as_view(), name="close-friends-list"),
+    path(
+        "close-friends/candidates/",
+        CloseFriendsCandidatesView.as_view(),
+        name="close-friends-candidates",
+    ),
     path("close-friends/<str:username>/", CloseFriendsView.as_view(), name="close-friends"),
     path("profile/<str:username>/", ProfileDetailView.as_view(), name="profile"),
 ]

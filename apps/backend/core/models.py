@@ -200,7 +200,6 @@ class AccessLog(models.Model):
 class Post(models.Model):
     class Visibility(models.TextChoices):
         PUBLIC = "public", _("Público")
-        FOLLOWERS = "followers", _("Seguidores")
         CIRCLE = "circle", _("Círculo de Amigos")
 
     id = models.UUIDField(primary_key=True, default=uuid6.uuid7, editable=False)

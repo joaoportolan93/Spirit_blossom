@@ -232,8 +232,72 @@ class TestCloseFriendsEndpoints:
 
         client = _client_for(user)
         res = client.post(f"/api/social/close-friends/{target.username}/")
-        assert res.status_code == status.HTTP_400_BAD_REQUEST
-        assert "Você precisa seguir este usuário" in res.json()["detail"]
+        assert res.status_code == status.HTTP_404_NOT_FOUND
+
+    def test_add_close_friend_blocked_user_returns_404(self):
+        user = UserFactory()
+        target = UserFactory()
+        Follow.objects.create(follower=target, followed=user, status=Follow.Status.ACTIVE)
+        BlockFactory(blocker=user, blocked=target)
+
+        client = _client_for(user)
+        res = client.post(f"/api/social/close-friends/{target.username}/")
+        assert res.status_code == status.HTTP_404_NOT_FOUND
+
+    def test_close_friends_candidates_list_and_search(self):
+        user = UserFactory()
+        f1 = UserFactory(username="cand_ana")
+        f2 = UserFactory(username="cand_bruno")
+        f3 = UserFactory(username="cand_carlos")
+        other = UserFactory(username="desconhecido")
+
+        Follow.objects.create(
+            follower=f1, followed=user, status=Follow.Status.ACTIVE, is_close_friend=True
+        )
+        Follow.objects.create(
+            follower=f2, followed=user, status=Follow.Status.ACTIVE, is_close_friend=False
+        )
+        Follow.objects.create(follower=f3, followed=user, status=Follow.Status.PENDING)
+
+        client = _client_for(user)
+        res = client.get("/api/social/close-friends/candidates/")
+        assert res.status_code == status.HTTP_200_OK
+        results = res.json()["results"]
+        usernames = [r["username"] for r in results]
+        assert "cand_ana" in usernames
+        assert "cand_bruno" in usernames
+        assert "cand_carlos" not in usernames  # pendente não é candidato
+        assert "desconhecido" not in usernames  # não seguidor não é candidato
+
+        # Checa status no círculo
+        ana_data = next(r for r in results if r["username"] == "cand_ana")
+        assert ana_data["is_close_friend"] is True
+        bruno_data = next(r for r in results if r["username"] == "cand_bruno")
+        assert bruno_data["is_close_friend"] is False
+
+        # Busca por q
+        res_q = client.get("/api/social/close-friends/candidates/?q=bruno")
+        assert res_q.status_code == status.HTTP_200_OK
+        q_results = res_q.json()["results"]
+        assert len(q_results) == 1
+        assert q_results[0]["username"] == "cand_bruno"
+
+    def test_close_friends_candidates_excludes_blocked(self):
+        user = UserFactory()
+        f1 = UserFactory(username="bloqueado_por_mim")
+        f2 = UserFactory(username="me_bloqueou")
+        Follow.objects.create(follower=f1, followed=user, status=Follow.Status.ACTIVE)
+        Follow.objects.create(follower=f2, followed=user, status=Follow.Status.ACTIVE)
+
+        BlockFactory(blocker=user, blocked=f1)
+        BlockFactory(blocker=f2, blocked=user)
+
+        client = _client_for(user)
+        res = client.get("/api/social/close-friends/candidates/")
+        assert res.status_code == status.HTTP_200_OK
+        usernames = [r["username"] for r in res.json()["results"]]
+        assert "bloqueado_por_mim" not in usernames
+        assert "me_bloqueou" not in usernames
 
     def test_add_close_friend_target_not_found(self):
         user = UserFactory()

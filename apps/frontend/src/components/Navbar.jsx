@@ -33,14 +33,11 @@ export function Navbar() {
               <Link to="/search" className="text-sm text-zinc-300 hover:text-white">
                 {t("nav.search")}
               </Link>
-              <Link to="/close-friends" className="text-sm text-zinc-300 hover:text-white">
-                {t("nav.close_friends")}
-              </Link>
               <Link to="/bookmarks" className="text-sm text-zinc-300 hover:text-white">
                 {t("nav.bookmarks")}
               </Link>
-              <Link to="/follow-requests" className="text-sm text-zinc-300 hover:text-white">
-                {t("nav.follow_requests")}
+              <Link to="/settings" className="text-sm text-zinc-300 hover:text-white">
+                {t("nav.settings")}
               </Link>
               <Link to="/profile" className="text-sm text-zinc-300 hover:text-white">
                 {t("nav.profile")}

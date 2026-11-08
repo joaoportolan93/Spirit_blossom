@@ -76,9 +76,10 @@ class TestVisibility:
 
     def test_post_followers_only_visivel_para_seguidor(self):
         author = UserFactory()
+        _make_private(author)
         follower = UserFactory()
         FollowFactory(follower=follower, followed=author)
-        post = PostFactory(author=author, visibility="followers")
+        post = PostFactory(author=author, visibility="public")
         client = _client_for(follower)
         response = client.get("/api/posts/")
         ids = [str(p["id"]) for p in response.json()]
@@ -86,8 +87,9 @@ class TestVisibility:
 
     def test_post_followers_only_invisivel_para_nao_seguidor(self):
         author = UserFactory()
+        _make_private(author)
         stranger = UserFactory()
-        post = PostFactory(author=author, visibility="followers")
+        post = PostFactory(author=author, visibility="public")
         client = _client_for(stranger)
         response = client.get("/api/posts/")
         ids = [str(p["id"]) for p in response.json()]
@@ -95,7 +97,8 @@ class TestVisibility:
 
     def test_post_proprio_sempre_visivel(self):
         author = UserFactory()
-        post = PostFactory(author=author, visibility="followers")
+        _make_private(author)
+        post = PostFactory(author=author, visibility="circle")
         client = _client_for(author)
         response = client.get("/api/posts/")
         ids = [str(p["id"]) for p in response.json()]
@@ -111,13 +114,17 @@ class TestVisibility:
 
     def test_multiple_posts_visibilidade_mista(self):
         author1 = UserFactory()
+        _make_private(author1)
         author2 = UserFactory()
+        _make_private(author2)
         viewer = UserFactory()
         FollowFactory(follower=viewer, followed=author1)
 
-        p1 = PostFactory(author=author1, visibility="followers")
-        p2 = PostFactory(author=author2, visibility="followers")
+        p1 = PostFactory(author=author1, visibility="public")
+        p2 = PostFactory(author=author2, visibility="public")
         p3 = PostFactory(author=author2, visibility="public")
+        author3 = UserFactory()
+        p3 = PostFactory(author=author3, visibility="public")
 
         client = _client_for(viewer)
         response = client.get("/api/posts/")
@@ -1006,13 +1013,13 @@ class TestPrivateAccountTransitions:
         _follow_pending(pending_user_b, author)
         _follow_pending(pending_user_c, author)
 
-        post_followers = PostFactory(author=author, visibility="followers")
+        post_public = PostFactory(author=author, visibility="public")
         post_circle = PostFactory(author=author, visibility="circle")
 
-        # Antes: pendentes não veem post_followers
+        # Antes: pendentes não veem post_public de conta privada
         client_b = _client_for(pending_user_b)
         res_before = client_b.get("/api/posts/")
-        assert str(post_followers.pk) not in [p["id"] for p in res_before.json()]
+        assert str(post_public.pk) not in [p["id"] for p in res_before.json()]
 
         # Autor transiciona para conta pública via PATCH /api/users/profile/
         client_author = _client_for(author)
@@ -1029,9 +1036,9 @@ class TestPrivateAccountTransitions:
         # Sem notificações em massa
         assert Notification.objects.filter(sender=author).count() == 0
 
-        # Post de followers agora é visível para os novos seguidores ativos
+        # Post público agora é visível para os novos seguidores ativos
         res_after = client_b.get("/api/posts/")
-        assert str(post_followers.pk) in [p["id"] for p in res_after.json()]
+        assert str(post_public.pk) in [p["id"] for p in res_after.json()]
 
         # Post de círculo continua restrito (eles não são amigos próximos)
         assert str(post_circle.pk) not in [p["id"] for p in res_after.json()]

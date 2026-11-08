@@ -12,7 +12,7 @@ from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from core.factories import BlockFactory, PostFactory, UserFactory
-from core.models import Block, Post
+from core.models import Block, Post, UserProfile
 from core.services.posts import search_posts
 
 _is_sqlite = (
@@ -61,21 +61,20 @@ class TestSearch:
 
     @requires_postgres
     def test_busca_nao_retorna_post_privado_de_nao_seguido(self):
-        """Busca não retorna post visibility=followers de usuário não seguido."""
+        """Busca não retorna post de conta privada de usuário não seguido."""
         user = UserFactory()
         stranger = UserFactory()
+        UserProfile.objects.filter(user=stranger).update(is_private=True)
         PostFactory(
             author=stranger,
             content_text="conteúdo privado restrito zyxw",
-            visibility="followers",
+            visibility="public",
         )
         client = _client_for(user)
         response = client.get("/api/posts/search/?q=zyxw")
         assert response.status_code == 200
         ids = [item["id"] for item in response.json()]
-        private_posts = Post.objects.filter(author=stranger, visibility="followers").values_list(
-            "id", flat=True
-        )
+        private_posts = Post.objects.filter(author=stranger).values_list("id", flat=True)
         for pid in private_posts:
             assert str(pid) not in ids
 

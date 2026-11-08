@@ -10,6 +10,7 @@
     "close_friends": "Close Friends",
     "bookmarks": "Saved",
     "follow_requests": "Requests",
+    "settings": "Settings",
     "profile": "Profile",
     "login": "Login",
     "register": "Register"
@@ -117,8 +118,21 @@
   },
   "notifications": {
     "title": "Notifications",
+    "tab_all": "All",
+    "tab_requests": "Follow requests",
     "mark_all_read": "Mark all as read",
     "empty": "No notifications yet."
+  },
+  "settings": {
+    "title": "Settings",
+    "privacy": "Privacy",
+    "circle": "Close friends",
+    "circle_subtitle": "Add active followers to your close friends circle to see exclusive posts.",
+    "search_followers_placeholder": "Search followers...",
+    "no_candidates": "No followers found.",
+    "in_circle": "In circle",
+    "add_to_circle": "Add",
+    "remove_from_circle": "Remove"
   },
   "errors": {
     "generic": "Something went wrong. Please try again.",

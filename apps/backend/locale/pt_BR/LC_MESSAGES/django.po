@@ -1,0 +1,161 @@
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: 1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-11-08 18:00+0000\n"
+"PO-Revision-Date: 2026-11-08 18:00+0000\n"
+"Last-Translator: \n"
+"Language-Team: pt_BR\n"
+"Language: pt_BR\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid "Account created successfully."
+msgstr "Conta criada com sucesso."
+
+msgid "Invalid credentials."
+msgstr "Credenciais inválidas."
+
+msgid "Logged out successfully."
+msgstr "Logout realizado com sucesso."
+
+msgid "Password reset successfully."
+msgstr "Senha redefinida com sucesso."
+
+msgid "If the email is registered, instructions have been sent."
+msgstr "Se o e-mail estiver cadastrado, as instruções foram enviadas."
+
+msgid "Added to close friends."
+msgstr "Adicionado ao círculo."
+
+msgid "Already in close friends."
+msgstr "Já está no círculo de amigos."
+
+msgid "Not in close friends."
+msgstr "Não estava no círculo de amigos."
+
+msgid "Apenas seguidores ativos podem ser adicionados ao círculo."
+msgstr "Apenas seguidores ativos podem ser adicionados ao círculo."
+
+msgid "Only active followers can be added to close friends."
+msgstr "Apenas seguidores ativos podem ser adicionados ao círculo."
+
+msgid "User muted."
+msgstr "Usuário silenciado."
+
+msgid "Usuário silenciado."
+msgstr "Usuário silenciado."
+
+msgid "Following."
+msgstr "Seguindo."
+
+msgid "Follow request sent."
+msgstr "Pedido de seguir enviado."
+
+msgid "Follow request accepted."
+msgstr "Pedido aceito com sucesso."
+
+msgid "Follow request rejected."
+msgstr "Pedido recusado com sucesso."
+
+msgid "Não encontrado."
+msgstr "Não encontrado."
+
+msgid "Not found."
+msgstr "Não encontrado."
+
+msgid "Você precisa estar autenticado."
+msgstr "Você precisa estar autenticado."
+
+msgid "Publicação criada com sucesso."
+msgstr "Publicação criada com sucesso."
+
+msgid "Publicação removida com sucesso."
+msgstr "Publicação removida com sucesso."
+
+msgid "Rascunho salvo com sucesso."
+msgstr "Rascunho salvo com sucesso."
+
+msgid "Rascunho removido com sucesso."
+msgstr "Rascunho removido com sucesso."
+
+msgid "Cursor inválido. Deve ser um ID inteiro."
+msgstr "Cursor inválido. Deve ser um ID inteiro."
+
+msgid "Não é possível bloquear a si mesmo."
+msgstr "Não é possível bloquear a si mesmo."
+
+msgid "Já bloqueou este usuário."
+msgstr "Já bloqueou este usuário."
+
+msgid "Não é possível silenciar a si mesmo."
+msgstr "Não é possível silenciar a si mesmo."
+
+msgid "Já silenciou este usuário."
+msgstr "Já silenciou este usuário."
+
+msgid "Não é possível seguir a si mesmo."
+msgstr "Não é possível seguir a si mesmo."
+
+msgid "Você já segue este usuário."
+msgstr "Você já segue este usuário."
+
+msgid "Pedido para seguir já enviado e pendente."
+msgstr "Pedido para seguir já enviado e pendente."
+
+msgid "[%(app_name)s] Password reset"
+msgstr "[%(app_name)s] Recuperação de senha"
+
+msgid ""
+"Hello %(username)s,\n"
+"\n"
+"You requested a password reset on %(app_name)s.\n"
+"Access the link below within 15 minutes to set a new password:\n"
+"\n"
+"%(reset_url)s\n"
+"\n"
+"If you did not request this, no action is needed."
+msgstr ""
+"Olá %(username)s,\n"
+"\n"
+"Você solicitou a recuperação da sua senha na %(app_name)s.\n"
+"Acesse o link abaixo em até 15 minutos para definir uma nova senha:\n"
+"\n"
+"%(reset_url)s\n"
+"\n"
+"Se você não solicitou, nenhuma ação é necessária."
+
+msgid "usuário"
+msgstr "usuário"
+
+msgid "usuários"
+msgstr "usuários"
+
+msgid "endereço de e-mail"
+msgstr "endereço de e-mail"
+
+msgid "nome de usuário"
+msgstr "nome de usuário"
+
+msgid "Ativo"
+msgstr "Ativo"
+
+msgid "Suspenso"
+msgstr "Suspenso"
+
+msgid "Desativado"
+msgstr "Desativado"
+
+msgid "Público"
+msgstr "Público"
+
+msgid "Círculo de Amigos"
+msgstr "Círculo de Amigos"
+
+msgid "publicação"
+msgstr "publicação"
+
+msgid "publicações"
+msgstr "publicações"

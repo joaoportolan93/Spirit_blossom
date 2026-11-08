@@ -10,9 +10,11 @@ import { CompleteSignup } from "./pages/CompleteSignup";
 import { Profile } from "./pages/Profile";
 import { Explore } from "./pages/Explore";
 import { Search } from "./pages/Search";
-import { CloseFriends } from "./pages/CloseFriends";
 import { Bookmarks } from "./pages/Bookmarks";
-import { FollowRequests } from "./pages/FollowRequests";
+import { Notifications } from "./pages/Notifications";
+import { Settings } from "./pages/Settings";
+import { SettingsPrivacy } from "./pages/settings/SettingsPrivacy";
+import { SettingsCircle } from "./pages/settings/SettingsCircle";
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -70,26 +72,38 @@ export function App() {
                 }
               />
               <Route
-                path="/close-friends"
+                path="/settings"
                 element={
                   <ProtectedRoute>
-                    <CloseFriends />
+                    <Settings />
                   </ProtectedRoute>
                 }
+              >
+                <Route index element={<Navigate to="/settings/privacy" replace />} />
+                <Route path="privacy" element={<SettingsPrivacy />} />
+                <Route path="circle" element={<SettingsCircle />} />
+              </Route>
+              <Route
+                path="/notifications"
+                element={
+                  <ProtectedRoute>
+                    <Notifications />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/close-friends"
+                element={<Navigate to="/settings/circle" replace />}
+              />
+              <Route
+                path="/follow-requests"
+                element={<Navigate to="/notifications?tab=requests" replace />}
               />
               <Route
                 path="/bookmarks"
                 element={
                   <ProtectedRoute>
                     <Bookmarks />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/follow-requests"
-                element={
-                  <ProtectedRoute>
-                    <FollowRequests />
                   </ProtectedRoute>
                 }
               />
