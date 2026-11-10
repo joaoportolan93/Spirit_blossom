@@ -110,6 +110,78 @@ class TestPostCRUD:
         res = client.delete(f"/api/posts/{post.id}/")
         assert res.status_code == status.HTTP_403_FORBIDDEN
 
+    def test_editar_post_autor_sucesso(self, db):
+        """Autor edita o texto do post; visibilidade mantida; is_edited marcado."""
+        user = UserFactory()
+        post = PostFactory(author=user, content_text="Original", visibility="public")
+        client = _client_for(user)
+
+        res = client.patch(f"/api/posts/{post.id}/", {"content_text": "Editado com sucesso!"})
+        assert res.status_code == 200
+        assert res.data["content_text"] == "Editado com sucesso!"
+        assert res.data["is_edited"] is True
+        assert res.data["visibility"] == "public"
+        assert res.data["edited_at"] is not None
+
+        post.refresh_from_db()
+        assert post.content_text == "Editado com sucesso!"
+        assert post.is_edited is True
+        assert post.visibility == "public"
+
+    def test_editar_post_alheio_retorna_403(self, db):
+        """Outro usuário não pode editar post alheio."""
+        author = UserFactory()
+        other = UserFactory()
+        post = PostFactory(author=author, content_text="Original")
+        client = _client_for(other)
+
+        res = client.patch(f"/api/posts/{post.id}/", {"content_text": "Hacked"})
+        assert res.status_code == 403
+
+    def test_editar_post_invalido_retorna_400(self, db):
+        """Edição com texto vazio ou além do limite retorna 400."""
+        user = UserFactory()
+        post = PostFactory(author=user, content_text="Original")
+        client = _client_for(user)
+
+        res1 = client.patch(f"/api/posts/{post.id}/", {"content_text": "   "})
+        assert res1.status_code == 400
+
+        long_text = "a" * (getattr(settings, "POST_MAX_CHARS", 3000) + 1)
+        res2 = client.patch(f"/api/posts/{post.id}/", {"content_text": long_text})
+        assert res2.status_code == 400
+
+    def test_deletar_post_em_transacao_cascata(self, db):
+        """Exclusão de post remove em transação comentários, curtidas, salvos e notificações."""
+        from comments.models import Comment
+        from core.models import Notification, Post, PostBookmark, PostLike
+
+        author = UserFactory()
+        commenter = UserFactory()
+        post = PostFactory(author=author)
+
+        PostLike.objects.create(post=post, user=commenter)
+        PostBookmark.objects.create(post=post, user=commenter)
+        comment = Comment.objects.create(post=post, author=commenter, content_text="Comentário")
+
+        Notification.objects.create(
+            recipient=author, sender=commenter, notification_type=Notification.Type.LIKE, ref_id=post.id
+        )
+        Notification.objects.create(
+            recipient=author, sender=commenter, notification_type=Notification.Type.REPLY, ref_id=comment.id
+        )
+
+        client = _client_for(author)
+        res = client.delete(f"/api/posts/{post.id}/")
+        assert res.status_code == 204
+
+        assert not Post.objects.filter(id=post.id).exists()
+        assert not PostLike.objects.filter(post_id=post.id).exists()
+        assert not PostBookmark.objects.filter(post_id=post.id).exists()
+        assert not Comment.objects.filter(post_id=post.id).exists()
+        assert not Notification.objects.filter(ref_id=post.id).exists()
+        assert not Notification.objects.filter(ref_id=comment.id).exists()
+
 
 @pytest.mark.django_db
 class TestPostContrato:

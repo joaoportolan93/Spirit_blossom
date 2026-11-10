@@ -28,6 +28,7 @@ class PostSerializer(serializers.ModelSerializer):
     content_length = serializers.SerializerMethodField()
     is_liked = serializers.SerializerMethodField()
     is_bookmarked = serializers.SerializerMethodField()
+    hidden_comments_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Post
@@ -39,11 +40,31 @@ class PostSerializer(serializers.ModelSerializer):
             "visibility",
             "likes_count",
             "bookmarks_count",
+            "comments_count",
+            "hidden_comments_count",
+            "is_edited",
+            "edited_at",
             "is_liked",
             "is_bookmarked",
             "created_at",
         )
-        read_only_fields = ("id", "author", "likes_count", "bookmarks_count", "created_at")
+        read_only_fields = (
+            "id",
+            "author",
+            "likes_count",
+            "bookmarks_count",
+            "comments_count",
+            "hidden_comments_count",
+            "is_edited",
+            "edited_at",
+            "created_at",
+        )
+
+    def get_hidden_comments_count(self, obj):
+        request = self.context.get("request")
+        if request and getattr(request.user, "is_authenticated", False) and obj.author_id == request.user.id:
+            return getattr(obj, "hidden_comments_count", 0)
+        return 0
 
     def get_content_length(self, obj):
         return len(obj.content_text)
@@ -74,6 +95,32 @@ class PostSerializer(serializers.ModelSerializer):
         return create_post(
             author=self.context["request"].user,
             **validated_data,
+        )
+
+
+class PostEditSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Post
+        fields = ("content_text",)
+
+    def validate_content_text(self, value):
+        max_chars = getattr(settings, "POST_MAX_CHARS", 3000)
+        cleaned = (value or "").strip()
+        if not cleaned:
+            raise serializers.ValidationError("Conteúdo não pode ser vazio.")
+        if len(cleaned) > max_chars:
+            raise serializers.ValidationError(
+                f"Conteúdo excede o limite de {max_chars} caracteres."
+            )
+        return cleaned
+
+    def update(self, instance, validated_data):
+        from core.services.posts import update_post
+
+        return update_post(
+            post=instance,
+            user=self.context["request"].user,
+            content_text=validated_data["content_text"],
         )
 
 

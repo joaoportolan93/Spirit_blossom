@@ -159,3 +159,105 @@ msgstr "publicação"
 
 msgid "publicações"
 msgstr "publicações"
+
+msgid "comentário"
+msgstr "comentário"
+
+msgid "comentários"
+msgstr "comentários"
+
+msgid "curtida de comentário"
+msgstr "curtida de comentário"
+
+msgid "curtidas de comentários"
+msgstr "curtidas de comentários"
+
+msgid "comentário salvo"
+msgstr "comentário salvo"
+
+msgid "comentários salvos"
+msgstr "comentários salvos"
+
+msgid "profundidade"
+msgstr "profundidade"
+
+msgid "conteúdo"
+msgstr "conteúdo"
+
+msgid "excluído"
+msgstr "excluído"
+
+msgid "editado"
+msgstr "editado"
+
+msgid "data de edição"
+msgstr "data de edição"
+
+msgid "contagem de curtidas"
+msgstr "contagem de curtidas"
+
+msgid "contagem de respostas"
+msgstr "contagem de respostas"
+
+msgid "criado em"
+msgstr "criado em"
+
+msgid "atualizado em"
+msgstr "atualizado em"
+
+msgid "comentário pai"
+msgstr "comentário pai"
+
+msgid "You cannot view or comment on this post."
+msgstr "Você não pode ver ou comentar nesta publicação."
+
+msgid "Interaction blocked by privacy settings."
+msgstr "Interação bloqueada pelas configurações de privacidade."
+
+msgid "Comment content cannot be empty."
+msgstr "O conteúdo do comentário não pode ser vazio."
+
+msgid "Comment exceeds maximum length of 1000 characters."
+msgstr "O comentário excede o limite máximo de 1000 caracteres."
+
+msgid "Parent comment belongs to a different post."
+msgstr "O comentário pai pertence a outra publicação."
+
+msgid "Maximum reply depth reached (50 levels)."
+msgstr "Limite máximo de profundidade de respostas atingido (50 níveis)."
+
+msgid "You can only edit your own comments."
+msgstr "Você só pode editar seus próprios comentários."
+
+msgid "Cannot edit a deleted comment."
+msgstr "Não é possível editar um comentário excluído."
+
+msgid "You do not have permission to delete this comment."
+msgstr "Você não tem permissão para excluir este comentário."
+
+msgid "You cannot view this post."
+msgstr "Você não pode ver esta publicação."
+
+msgid "Parent comment does not belong to this post."
+msgstr "O comentário pai não pertence a esta publicação."
+
+msgid "Authentication credentials were not provided."
+msgstr "Credenciais de autenticação não foram fornecidas."
+
+msgid "Only the post author can hide comments."
+msgstr "Apenas o autor da publicação pode ocultar comentários."
+
+msgid "Cannot hide your own comment."
+msgstr "Não é possível ocultar seu próprio comentário."
+
+msgid "Only the post author can unhide comments."
+msgstr "Apenas o autor da publicação pode reexibir comentários."
+
+msgid "Sem permissão para editar esta publicação."
+msgstr "Sem permissão para editar esta publicação."
+
+msgid "Conteúdo não pode ser vazio."
+msgstr "Conteúdo não pode ser vazio."
+
+msgid "Only the post author can view hidden comments."
+msgstr "Apenas o autor da publicação pode ver comentários ocultos."

@@ -159,3 +159,105 @@ msgstr "post"
 
 msgid "publicações"
 msgstr "posts"
+
+msgid "comentário"
+msgstr "comment"
+
+msgid "comentários"
+msgstr "comments"
+
+msgid "curtida de comentário"
+msgstr "comment like"
+
+msgid "curtidas de comentários"
+msgstr "comment likes"
+
+msgid "comentário salvo"
+msgstr "saved comment"
+
+msgid "comentários salvos"
+msgstr "saved comments"
+
+msgid "profundidade"
+msgstr "depth"
+
+msgid "conteúdo"
+msgstr "content"
+
+msgid "excluído"
+msgstr "deleted"
+
+msgid "editado"
+msgstr "edited"
+
+msgid "data de edição"
+msgstr "edited date"
+
+msgid "contagem de curtidas"
+msgstr "likes count"
+
+msgid "contagem de respostas"
+msgstr "replies count"
+
+msgid "criado em"
+msgstr "created at"
+
+msgid "atualizado em"
+msgstr "updated at"
+
+msgid "comentário pai"
+msgstr "parent comment"
+
+msgid "You cannot view or comment on this post."
+msgstr "You cannot view or comment on this post."
+
+msgid "Interaction blocked by privacy settings."
+msgstr "Interaction blocked by privacy settings."
+
+msgid "Comment content cannot be empty."
+msgstr "Comment content cannot be empty."
+
+msgid "Comment exceeds maximum length of 1000 characters."
+msgstr "Comment exceeds maximum length of 1000 characters."
+
+msgid "Parent comment belongs to a different post."
+msgstr "Parent comment belongs to a different post."
+
+msgid "Maximum reply depth reached (50 levels)."
+msgstr "Maximum reply depth reached (50 levels)."
+
+msgid "You can only edit your own comments."
+msgstr "You can only edit your own comments."
+
+msgid "Cannot edit a deleted comment."
+msgstr "Cannot edit a deleted comment."
+
+msgid "You do not have permission to delete this comment."
+msgstr "You do not have permission to delete this comment."
+
+msgid "You cannot view this post."
+msgstr "You cannot view this post."
+
+msgid "Parent comment does not belong to this post."
+msgstr "Parent comment does not belong to this post."
+
+msgid "Authentication credentials were not provided."
+msgstr "Authentication credentials were not provided."
+
+msgid "Only the post author can hide comments."
+msgstr "Only the post author can hide comments."
+
+msgid "Cannot hide your own comment."
+msgstr "Cannot hide your own comment."
+
+msgid "Only the post author can unhide comments."
+msgstr "Only the post author can unhide comments."
+
+msgid "Sem permissão para editar esta publicação."
+msgstr "No permission to edit this post."
+
+msgid "Conteúdo não pode ser vazio."
+msgstr "Content cannot be empty."
+
+msgid "Only the post author can view hidden comments."
+msgstr "Only the post author can view hidden comments."

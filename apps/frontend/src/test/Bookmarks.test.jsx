@@ -1,8 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { Bookmarks } from "../pages/Bookmarks";
 import { api } from "../services/api";
+import * as apiModule from "../services/api";
 import "../i18n";
 
 function renderBookmarks() {
@@ -61,6 +62,51 @@ describe("Bookmarks Page", () => {
 
     await waitFor(() => {
       expect(screen.getByTestId("empty-bookmarks")).toBeInTheDocument();
+    });
+  });
+
+  it("4. Alterna para aba de comentários salvos e lista itens", async () => {
+    vi.spyOn(api, "get").mockResolvedValueOnce({ data: [] });
+    vi.spyOn(apiModule, "getBookmarkedComments").mockResolvedValueOnce({
+      items: [
+        {
+          id: "comment-bm-1",
+          content_text: "Comentário importante salvo",
+          author: { username: "ana", avatar: null },
+          likes_count: 3,
+          replies_count: 0,
+          is_liked: false,
+          is_bookmarked: true,
+        },
+      ],
+      next_cursor: null,
+    });
+
+    renderBookmarks();
+
+    const commentsTab = screen.getByTestId("tab-comments");
+    fireEvent.click(commentsTab);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("bookmarks-comments-list")).toBeInTheDocument();
+      expect(screen.getByText("Comentário importante salvo")).toBeInTheDocument();
+    });
+  });
+
+  it("5. Exibe mensagem vazia na aba de comentários", async () => {
+    vi.spyOn(api, "get").mockResolvedValueOnce({ data: [] });
+    vi.spyOn(apiModule, "getBookmarkedComments").mockResolvedValueOnce({
+      items: [],
+      next_cursor: null,
+    });
+
+    renderBookmarks();
+
+    const commentsTab = screen.getByTestId("tab-comments");
+    fireEvent.click(commentsTab);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("empty-comments-bookmarks")).toBeInTheDocument();
     });
   });
 });

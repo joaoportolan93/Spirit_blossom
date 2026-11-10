@@ -28,6 +28,7 @@ INSTALLED_APPS = [
     "corsheaders",
     # Domínio
     "core",
+    "comments",
 ]
 
 MIDDLEWARE = [

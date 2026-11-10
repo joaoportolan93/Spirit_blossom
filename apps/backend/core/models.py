@@ -216,6 +216,10 @@ class Post(models.Model):
     )
     likes_count = models.PositiveIntegerField(default=0)
     bookmarks_count = models.PositiveIntegerField(default=0)
+    comments_count = models.PositiveIntegerField(default=0)
+    hidden_comments_count = models.PositiveIntegerField(default=0)
+    is_edited = models.BooleanField(default=False)
+    edited_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     search_vector = GeneratedField(

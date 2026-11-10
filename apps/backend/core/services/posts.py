@@ -8,9 +8,10 @@ from typing import Optional
 from django.conf import settings
 from django.contrib.postgres.search import SearchQuery, SearchRank
 from django.db import transaction
-from django.db.models import F, QuerySet
+from django.db.models import F, Q, QuerySet
+from django.utils import timezone
 
-from core.models import Draft, Post, PostBookmark, PostLike
+from core.models import Draft, Notification, Post, PostBookmark, PostLike
 from core.utils.visibility import can_view_post, visible_posts_for
 
 # -----------------------------------------------------------------------------
@@ -81,6 +82,36 @@ def list_drafts(*, author) -> QuerySet:
     return Draft.objects.filter(author=author).order_by("-updated_at")
 
 
+def increment_post_comments_count(post_id, amount: int = 1) -> None:
+    """Incrementa atômica e seguramente o contador de comentários do post."""
+    if amount <= 0:
+        return
+    Post.objects.filter(pk=post_id).update(comments_count=F("comments_count") + amount)
+
+
+def decrement_post_comments_count(post_id, amount: int = 1) -> None:
+    """Decrementa atômica e seguramente o contador de comentários do post."""
+    if amount <= 0:
+        return
+    Post.objects.filter(pk=post_id, comments_count__gte=amount).update(
+        comments_count=F("comments_count") - amount
+    )
+
+
+def increment_post_hidden_comments_count(post_id) -> None:
+    """Incrementa contador de respostas ocultas no post."""
+    Post.objects.filter(pk=post_id).update(
+        hidden_comments_count=F("hidden_comments_count") + 1
+    )
+
+
+def decrement_post_hidden_comments_count(post_id) -> None:
+    """Decrementa contador de respostas ocultas no post."""
+    Post.objects.filter(pk=post_id, hidden_comments_count__gt=0).update(
+        hidden_comments_count=F("hidden_comments_count") - 1
+    )
+
+
 # -----------------------------------------------------------------------------
 # Operações de Escrita (Mutações)
 # -----------------------------------------------------------------------------
@@ -98,11 +129,42 @@ def create_post(*, author, content_text: str, visibility: str = Post.Visibility.
     )
 
 
+def update_post(*, post: Post, user, content_text: str) -> Post:
+    """Atualiza o conteúdo de texto da publicação mantendo sua visibilidade."""
+    if post.author != user:
+        raise PermissionError("Sem permissão para editar esta publicação.")
+    max_chars = getattr(settings, "POST_MAX_CHARS", 3000)
+    cleaned_text = (content_text or "").strip()
+    if not cleaned_text:
+        raise ValueError("Conteúdo não pode ser vazio.")
+    if len(cleaned_text) > max_chars:
+        raise ValueError(f"Conteúdo excede o limite de {max_chars} caracteres.")
+    post.content_text = cleaned_text
+    post.is_edited = True
+    post.edited_at = timezone.now()
+    post.save(update_fields=["content_text", "is_edited", "edited_at"])
+    return post
+
+
 def delete_post(*, post: Post, user) -> bool:
-    """Apaga um post se o usuário for o autor."""
+    """
+    Apaga um post se o usuário for o autor.
+    Em uma transação atômica, remove comentários, curtidas, favoritos e notificações.
+    """
     if post.author != user:
         raise PermissionError("Sem permissão para excluir esta publicação.")
-    post.delete()
+
+    with transaction.atomic():
+        comment_ids = list(post.comments.values_list("id", flat=True))
+        notif_q = Q(ref_id=post.id)
+        if comment_ids:
+            notif_q |= Q(ref_id__in=comment_ids)
+        Notification.objects.filter(notif_q).delete()
+        post.likes.all().delete()
+        post.bookmarks.all().delete()
+        post.comments.all().delete()
+        post.delete()
+
     return True
 
 

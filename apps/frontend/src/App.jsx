@@ -11,6 +11,7 @@ import { Profile } from "./pages/Profile";
 import { Explore } from "./pages/Explore";
 import { Search } from "./pages/Search";
 import { Bookmarks } from "./pages/Bookmarks";
+import { PostPage } from "./pages/PostPage";
 import { Notifications } from "./pages/Notifications";
 import { Settings } from "./pages/Settings";
 import { SettingsPrivacy } from "./pages/settings/SettingsPrivacy";
@@ -104,6 +105,22 @@ export function App() {
                 element={
                   <ProtectedRoute>
                     <Bookmarks />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/posts/:id"
+                element={
+                  <ProtectedRoute>
+                    <PostPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/post/:id"
+                element={
+                  <ProtectedRoute>
+                    <PostPage />
                   </ProtectedRoute>
                 }
               />

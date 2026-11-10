@@ -7,7 +7,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from core.serializers.posts import DraftSerializer, PostSerializer
+from core.serializers.posts import DraftSerializer, PostEditSerializer, PostSerializer
 from core.services.posts import (
     bookmark_post,
     create_draft,
@@ -55,6 +55,7 @@ class PostListCreateView(APIView):
 class PostDetailView(APIView):
     """
     GET    /api/posts/<id>/  → detalhe de um post via selector
+    PATCH  /api/posts/<id>/  → edita texto do post (apenas autor)
     DELETE /api/posts/<id>/  → apaga o post via service
     """
 
@@ -66,6 +67,17 @@ class PostDetailView(APIView):
             return Response({"detail": "Não encontrado."}, status=status.HTTP_404_NOT_FOUND)
         serializer = PostSerializer(post, context={"request": request})
         return Response(serializer.data)
+
+    def patch(self, request, pk):
+        post = get_post_detail_for_user(post_id=pk, user=request.user)
+        if not post:
+            return Response({"detail": "Não encontrado."}, status=status.HTTP_404_NOT_FOUND)
+        if post.author != request.user:
+            return Response({"detail": "Sem permissão para editar esta publicação."}, status=status.HTTP_403_FORBIDDEN)
+        serializer = PostEditSerializer(post, data=request.data, partial=True, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(PostSerializer(post, context={"request": request}).data)
 
     def delete(self, request, pk):
         post = get_post_detail_for_user(post_id=pk, user=request.user)
