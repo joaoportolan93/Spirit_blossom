@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { FollowButton } from "../components/FollowButton";
 import { PostCard } from "../components/PostCard";
 import { useAuth } from "../hooks/useAuth";
-import { api } from "../services/api";
+import { api, blockUser, unblockUser } from "../services/api";
 
 export function Profile() {
   const { t } = useTranslation();
@@ -22,6 +22,9 @@ export function Profile() {
   });
   const [isMuting, setIsMuting] = useState(false);
   const [muteLoading, setMuteLoading] = useState(false);
+  const [isBlocked, setIsBlocked] = useState(false);
+  const [blockLoading, setBlockLoading] = useState(false);
+  const [toast, setToast] = useState(null);
   const [isPrivate, setIsPrivate] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -93,8 +96,72 @@ export function Profile() {
     }
   };
 
+  const handleBlockToggle = async () => {
+    if (blockLoading) return;
+    if (
+      !isBlocked &&
+      !window.confirm(
+        t(
+          "profile.confirm_block_desc",
+          "Eles não poderão ver suas publicações ou perfil, nem interagir com você. Esta ação pode ser desfeita a qualquer momento."
+        )
+      )
+    ) {
+      return;
+    }
+
+    setBlockLoading(true);
+    const prevBlocked = isBlocked;
+    try {
+      if (prevBlocked) {
+        await unblockUser(currentUsername);
+        setIsBlocked(false);
+        setToast(null);
+      } else {
+        await blockUser(currentUsername);
+        setIsBlocked(true);
+        setToast({
+          message: t("profile.user_blocked_toast", `@${currentUsername} foi bloqueado.`, {
+            username: currentUsername,
+          }),
+        });
+      }
+    } catch {
+      setIsBlocked(prevBlocked);
+    } finally {
+      setBlockLoading(false);
+    }
+  };
+
+  const handleUndoBlock = async () => {
+    setBlockLoading(true);
+    try {
+      await unblockUser(currentUsername);
+      setIsBlocked(false);
+      setToast(null);
+    } catch (err) {
+      console.error("Erro ao desfazer bloqueio:", err);
+    } finally {
+      setBlockLoading(false);
+    }
+  };
+
   return (
     <div className="max-w-2xl mx-auto py-8 px-4">
+      {toast && (
+        <div className="mb-4 p-3 bg-rose-950/60 border border-rose-800/60 rounded-xl flex items-center justify-between text-sm text-rose-200">
+          <span>{toast.message}</span>
+          <button
+            type="button"
+            onClick={handleUndoBlock}
+            className="text-xs font-semibold text-rose-300 hover:text-white underline ml-3"
+            data-testid="undo-block-btn"
+          >
+            {t("settings.undo", "Desfazer")}
+          </button>
+        </div>
+      )}
+
       {/* Header do perfil */}
       <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 mb-8">
         <div className="flex items-center justify-between">
@@ -123,11 +190,24 @@ export function Profile() {
                 disabled={muteLoading}
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
                   isMuting
-                    ? "bg-rose-950/40 text-rose-400 border border-rose-800/60 hover:bg-rose-900/40"
+                    ? "bg-amber-950/40 text-amber-400 border border-amber-800/60 hover:bg-amber-900/40"
                     : "bg-zinc-800 text-zinc-300 border border-zinc-700 hover:bg-zinc-700 hover:text-white"
                 }`}
               >
                 {isMuting ? t("profile.unmute") : t("profile.mute")}
+              </button>
+              <button
+                type="button"
+                data-testid="block-button"
+                onClick={handleBlockToggle}
+                disabled={blockLoading}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
+                  isBlocked
+                    ? "bg-zinc-800 text-zinc-300 border border-zinc-700 hover:bg-zinc-700"
+                    : "bg-rose-950/40 text-rose-400 border border-rose-800/60 hover:bg-rose-900/40"
+                }`}
+              >
+                {isBlocked ? t("profile.unblock", "Desbloquear") : t("profile.block", "Bloquear")}
               </button>
             </div>
           )}

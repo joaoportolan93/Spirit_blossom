@@ -34,7 +34,7 @@ from comments.services import (
     unhide_comment,
 )
 from core.services.posts import get_post_detail_for_user
-from core.utils.visibility import can_view_post
+from core.utils.visibility import can_view_post, is_user_blocked
 
 
 class PostCommentsView(APIView):
@@ -93,6 +93,8 @@ class PostCommentsView(APIView):
                     {"parent": _("Parent comment does not belong to this post.")},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
+            if is_user_blocked(request.user, parent.author):
+                raise Http404
 
         try:
             comment = create_comment(
@@ -191,7 +193,7 @@ class CommentDetailView(APIView):
         comment = get_object_or_404(
             Comment.objects.select_related("post", "post__author", "author"), pk=pk
         )
-        if not can_view_post(user, comment.post):
+        if not can_view_post(user, comment.post) or is_user_blocked(user, comment.author):
             raise Http404
         return comment
 
@@ -253,7 +255,7 @@ class CommentLikeView(APIView):
 
     def post(self, request, pk):
         comment = get_object_or_404(Comment.objects.select_related("post", "author"), pk=pk)
-        if not can_view_post(request.user, comment.post):
+        if not can_view_post(request.user, comment.post) or is_user_blocked(request.user, comment.author):
             raise Http404
 
         try:
@@ -273,8 +275,8 @@ class CommentBookmarkView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, pk):
-        comment = get_object_or_404(Comment.objects.select_related("post"), pk=pk)
-        if not can_view_post(request.user, comment.post):
+        comment = get_object_or_404(Comment.objects.select_related("post", "author"), pk=pk)
+        if not can_view_post(request.user, comment.post) or is_user_blocked(request.user, comment.author):
             raise Http404
 
         try:
@@ -301,7 +303,9 @@ class CommentBookmarksListView(APIView):
         )
         items = []
         for b in bookmarks:
-            if can_view_post(request.user, b.comment.post):
+            if can_view_post(request.user, b.comment.post) and not is_user_blocked(
+                request.user, b.comment.author
+            ):
                 # Comentários ocultos saem dos favoritos de terceiros
                 if b.comment.is_hidden and b.comment.author_id != request.user.id:
                     continue

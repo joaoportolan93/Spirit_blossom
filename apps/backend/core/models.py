@@ -383,6 +383,10 @@ class Block(models.Model):
                 name="no_self_block",
             ),
         ]
+        indexes = [
+            models.Index(fields=["blocker", "blocked"], name="block_blocker_blocked_idx"),
+            models.Index(fields=["blocked", "blocker"], name="block_blocked_blocker_idx"),
+        ]
 
     def __str__(self):
         return f"{self.blocker_id} ✕ {self.blocked_id}"
@@ -411,6 +415,10 @@ class Mute(models.Model):
                 condition=~Q(muter=models.F("muted")),
                 name="no_self_mute",
             ),
+        ]
+        indexes = [
+            models.Index(fields=["muter", "muted"], name="mute_muter_muted_idx"),
+            models.Index(fields=["muted", "muter"], name="mute_muted_muter_idx"),
         ]
 
     def __str__(self):

@@ -7,6 +7,8 @@ from typing import Optional, Tuple
 from django.db import transaction
 from django.db.models import Exists, OuterRef, Q, QuerySet
 from django.http import Http404
+from django.utils import timezone
+from django.utils.translation import gettext as _
 
 from core.models import Block, Follow, Mute, UserProfile
 from core.utils.visibility import (
@@ -23,6 +25,8 @@ __all__ = [
     "unblock_user",
     "mute_user",
     "unmute_user",
+    "list_blocked_users",
+    "list_muted_users",
     "add_to_close_friends",
     "remove_from_close_friends",
     "can_view_profile",
@@ -79,54 +83,129 @@ def unfollow_user(*, follower, target_user) -> bool:
 @transaction.atomic
 def block_user(*, blocker, target_user) -> Tuple[Block, bool]:
     """
-    Bloquear usuário. Remove follows mútuos automaticamente.
-    Raises ValueError se tentar bloquear a si mesmo ou já estiver bloqueado.
+    Bloquear usuário (ADR-N24 / Onda 4c).
+    Numa transação atômica:
+    1. Cria o bloqueio (idempotente).
+    2. Remove seguimentos nos dois sentidos (ativos e pendentes).
+    3. Remove marcas de círculo de amigos dos dois lados.
+    4. Oculta retroativamente comentários antigos do bloqueado nos posts do bloqueador
+       (mecanismo 'ocultar', motivo 'block').
+    5. Preserva curtidas, favoritos e notificações históricas (filtrados apenas na leitura).
+    Raises ValueError se tentar bloquear a si mesmo.
     """
     if blocker == target_user:
-        raise ValueError("Não é possível bloquear a si mesmo.")
-
-    # Remove relacionamentos de follow em ambas as direções
-    Follow.objects.filter(follower=blocker, followed=target_user).delete()
-    Follow.objects.filter(follower=target_user, followed=blocker).delete()
+        raise ValueError(_("Não é possível bloquear a si mesmo."))
 
     block, created = Block.objects.get_or_create(
         blocker=blocker,
         blocked=target_user,
     )
-    if not created:
-        raise ValueError("Já bloqueou este usuário.")
+
+    # Remove relacionamentos de follow e pedidos em ambas as direções
+    Follow.objects.filter(
+        Q(follower=blocker, followed=target_user) | Q(follower=target_user, followed=blocker)
+    ).delete()
+
+    if created:
+        # Oculta comentários do bloqueado nas publicações de quem bloqueou
+        from comments.models import Comment
+        from core.services.posts import decrement_post_comments_count, increment_post_hidden_comments_count
+
+        comments_to_hide = list(
+            Comment.objects.filter(
+                post__author=blocker,
+                author=target_user,
+                is_hidden=False,
+            ).select_related("post")
+        )
+
+        now = timezone.now()
+        for c in comments_to_hide:
+            c.is_hidden = True
+            c.hidden_reason = "block"
+            c.hidden_at = now
+            c.hidden_by = blocker
+            c.save(update_fields=["is_hidden", "hidden_reason", "hidden_at", "hidden_by"])
+            decrement_post_comments_count(c.post_id)
+            increment_post_hidden_comments_count(c.post_id)
+
     return block, created
 
 
+@transaction.atomic
 def unblock_user(*, blocker, target_user) -> bool:
-    """Desbloquear usuário."""
-    deleted, _ = Block.objects.filter(
+    """
+    Desbloquear usuário (ADR-N24 / Onda 4c).
+    Reversível: restaura visibilidade e reexibe comentários ocultados por bloqueio.
+    Não restaura seguidores nem círculo de amigos.
+    Idempotente.
+    """
+    deleted_count, _ = Block.objects.filter(
         blocker=blocker,
         blocked=target_user,
     ).delete()
-    return bool(deleted)
+
+    if deleted_count > 0:
+        from comments.models import Comment
+        from core.services.posts import decrement_post_hidden_comments_count, increment_post_comments_count
+
+        comments_to_unhide = list(
+            Comment.objects.filter(
+                post__author=blocker,
+                author=target_user,
+                is_hidden=True,
+                hidden_reason="block",
+            ).select_related("post")
+        )
+
+        for c in comments_to_unhide:
+            c.is_hidden = False
+            c.hidden_reason = "owner"
+            c.hidden_at = None
+            c.hidden_by = None
+            c.save(update_fields=["is_hidden", "hidden_reason", "hidden_at", "hidden_by"])
+            increment_post_comments_count(c.post_id)
+            decrement_post_hidden_comments_count(c.post_id)
+
+    return bool(deleted_count)
 
 
 def mute_user(*, muter, target_user) -> Tuple[Mute, bool]:
-    """Silenciar usuário."""
+    """Silenciar usuário (ADR-N24). Idempotente."""
     if muter == target_user:
-        raise ValueError("Não é possível silenciar a si mesmo.")
+        raise ValueError(_("Não é possível silenciar a si mesmo."))
     mute, created = Mute.objects.get_or_create(
         muter=muter,
         muted=target_user,
     )
-    if not created:
-        raise ValueError("Já silenciou este usuário.")
     return mute, created
 
 
 def unmute_user(*, muter, target_user) -> bool:
-    """Remover silenciamento."""
+    """Remover silenciamento (ADR-N24). Idempotente."""
     deleted, _ = Mute.objects.filter(
         muter=muter,
         muted=target_user,
     ).delete()
     return bool(deleted)
+
+
+def list_blocked_users(*, user) -> QuerySet:
+    """Lista contas bloqueadas pelo usuário solicitante (ADR-N24)."""
+    return (
+        Block.objects.filter(blocker=user)
+        .select_related("blocked", "blocked__profile")
+        .order_by("-created_at")
+    )
+
+
+def list_muted_users(*, user) -> QuerySet:
+    """Lista contas silenciadas pelo usuário solicitante (ADR-N24)."""
+    return (
+        Mute.objects.filter(muter=user)
+        .select_related("muted", "muted__profile")
+        .order_by("-created_at")
+    )
 
 
 def add_to_close_friends(*, user, target_user) -> bool:

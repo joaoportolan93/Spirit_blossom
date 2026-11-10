@@ -11,7 +11,7 @@ from django.db.models import F, Q
 from django.utils.dateparse import parse_datetime
 
 from comments.models import Comment, CommentBookmark, CommentLike
-from core.models import Block, Post
+from core.models import Block, Mute, Post
 from core.utils.visibility import can_view_post
 
 # -----------------------------------------------------------------------------
@@ -71,6 +71,12 @@ def _extract_blocked_ids(user) -> Set[Any]:
     return blocked
 
 
+def _extract_muted_ids(user) -> Set[Any]:
+    if not user or not user.is_authenticated:
+        return set()
+    return set(Mute.objects.filter(muter=user).values_list("muted_id", flat=True))
+
+
 # -----------------------------------------------------------------------------
 # Consultas em Lote de Comentários
 # -----------------------------------------------------------------------------
@@ -96,11 +102,10 @@ def list_post_comments_with_preview(
         return {"items": [], "next_cursor": None}
 
     blocked_ids = _extract_blocked_ids(viewer)
+    muted_ids = _extract_muted_ids(viewer)
 
     # Consulta 1: Raízes (depth 0)
     qs = Comment.objects.filter(post=post, parent__isnull=True).select_related("author")
-    if blocked_ids:
-        qs = qs.exclude(author_id__in=blocked_ids)
     if viewer and viewer.is_authenticated:
         qs = qs.filter(Q(is_hidden=False) | Q(is_hidden=True, author=viewer))
     else:
@@ -167,8 +172,6 @@ def list_post_comments_with_preview(
         .select_related("author")
         .order_by("created_at", "id")
     )
-    if blocked_ids:
-        level1_qs = level1_qs.exclude(author_id__in=blocked_ids)
     if viewer and viewer.is_authenticated:
         level1_qs = level1_qs.filter(Q(is_hidden=False) | Q(is_hidden=True, author=viewer))
     else:
@@ -184,8 +187,6 @@ def list_post_comments_with_preview(
             .select_related("author")
             .order_by("created_at", "id")
         )
-        if blocked_ids:
-            level2_qs = level2_qs.exclude(author_id__in=blocked_ids)
         if viewer and viewer.is_authenticated:
             level2_qs = level2_qs.filter(Q(is_hidden=False) | Q(is_hidden=True, author=viewer))
         else:
@@ -210,8 +211,22 @@ def list_post_comments_with_preview(
 
     # Monta a árvore em memória
     for item in roots + level1_items + level2_items:
-        item.is_liked = item.id in liked_ids
-        item.is_bookmarked = item.id in bookmarked_ids
+        is_blocked = (item.author_id in blocked_ids) if item.author_id else False
+        if is_blocked:
+            item.is_placeholder = True
+            item.placeholder_reason = "block"
+            item.author = None
+            item.content_text = ""
+            item.likes_count = 0
+            item.is_liked = False
+            item.is_bookmarked = False
+        else:
+            item.is_liked = item.id in liked_ids
+            item.is_bookmarked = item.id in bookmarked_ids
+            item.placeholder_reason = (
+                "deleted" if item.is_deleted else getattr(item, "placeholder_reason", None)
+            )
+        item.is_muted = (item.author_id in muted_ids) if item.author_id else False
         item.preview_replies = []
 
     level2_by_parent: Dict[Any, List[Comment]] = {}
@@ -244,8 +259,7 @@ def list_comment_replies(
         return {"items": [], "next_cursor": None}
 
     blocked_ids = _extract_blocked_ids(viewer)
-    if comment.author_id in blocked_ids:
-        return {"items": [], "next_cursor": None}
+    muted_ids = _extract_muted_ids(viewer)
 
     # Se o comentário for oculto, apenas o autor ou o dono do post podem acessar replies
     if comment.is_hidden:
@@ -256,8 +270,6 @@ def list_comment_replies(
             return {"items": [], "next_cursor": None}
 
     qs = Comment.objects.filter(parent=comment).select_related("author")
-    if blocked_ids:
-        qs = qs.exclude(author_id__in=blocked_ids)
     if viewer and viewer.is_authenticated:
         qs = qs.filter(Q(is_hidden=False) | Q(is_hidden=True, author=viewer))
     else:
@@ -293,13 +305,39 @@ def list_comment_replies(
             )
         )
         for r in replies:
-            r.is_liked = r.id in liked_ids
-            r.is_bookmarked = r.id in bookmarked_ids
+            is_blocked = (r.author_id in blocked_ids) if r.author_id else False
+            if is_blocked:
+                r.is_placeholder = True
+                r.placeholder_reason = "block"
+                r.author = None
+                r.content_text = ""
+                r.likes_count = 0
+                r.is_liked = False
+                r.is_bookmarked = False
+            else:
+                r.is_liked = r.id in liked_ids
+                r.is_bookmarked = r.id in bookmarked_ids
+                r.placeholder_reason = (
+                    "deleted" if r.is_deleted else getattr(r, "placeholder_reason", None)
+                )
+            r.is_muted = (r.author_id in muted_ids) if r.author_id else False
             r.preview_replies = []
     else:
         for r in replies:
+            is_blocked = (r.author_id in blocked_ids) if r.author_id else False
+            if is_blocked:
+                r.is_placeholder = True
+                r.placeholder_reason = "block"
+                r.author = None
+                r.content_text = ""
+                r.likes_count = 0
+            else:
+                r.placeholder_reason = (
+                    "deleted" if r.is_deleted else getattr(r, "placeholder_reason", None)
+                )
             r.is_liked = False
             r.is_bookmarked = False
+            r.is_muted = (r.author_id in muted_ids) if r.author_id else False
             r.preview_replies = []
 
     return {"items": replies, "next_cursor": next_cursor}
@@ -331,6 +369,7 @@ def get_comment_thread_context(
         return None
 
     blocked_ids = _extract_blocked_ids(viewer)
+    muted_ids = _extract_muted_ids(viewer)
     if comment.author_id in blocked_ids:
         return None
 
@@ -341,6 +380,8 @@ def get_comment_thread_context(
         )
         if not is_allowed:
             return None
+
+    comment.is_muted = (comment.author_id in muted_ids) if comment.author_id else False
 
     # Constrói trilha de ancestrais subindo pelos ponteiros parent
     raw_ancestors = []
@@ -387,9 +428,15 @@ def get_comment_thread_context(
         if is_placeholder:
             a.author = None
             a.content_text = ""
-        a.is_liked = a.id in liked_ids
-        a.is_bookmarked = a.id in bookmarked_ids
+        a.placeholder_reason = (
+            "block"
+            if is_blocked
+            else ("hidden" if is_hidden_from_viewer else ("deleted" if a.is_deleted else None))
+        )
+        a.is_liked = a.id in liked_ids if not is_blocked else False
+        a.is_bookmarked = a.id in bookmarked_ids if not is_blocked else False
         a.is_placeholder = is_placeholder
+        a.is_muted = (a.author_id in muted_ids) if a.author_id else False
         ancestors.append(a)
 
     # Primeira página de respostas diretas

@@ -41,7 +41,11 @@ from core.services.auth import (
     set_access_cookie,
     set_refresh_cookie,
 )
-from core.services.social import update_user_privacy
+from core.services.social import (
+    list_blocked_users,
+    list_muted_users,
+    update_user_privacy,
+)
 from core.throttles import (
     LoginRateThrottle,
     PasswordResetRateThrottle,
@@ -365,3 +369,55 @@ class UserProfileUpdateView(APIView):
             },
             status=status.HTTP_200_OK,
         )
+
+
+class UserDataExportView(APIView):
+    """
+    GET /api/users/export-data/
+    Exportação LGPD dos dados do usuário autenticado (ADR-N24).
+    Inclui contas que o usuário bloqueou/silenciou.
+    NUNCA inclui quem bloqueou ou silenciou o usuário.
+    """
+
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [UserRateThrottle]
+
+    def get(self, request):
+        user = request.user
+        profile = getattr(user, "profile", None)
+        blocked_qs = list_blocked_users(user=user)
+        muted_qs = list_muted_users(user=user)
+
+        blocked_by_me = [
+            {
+                "id": str(b.blocked.id),
+                "username": b.blocked.username,
+                "blocked_at": b.created_at.isoformat(),
+            }
+            for b in blocked_qs
+        ]
+
+        muted_by_me = [
+            {
+                "id": str(m.muted.id),
+                "username": m.muted.username,
+                "muted_at": m.created_at.isoformat(),
+            }
+            for m in muted_qs
+        ]
+
+        data = {
+            "user": {
+                "id": str(user.id),
+                "username": user.username,
+                "email": user.email,
+                "bio": getattr(profile, "bio", "") if profile else "",
+                "is_private": getattr(profile, "is_private", False) if profile else False,
+                "avatar": profile.avatar.url if profile and profile.avatar else None,
+                "date_joined": user.date_joined.isoformat(),
+            },
+            "blocked_users": blocked_by_me,
+            "muted_users": muted_by_me,
+        }
+        return Response(data, status=status.HTTP_200_OK)
+

@@ -5,7 +5,7 @@ Operações de leitura e escrita para notificações (ADR-N2 / Onda 3b).
 from typing import Optional
 
 from django.db import transaction
-from django.db.models import Q, QuerySet
+from django.db.models import Exists, OuterRef, Q, QuerySet
 
 from core.models import Block, Mute, Notification
 from core.utils.visibility import can_view_post
@@ -16,17 +16,34 @@ from core.utils.visibility import can_view_post
 
 
 def get_user_notifications(*, user, limit: int = 50) -> QuerySet:
-    """Retorna as notificações mais recentes de um usuário."""
+    """Retorna as notificações mais recentes de um usuário, excluindo remetentes bloqueados ou silenciados (ADR-N24)."""
+    blocked_by_user = Block.objects.filter(blocker=user, blocked=OuterRef("sender"))
+    blocker_of_user = Block.objects.filter(blocker=OuterRef("sender"), blocked=user)
+    muted_by_user = Mute.objects.filter(muter=user, muted=OuterRef("sender"))
+
     return (
         Notification.objects.filter(recipient=user)
+        .exclude(Exists(blocked_by_user))
+        .exclude(Exists(blocker_of_user))
+        .exclude(Exists(muted_by_user))
         .select_related("sender")
         .order_by("-created_at")[:limit]
     )
 
 
 def get_unread_notifications_count(*, user) -> int:
-    """Retorna a contagem de notificações não lidas."""
-    return Notification.objects.filter(recipient=user, read=False).count()
+    """Retorna a contagem de notificações não lidas excluindo remetentes bloqueados ou silenciados (ADR-N24)."""
+    blocked_by_user = Block.objects.filter(blocker=user, blocked=OuterRef("sender"))
+    blocker_of_user = Block.objects.filter(blocker=OuterRef("sender"), blocked=user)
+    muted_by_user = Mute.objects.filter(muter=user, muted=OuterRef("sender"))
+
+    return (
+        Notification.objects.filter(recipient=user, read=False)
+        .exclude(Exists(blocked_by_user))
+        .exclude(Exists(blocker_of_user))
+        .exclude(Exists(muted_by_user))
+        .count()
+    )
 
 
 # -----------------------------------------------------------------------------

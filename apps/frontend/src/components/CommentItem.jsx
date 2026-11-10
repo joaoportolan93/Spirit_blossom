@@ -101,6 +101,7 @@ export const CommentItem = React.memo(function CommentItem({
   const [showMenu, setShowMenu] = useState(false);
   const [isHidden, setIsHidden] = useState(Boolean(comment.is_hidden));
   const [hidingLoading, setHidingLoading] = useState(false);
+  const [showMutedContent, setShowMutedContent] = useState(false);
 
   const hasReplies = comment.preview_replies && comment.preview_replies.length > 0;
   const showInlineReplies = hasReplies && !flat && !hero && depth < 2;
@@ -108,6 +109,8 @@ export const CommentItem = React.memo(function CommentItem({
 
   const isDeleted = Boolean(comment.is_deleted);
   const isPlaceholder = Boolean(comment.is_placeholder);
+  const isBlockPlaceholder = Boolean(isPlaceholder && comment.placeholder_reason === "block");
+  const isMuted = Boolean(comment.is_muted);
 
   const isAuthor = Boolean(
     comment.can_delete ||
@@ -528,6 +531,10 @@ export const CommentItem = React.memo(function CommentItem({
                 <div className="italic text-zinc-500 text-sm">
                   {t("comments.deletedAuthor", "[removido]")}
                 </div>
+              ) : isBlockPlaceholder ? (
+                <div className="italic text-zinc-500 text-sm">
+                  {t("comments.blockedAuthor", "[conta bloqueada]")}
+                </div>
               ) : isPlaceholder ? (
                 <div className="italic text-zinc-500 text-sm">
                   {t("comments.unavailable", "[indisponível]")}
@@ -587,12 +594,43 @@ export const CommentItem = React.memo(function CommentItem({
               <p className="text-zinc-500 text-sm italic" data-testid="tombstone-text">
                 {t("comments.deletedText", "[comentário excluído]")}
               </p>
+            ) : isBlockPlaceholder ? (
+              <p className="text-zinc-500 text-sm italic" data-testid="blocked-comment-text">
+                {t("comments.blockedText", "[comentário de conta bloqueada]")}
+              </p>
             ) : isPlaceholder ? (
               <p className="text-zinc-600 text-sm italic">
                 {t("comments.unavailableText", "[indisponível]")}
               </p>
+            ) : isMuted && !showMutedContent ? (
+              <button
+                type="button"
+                onClick={(e) => {
+                  stopEventPropagation(e);
+                  setShowMutedContent(true);
+                }}
+                className="text-xs text-zinc-500 hover:text-zinc-300 italic py-1 flex items-center gap-1.5"
+                data-testid={`show-muted-comment-${comment.id}`}
+              >
+                <VolumeX size={12} />
+                <span>{t("comments.showMutedComment", "Mostrar comentário")}</span>
+              </button>
             ) : (
-              <SafeCommentText text={comment.content_text} hero={true} />
+              <div>
+                <SafeCommentText text={comment.content_text} hero={true} />
+                {isMuted && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      stopEventPropagation(e);
+                      setShowMutedContent(false);
+                    }}
+                    className="text-[11px] text-zinc-500 hover:text-zinc-300 mt-1 block"
+                  >
+                    {t("comments.hideMutedComment", "Ocultar")}
+                  </button>
+                )}
+              </div>
             )}
           </div>
 
@@ -702,6 +740,10 @@ export const CommentItem = React.memo(function CommentItem({
                   <span className="italic text-zinc-500">
                     {t("comments.deletedAuthor", "[removido]")}
                   </span>
+                ) : isBlockPlaceholder ? (
+                  <span className="italic text-zinc-500">
+                    {t("comments.blockedAuthor", "[conta bloqueada]")}
+                  </span>
                 ) : isPlaceholder ? (
                   <span className="italic text-zinc-500">
                     {t("comments.unavailable", "[indisponível]")}
@@ -764,12 +806,43 @@ export const CommentItem = React.memo(function CommentItem({
               <p className="text-zinc-500 text-xs italic mt-1" data-testid="tombstone-text">
                 {t("comments.deletedText", "[comentário excluído]")}
               </p>
+            ) : isBlockPlaceholder ? (
+              <p className="text-zinc-500 text-xs italic mt-1" data-testid="blocked-comment-text">
+                {t("comments.blockedText", "[comentário de conta bloqueada]")}
+              </p>
             ) : isPlaceholder ? (
               <p className="text-zinc-600 text-xs italic mt-1">
                 {t("comments.unavailableText", "[indisponível]")}
               </p>
+            ) : isMuted && !showMutedContent ? (
+              <button
+                type="button"
+                onClick={(e) => {
+                  stopEventPropagation(e);
+                  setShowMutedContent(true);
+                }}
+                className="text-xs text-zinc-500 hover:text-zinc-300 italic py-1 flex items-center gap-1.5"
+                data-testid={`show-muted-comment-${comment.id}`}
+              >
+                <VolumeX size={12} />
+                <span>{t("comments.showMutedComment", "Mostrar comentário")}</span>
+              </button>
             ) : (
-              <SafeCommentText text={comment.content_text} hero={false} />
+              <div>
+                <SafeCommentText text={comment.content_text} hero={false} />
+                {isMuted && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      stopEventPropagation(e);
+                      setShowMutedContent(false);
+                    }}
+                    className="text-[11px] text-zinc-500 hover:text-zinc-300 mt-1 block"
+                  >
+                    {t("comments.hideMutedComment", "Ocultar")}
+                  </button>
+                )}
+              </div>
             )}
 
             {renderActions()}

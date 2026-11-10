@@ -407,4 +407,51 @@ describe("CommentItem Component", () => {
     expect(muteSpy).not.toHaveBeenCalled();
     expect(blockSpy).not.toHaveBeenCalled();
   });
+
+  it("17. Renderiza placeholder de conta bloqueada em modo normal e modo hero", () => {
+    const blockedComment = {
+      ...getBaseComment(),
+      id: "blocked-1",
+      author: null,
+      content_text: "",
+      is_placeholder: true,
+      placeholder_reason: "block",
+    };
+
+    const { unmount } = renderComment({ comment: blockedComment, postId: "post-1" });
+    expect(screen.getByTestId("blocked-comment-text")).toHaveTextContent(
+      "[comentário de conta bloqueada]"
+    );
+    expect(screen.getByText("[conta bloqueada]")).toBeInTheDocument();
+    unmount();
+
+    // Modo Hero
+    renderComment({ comment: blockedComment, postId: "post-1", hero: true });
+    expect(screen.getByTestId("blocked-comment-text")).toHaveTextContent(
+      "[comentário de conta bloqueada]"
+    );
+  });
+
+  it("18. Colapsa comentário de usuário silenciado com botão de mostrar/ocultar", () => {
+    const mutedComment = {
+      ...getBaseComment(),
+      id: "muted-1",
+      content_text: "Texto do usuário silenciado",
+      is_muted: true,
+    };
+
+    renderComment({ comment: mutedComment, postId: "post-1" });
+    const showBtn = screen.getByTestId("show-muted-comment-muted-1");
+    expect(showBtn).toHaveTextContent("Mostrar comentário");
+    expect(screen.queryByText("Texto do usuário silenciado")).not.toBeInTheDocument();
+
+    // Expande
+    fireEvent.click(showBtn);
+    expect(screen.getByText("Texto do usuário silenciado")).toBeInTheDocument();
+    expect(screen.getByText("Ocultar")).toBeInTheDocument();
+
+    // Oculta novamente
+    fireEvent.click(screen.getByText("Ocultar"));
+    expect(screen.getByTestId("show-muted-comment-muted-1")).toBeInTheDocument();
+  });
 });

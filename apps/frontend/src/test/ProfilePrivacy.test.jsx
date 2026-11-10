@@ -156,4 +156,52 @@ describe("Profile Privacy & Settings Privacy (Onda 3d)", () => {
       );
     });
   });
+
+  it("5. Profile: bloqueia e desbloqueia usuário com toast Desfazer", async () => {
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    vi.spyOn(api, "get").mockImplementation((url) => {
+      if (url.includes("/api/social/profile/outro/")) {
+        return Promise.resolve({
+          data: {
+            username: "outro",
+            followers_count: 10,
+            following_count: 5,
+            is_private: false,
+          },
+        });
+      }
+      return Promise.resolve({ data: [] });
+    });
+    vi.spyOn(api, "post").mockResolvedValue({ data: {} });
+    vi.spyOn(api, "delete").mockResolvedValue({ data: {} });
+
+    renderWithAuth(
+      <Routes>
+        <Route path="/profile/:username" element={<Profile />} />
+      </Routes>,
+      { username: "me" },
+      "/profile/outro"
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("block-button")).toBeInTheDocument();
+      expect(screen.getByTestId("mute-button")).toBeInTheDocument();
+    });
+
+    // Clica em Bloquear
+    fireEvent.click(screen.getByTestId("block-button"));
+
+    await waitFor(() => {
+      expect(api.post).toHaveBeenCalledWith("/api/social/block/outro/");
+      expect(screen.getByText(/@outro foi bloqueado/)).toBeInTheDocument();
+      expect(screen.getByTestId("undo-block-btn")).toBeInTheDocument();
+    });
+
+    // Clica em Desfazer
+    fireEvent.click(screen.getByTestId("undo-block-btn"));
+
+    await waitFor(() => {
+      expect(api.delete).toHaveBeenCalledWith("/api/social/block/outro/");
+    });
+  });
 });

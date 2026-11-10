@@ -213,3 +213,18 @@ export async function getBookmarkedComments() {
   const res = await api.get("/api/comments/bookmarks/");
   return res.data;
 }
+
+export async function getBlockedUsers() {
+  const res = await api.get("/api/social/blocked-users/");
+  return res.data?.items || [];
+}
+
+export async function getMutedUsers() {
+  const res = await api.get("/api/social/muted-users/");
+  return res.data?.items || [];
+}
+
+export async function exportUserData() {
+  const res = await api.get("/api/users/export-data/");
+  return res.data;
+}

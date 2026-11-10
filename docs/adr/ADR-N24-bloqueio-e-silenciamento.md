@@ -1,7 +1,7 @@
 # ADR-N24: Sistema Completo de Bloqueio e Silenciamento
 
 ## Status
-Proposto (Aguardando Aprovação do Usuário para Execução da Onda 4c)
+Aceito (Aprovado pelo Usuário — Onda 4c em Execução)
 
 ## Contexto
 O Spirit Blossom necessita de um sistema abrangente e robusto de moderação pessoal composto por **Bloqueio** e **Silenciamento** de contas. Diferente de implementações ingênuas que deixam rastros ou dependem de limpezas em lote, o sistema deve garantir segurança máxima ao usuário que bloqueia, prevenção contra retaliação e conformidade com as diretrizes de privacidade e LGPD.

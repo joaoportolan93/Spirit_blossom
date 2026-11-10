@@ -6,13 +6,14 @@ from django.contrib.auth import get_user_model
 from django.db.models import Exists, OuterRef, Q
 from django.http import Http404
 from django.shortcuts import get_object_or_404
+from django.utils.translation import gettext as _
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.throttling import UserRateThrottle
 from rest_framework.views import APIView
 
-from core.models import Block, Follow
+from core.models import Block, Follow, Mute
 from core.serializers.posts import PostSerializer
 from core.serializers.social import FollowRequestSerializer
 from core.services.social import (
@@ -20,7 +21,9 @@ from core.services.social import (
     add_to_close_friends,
     block_user,
     follow_user,
+    list_blocked_users,
     list_follow_requests,
+    list_muted_users,
     mute_user,
     reject_follow_request,
     remove_from_close_friends,
@@ -28,6 +31,7 @@ from core.services.social import (
     unfollow_user,
     unmute_user,
 )
+from core.throttles import BlockRateThrottle
 from core.utils.visibility import (
     can_view_profile,
     get_profile_counters,
@@ -49,6 +53,8 @@ class FollowView(APIView):
 
     def post(self, request, username):
         target = get_object_or_404(User, username=username)
+        if is_user_blocked(request.user, target):
+            raise Http404()
         try:
             follow, created = follow_user(follower=request.user, target_user=target)
         except ValueError as exc:
@@ -69,28 +75,30 @@ class FollowView(APIView):
 
 class BlockView(APIView):
     """
-    POST /api/social/block/<username>/   → bloquear usuário
-    DELETE /api/social/block/<username>/ → desbloquear
+    POST /api/social/block/<username>/   → bloquear usuário (idempotente)
+    DELETE /api/social/block/<username>/ → desbloquear (idempotente)
     """
 
     permission_classes = [IsAuthenticated]
+    throttle_classes = [BlockRateThrottle]
 
     def post(self, request, username):
         target = get_object_or_404(User, username=username)
-        try:
-            block_user(blocker=request.user, target_user=target)
-        except ValueError as exc:
-            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
-        return Response({"detail": "Usuário bloqueado."}, status=status.HTTP_201_CREATED)
+        if target == request.user:
+            return Response(
+                {"detail": _("Não é possível bloquear a si mesmo.")},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        block, created = block_user(blocker=request.user, target_user=target)
+        msg = _("Usuário bloqueado.") if created else _("Usuário já está bloqueado.")
+        return Response(
+            {"detail": msg},
+            status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
+        )
 
     def delete(self, request, username):
         target = get_object_or_404(User, username=username)
-        deleted = unblock_user(blocker=request.user, target_user=target)
-        if not deleted:
-            return Response(
-                {"detail": "Este usuário não estava bloqueado."},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+        unblock_user(blocker=request.user, target_user=target)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -98,7 +106,7 @@ class ProfileDetailView(APIView):
     """
     GET /api/social/profile/<username>/
     Retorna perfil, contadores públicos, status de relacionamento e posts visíveis.
-    Bloqueio bilateral retorna 404 (ADR-N21).
+    Bloqueio bilateral retorna 404 indistinguível (ADR-N21 / ADR-N24).
     Conta privada sem seguimento ativo retorna perfil mínimo (200 OK)
     para permitir solicitação de follow.
     """
@@ -106,11 +114,9 @@ class ProfileDetailView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, username):
-        target = get_object_or_404(User.objects.select_related("profile"), username=username)
-
-        # 1. Se houver bloqueio bilateral ou conta desativada para auth -> 404 (inacessível)
-        if is_user_blocked(request.user, target) or not getattr(target, "is_valid_for_auth", True):
-            return Response({"detail": "Não encontrado."}, status=status.HTTP_404_NOT_FOUND)
+        target = User.objects.filter(username=username).select_related("profile").first()
+        if not target or is_user_blocked(request.user, target) or not getattr(target, "is_valid_for_auth", True):
+            raise Http404()
 
         profile = getattr(target, "profile", None)
         is_private = getattr(profile, "is_private", False)
@@ -301,29 +307,84 @@ class CloseFriendsCandidatesView(APIView):
 
 class MuteView(APIView):
     """
-    POST   /api/social/mute/<username>/  → silenciar usuário
-    DELETE /api/social/mute/<username>/  → remover silenciamento
+    POST   /api/social/mute/<username>/  → silenciar usuário (idempotente)
+    DELETE /api/social/mute/<username>/  → remover silenciamento (idempotente)
     """
 
     permission_classes = [IsAuthenticated]
 
     def post(self, request, username):
         target = get_object_or_404(User, username=username)
-        try:
-            mute_user(muter=request.user, target_user=target)
-        except ValueError as exc:
-            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
-        return Response({"detail": "Usuário silenciado."}, status=status.HTTP_201_CREATED)
+        if target == request.user:
+            return Response(
+                {"detail": _("Não é possível silenciar a si mesmo.")},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        mute, created = mute_user(muter=request.user, target_user=target)
+        msg = _("Usuário silenciado.") if created else _("Usuário já está silenciado.")
+        return Response(
+            {"detail": msg},
+            status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
+        )
 
     def delete(self, request, username):
         target = get_object_or_404(User, username=username)
-        removed = unmute_user(muter=request.user, target_user=target)
-        if not removed:
-            return Response(
-                {"detail": "Este usuário não estava silenciado."},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+        unmute_user(muter=request.user, target_user=target)
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class BlockedUsersListView(APIView):
+    """
+    GET /api/social/blocked-users/
+    Lista contas bloqueadas pelo usuário autenticado (ADR-N24).
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        qs = list_blocked_users(user=request.user)
+        items = []
+        for b in qs:
+            target = b.blocked
+            avatar_url = None
+            if hasattr(target, "profile") and target.profile and target.profile.avatar:
+                avatar_url = target.profile.avatar.url
+            items.append(
+                {
+                    "id": str(target.id),
+                    "username": target.username,
+                    "avatar": avatar_url,
+                    "blocked_at": b.created_at.isoformat(),
+                }
+            )
+        return Response({"items": items})
+
+
+class MutedUsersListView(APIView):
+    """
+    GET /api/social/muted-users/
+    Lista contas silenciadas pelo usuário autenticado (ADR-N24).
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        qs = list_muted_users(user=request.user)
+        items = []
+        for m in qs:
+            target = m.muted
+            avatar_url = None
+            if hasattr(target, "profile") and target.profile and target.profile.avatar:
+                avatar_url = target.profile.avatar.url
+            items.append(
+                {
+                    "id": str(target.id),
+                    "username": target.username,
+                    "avatar": avatar_url,
+                    "muted_at": m.created_at.isoformat(),
+                }
+            )
+        return Response({"items": items})
 
 
 class FollowRequestListView(APIView):

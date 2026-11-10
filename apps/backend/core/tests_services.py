@@ -193,8 +193,9 @@ class TestSocialServicesSelectors:
         with pytest.raises(ValueError, match="bloquear a si mesmo"):
             block_user(blocker=u1, target_user=u1)
 
-        with pytest.raises(ValueError, match="Já bloqueou"):
-            block_user(blocker=u1, target_user=u2)
+        # Idempotente: bloquear novamente retorna created=False sem erro
+        _block2, created2 = block_user(blocker=u1, target_user=u2)
+        assert created2 is False
 
         assert unblock_user(blocker=u1, target_user=u2) is True
         assert unblock_user(blocker=u1, target_user=u2) is False
@@ -204,8 +205,9 @@ class TestSocialServicesSelectors:
         assert m_created is True
         with pytest.raises(ValueError, match="silenciar a si mesmo"):
             mute_user(muter=u1, target_user=u1)
-        with pytest.raises(ValueError, match="Já silenciou"):
-            mute_user(muter=u1, target_user=u2)
+        # Idempotente: silenciar novamente retorna m_created=False sem erro
+        _mute2, m_created2 = mute_user(muter=u1, target_user=u2)
+        assert m_created2 is False
 
         assert unmute_user(muter=u1, target_user=u2) is True
         assert unmute_user(muter=u1, target_user=u2) is False

@@ -27,6 +27,7 @@ REST_FRAMEWORK = {
         "login": "10000/minute",
         "register": "10000/minute",
         "password_reset": "10000/minute",
+        "block": "10000/minute",
     },
 }
 

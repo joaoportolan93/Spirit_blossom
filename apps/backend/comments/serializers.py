@@ -50,6 +50,8 @@ class CommentItemSerializer(serializers.ModelSerializer):
     can_edit = serializers.SerializerMethodField()
     can_hide = serializers.SerializerMethodField()
     is_placeholder = serializers.BooleanField(default=False)
+    placeholder_reason = serializers.SerializerMethodField()
+    is_muted = serializers.BooleanField(default=False)
     is_hidden = serializers.BooleanField(default=False)
 
     class Meta:
@@ -73,6 +75,8 @@ class CommentItemSerializer(serializers.ModelSerializer):
             "can_edit",
             "can_hide",
             "is_placeholder",
+            "placeholder_reason",
+            "is_muted",
             "preview_replies",
         ]
 
@@ -81,6 +85,12 @@ class CommentItemSerializer(serializers.ModelSerializer):
         if getattr(obj, "is_placeholder", False) or obj.is_deleted or not obj.author:
             return None
         return AuthorSummarySerializer(obj.author).data
+
+    def get_placeholder_reason(self, obj):
+        reason = getattr(obj, "placeholder_reason", None)
+        if not reason and getattr(obj, "is_deleted", False):
+            return "deleted"
+        return reason
 
     def to_representation(self, instance):
         data = super().to_representation(instance)

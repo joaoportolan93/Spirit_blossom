@@ -7,6 +7,8 @@ export function Settings() {
   const navItems = [
     { to: "/settings/privacy", label: t("settings.privacy") },
     { to: "/settings/circle", label: t("settings.circle") },
+    { to: "/settings/blocked", label: t("settings.blocked_accounts", "Contas bloqueadas") },
+    { to: "/settings/muted", label: t("settings.muted_accounts", "Contas silenciadas") },
   ];
 
   return (

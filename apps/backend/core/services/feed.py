@@ -27,6 +27,10 @@ def get_following_feed(*, user, cursor: str | None = None, limit: int = 20) -> Q
     ).values("followed_id")
     qs = qs.filter(author__in=following_ids)
 
+    # Exclui autores silenciados pelo usuário (ADR-N24)
+    muted_by_user = Mute.objects.filter(muter=user, muted=OuterRef("author"))
+    qs = qs.exclude(Exists(muted_by_user))
+
     # Keyset pagination por UUID (UUIDv7 é ordenável por tempo)
     if cursor is not None:
         try:

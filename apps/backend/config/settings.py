@@ -214,6 +214,7 @@ REST_FRAMEWORK = {
         "login": "5/minute",
         "register": "3/minute",
         "password_reset": "5/minute",
+        "block": "10/minute",
     },
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.CursorPagination",
     "PAGE_SIZE": int(os.environ.get("FEED_DEFAULT_LIMIT", "20")),

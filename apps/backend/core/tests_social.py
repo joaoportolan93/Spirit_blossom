@@ -130,7 +130,7 @@ class TestBlock:
         )
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
-    def test_bloquear_ja_bloqueado_retorna_400(self):
+    def test_bloquear_ja_bloqueado_retorna_200_idempotente(self):
         user = UserFactory()
         target = UserFactory()
         Block.objects.create(blocker=user, blocked=target)
@@ -140,9 +140,9 @@ class TestBlock:
             f"/api/social/block/{target.username}/",
             HTTP_X_CSRFTOKEN=csrf,
         )
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert response.status_code == status.HTTP_200_OK
 
-    def test_desbloquear_nao_bloqueado_retorna_404(self):
+    def test_desbloquear_nao_bloqueado_retorna_204_idempotente(self):
         user = UserFactory()
         target = UserFactory()
         client = _client_for(user, enforce_csrf=True)
@@ -151,7 +151,7 @@ class TestBlock:
             f"/api/social/block/{target.username}/",
             HTTP_X_CSRFTOKEN=csrf,
         )
-        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert response.status_code == status.HTTP_204_NO_CONTENT
 
 
 @pytest.mark.django_db
@@ -375,14 +375,14 @@ class TestMuteEndpoints:
         res = client.post(f"/api/social/mute/{user.username}/")
         assert res.status_code == status.HTTP_400_BAD_REQUEST
 
-    def test_mute_already_muted_fails(self):
+    def test_mute_already_muted_is_idempotent(self):
         user = UserFactory()
         target = UserFactory()
         Mute.objects.create(muter=user, muted=target)
 
         client = _client_for(user)
         res = client.post(f"/api/social/mute/{target.username}/")
-        assert res.status_code == status.HTTP_400_BAD_REQUEST
+        assert res.status_code == status.HTTP_200_OK
 
     def test_unmute_user_success(self):
         user = UserFactory()
@@ -394,13 +394,13 @@ class TestMuteEndpoints:
         assert res.status_code == status.HTTP_204_NO_CONTENT
         assert not Mute.objects.filter(muter=user, muted=target).exists()
 
-    def test_unmute_user_not_muted_returns_404(self):
+    def test_unmute_user_not_muted_is_idempotent(self):
         user = UserFactory()
         target = UserFactory()
 
         client = _client_for(user)
         res = client.delete(f"/api/social/mute/{target.username}/")
-        assert res.status_code == status.HTTP_404_NOT_FOUND
+        assert res.status_code == status.HTTP_204_NO_CONTENT
 
 
 @pytest.mark.django_db
