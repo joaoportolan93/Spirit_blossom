@@ -255,7 +255,9 @@ class CommentLikeView(APIView):
 
     def post(self, request, pk):
         comment = get_object_or_404(Comment.objects.select_related("post", "author"), pk=pk)
-        if not can_view_post(request.user, comment.post) or is_user_blocked(request.user, comment.author):
+        if not can_view_post(request.user, comment.post) or is_user_blocked(
+            request.user, comment.author
+        ):
             raise Http404
 
         try:
@@ -276,7 +278,9 @@ class CommentBookmarkView(APIView):
 
     def post(self, request, pk):
         comment = get_object_or_404(Comment.objects.select_related("post", "author"), pk=pk)
-        if not can_view_post(request.user, comment.post) or is_user_blocked(request.user, comment.author):
+        if not can_view_post(request.user, comment.post) or is_user_blocked(
+            request.user, comment.author
+        ):
             raise Http404
 
         try:
@@ -375,4 +379,7 @@ class PostHiddenCommentsView(APIView):
         cursor = request.query_params.get("cursor")
         data = list_post_hidden_comments(post=post, user=request.user, cursor=cursor, page_size=20)
         serializer = CommentItemSerializer(data["items"], many=True, context={"request": request})
-        return Response({"items": serializer.data, "next_cursor": data["next_cursor"]}, status=status.HTTP_200_OK)
+        return Response(
+            {"items": serializer.data, "next_cursor": data["next_cursor"]},
+            status=status.HTTP_200_OK,
+        )

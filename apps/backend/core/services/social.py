@@ -109,7 +109,10 @@ def block_user(*, blocker, target_user) -> Tuple[Block, bool]:
     if created:
         # Oculta comentários do bloqueado nas publicações de quem bloqueou
         from comments.models import Comment
-        from core.services.posts import decrement_post_comments_count, increment_post_hidden_comments_count
+        from core.services.posts import (
+            decrement_post_comments_count,
+            increment_post_hidden_comments_count,
+        )
 
         comments_to_hide = list(
             Comment.objects.filter(
@@ -147,7 +150,10 @@ def unblock_user(*, blocker, target_user) -> bool:
 
     if deleted_count > 0:
         from comments.models import Comment
-        from core.services.posts import decrement_post_hidden_comments_count, increment_post_comments_count
+        from core.services.posts import (
+            decrement_post_hidden_comments_count,
+            increment_post_comments_count,
+        )
 
         comments_to_unhide = list(
             Comment.objects.filter(

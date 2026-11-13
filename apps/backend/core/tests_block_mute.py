@@ -6,28 +6,24 @@ idempotência, transações atômicas, ocultação retroativa, LGPD e teste de m
 
 import ast
 import os
+
 import pytest
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from rest_framework import status
 from rest_framework.test import APIClient
 
-from comments.models import Comment, CommentLike, CommentBookmark
 from comments.services import create_comment
-from core.factories import BlockFactory, FollowFactory, PostFactory, UserFactory
-from core.models import Block, Follow, Mute, Notification, Post, PostBookmark, PostLike
+from core.factories import UserFactory
+from core.models import Follow, Notification
 from core.services.notifications import create_notification
-from core.services.posts import bookmark_post, create_post, like_post
+from core.services.posts import bookmark_post, create_post
 from core.services.social import (
-    add_to_close_friends,
     block_user,
-    list_blocked_users,
-    list_muted_users,
     mute_user,
     unblock_user,
-    unmute_user,
 )
-from core.utils.visibility import can_view_post, can_view_profile, is_user_blocked
+from core.utils.visibility import can_view_profile, is_user_blocked
 
 User = get_user_model()
 
@@ -295,6 +291,7 @@ class TestIndistinguishable404:
 
         client = _client_for(viewer)
         import uuid
+
         random_uuid = uuid.uuid4()
 
         res_nonexistent = client.get(f"/api/posts/{random_uuid}/")
@@ -349,6 +346,7 @@ class TestMuteBehavior:
 
     def test_mute_suppresses_notifications(self):
         import uuid
+
         user_a = UserFactory()
         user_b = UserFactory()
         mute_user(muter=user_a, target_user=user_b)
@@ -368,7 +366,9 @@ class TestMuteBehavior:
     def test_mute_preserves_relationship_and_direct_post_link(self):
         user_a = UserFactory()
         user_b = UserFactory()
-        follow = Follow.objects.create(follower=user_a, followed=user_b, status=Follow.Status.ACTIVE)
+        follow = Follow.objects.create(
+            follower=user_a, followed=user_b, status=Follow.Status.ACTIVE
+        )
         post_b = create_post(author=user_b, content_text="Post visível por link direto")
 
         mute_user(muter=user_a, target_user=user_b)
@@ -438,8 +438,12 @@ class TestIdempotencyAndMutualLifecycle:
     def test_race_follow_then_block_and_unblock_does_not_restore_follow(self):
         user_a = UserFactory()
         user_b = UserFactory()
-        Follow.objects.create(follower=user_a, followed=user_b, is_close_friend=True, status=Follow.Status.ACTIVE)
-        Follow.objects.create(follower=user_b, followed=user_a, is_close_friend=True, status=Follow.Status.ACTIVE)
+        Follow.objects.create(
+            follower=user_a, followed=user_b, is_close_friend=True, status=Follow.Status.ACTIVE
+        )
+        Follow.objects.create(
+            follower=user_b, followed=user_a, is_close_friend=True, status=Follow.Status.ACTIVE
+        )
 
         # A bloqueia B
         block_user(blocker=user_a, target_user=user_b)
@@ -591,9 +595,17 @@ class TestArchitectureAndMutation:
                     # Verifica que nenhum service faz Post.objects.all() sem filtro
                     for node in ast.walk(tree):
                         if isinstance(node, ast.Attribute) and node.attr == "all":
-                            if isinstance(node.value, ast.Attribute) and node.value.attr == "objects":
-                                if isinstance(node.value.value, ast.Name) and node.value.value.id == "Post":
-                                    pytest.fail(f"Acesso direto proibido a Post.objects.all em {filename}")
+                            if (
+                                isinstance(node.value, ast.Attribute)
+                                and node.value.attr == "objects"
+                            ):
+                                if (
+                                    isinstance(node.value.value, ast.Name)
+                                    and node.value.value.id == "Post"
+                                ):
+                                    pytest.fail(
+                                        f"Acesso direto proibido a Post.objects.all em {filename}"
+                                    )
 
     def test_mutation_breaking_block_filter_causes_test_failure(self):
         """
@@ -609,7 +621,9 @@ class TestArchitectureAndMutation:
         assert can_view_profile(user_a, user_b) is False
 
         # Mutação simulada: se o retorno de is_user_blocked for invertido
-        mutated_check = lambda a, b: False
+        def mutated_check(a, b):
+            return False
+
         can_view_with_mutation = not mutated_check(user_a, user_b)
         # Prova que a mutação permitiria vazamento (tornando o teste um vigia fiel)
         assert can_view_with_mutation is True

@@ -4,26 +4,25 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('core', '0004_post_edited_at_post_hidden_comments_count_and_more'),
+        ("core", "0004_post_edited_at_post_hidden_comments_count_and_more"),
     ]
 
     operations = [
         migrations.AddIndex(
-            model_name='block',
-            index=models.Index(fields=['blocker', 'blocked'], name='block_blocker_blocked_idx'),
+            model_name="block",
+            index=models.Index(fields=["blocker", "blocked"], name="block_blocker_blocked_idx"),
         ),
         migrations.AddIndex(
-            model_name='block',
-            index=models.Index(fields=['blocked', 'blocker'], name='block_blocked_blocker_idx'),
+            model_name="block",
+            index=models.Index(fields=["blocked", "blocker"], name="block_blocked_blocker_idx"),
         ),
         migrations.AddIndex(
-            model_name='mute',
-            index=models.Index(fields=['muter', 'muted'], name='mute_muter_muted_idx'),
+            model_name="mute",
+            index=models.Index(fields=["muter", "muted"], name="mute_muter_muted_idx"),
         ),
         migrations.AddIndex(
-            model_name='mute',
-            index=models.Index(fields=['muted', 'muter'], name='mute_muted_muter_idx'),
+            model_name="mute",
+            index=models.Index(fields=["muted", "muter"], name="mute_muted_muter_idx"),
         ),
     ]

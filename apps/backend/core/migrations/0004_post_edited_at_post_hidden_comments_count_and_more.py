@@ -4,25 +4,24 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('core', '0003_post_comments_count'),
+        ("core", "0003_post_comments_count"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='post',
-            name='edited_at',
+            model_name="post",
+            name="edited_at",
             field=models.DateTimeField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='post',
-            name='hidden_comments_count',
+            model_name="post",
+            name="hidden_comments_count",
             field=models.PositiveIntegerField(default=0),
         ),
         migrations.AddField(
-            model_name='post',
-            name='is_edited',
+            model_name="post",
+            name="is_edited",
             field=models.BooleanField(default=False),
         ),
     ]

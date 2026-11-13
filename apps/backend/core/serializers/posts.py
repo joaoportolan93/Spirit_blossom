@@ -62,7 +62,11 @@ class PostSerializer(serializers.ModelSerializer):
 
     def get_hidden_comments_count(self, obj):
         request = self.context.get("request")
-        if request and getattr(request.user, "is_authenticated", False) and obj.author_id == request.user.id:
+        if (
+            request
+            and getattr(request.user, "is_authenticated", False)
+            and obj.author_id == request.user.id
+        ):
             return getattr(obj, "hidden_comments_count", 0)
         return 0
 

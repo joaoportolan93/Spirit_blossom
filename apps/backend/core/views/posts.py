@@ -73,8 +73,13 @@ class PostDetailView(APIView):
         if not post:
             return Response({"detail": "Não encontrado."}, status=status.HTTP_404_NOT_FOUND)
         if post.author != request.user:
-            return Response({"detail": "Sem permissão para editar esta publicação."}, status=status.HTTP_403_FORBIDDEN)
-        serializer = PostEditSerializer(post, data=request.data, partial=True, context={"request": request})
+            return Response(
+                {"detail": "Sem permissão para editar esta publicação."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        serializer = PostEditSerializer(
+            post, data=request.data, partial=True, context={"request": request}
+        )
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(PostSerializer(post, context={"request": request}).data)

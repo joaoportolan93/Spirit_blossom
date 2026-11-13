@@ -263,8 +263,10 @@ def list_comment_replies(
 
     # Se o comentário for oculto, apenas o autor ou o dono do post podem acessar replies
     if comment.is_hidden:
-        is_allowed = viewer and viewer.is_authenticated and (
-            comment.author_id == viewer.id or comment.post.author_id == viewer.id
+        is_allowed = (
+            viewer
+            and viewer.is_authenticated
+            and (comment.author_id == viewer.id or comment.post.author_id == viewer.id)
         )
         if not is_allowed:
             return {"items": [], "next_cursor": None}
@@ -375,8 +377,10 @@ def get_comment_thread_context(
 
     # Se o comentário focado for oculto, apenas o autor e o dono do post podem visualizá-lo no Focar
     if comment.is_hidden:
-        is_allowed = viewer and viewer.is_authenticated and (
-            comment.author_id == viewer.id or comment.post.author_id == viewer.id
+        is_allowed = (
+            viewer
+            and viewer.is_authenticated
+            and (comment.author_id == viewer.id or comment.post.author_id == viewer.id)
         )
         if not is_allowed:
             return None
@@ -480,10 +484,7 @@ def list_post_hidden_comments(
     if decoded and len(decoded) == 2:
         cur_dt_raw, cur_id = parse_datetime(decoded[0]), decoded[1]
         if cur_dt_raw:
-            qs = qs.filter(
-                Q(hidden_at__lt=cur_dt_raw)
-                | Q(hidden_at=cur_dt_raw, id__lt=cur_id)
-            )
+            qs = qs.filter(Q(hidden_at__lt=cur_dt_raw) | Q(hidden_at=cur_dt_raw, id__lt=cur_id))
 
     items = list(qs[: page_size + 1])
     has_more = len(items) > page_size

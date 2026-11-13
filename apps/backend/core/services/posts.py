@@ -100,9 +100,7 @@ def decrement_post_comments_count(post_id, amount: int = 1) -> None:
 
 def increment_post_hidden_comments_count(post_id) -> None:
     """Incrementa contador de respostas ocultas no post."""
-    Post.objects.filter(pk=post_id).update(
-        hidden_comments_count=F("hidden_comments_count") + 1
-    )
+    Post.objects.filter(pk=post_id).update(hidden_comments_count=F("hidden_comments_count") + 1)
 
 
 def decrement_post_hidden_comments_count(post_id) -> None:

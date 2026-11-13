@@ -288,7 +288,14 @@ def delete_comment(*, comment: Comment, user) -> bool:
             comment.is_edited = False
             comment.edited_at = None
             comment.save(
-                update_fields=["is_deleted", "content_text", "author", "is_edited", "edited_at", "updated_at"]
+                update_fields=[
+                    "is_deleted",
+                    "content_text",
+                    "author",
+                    "is_edited",
+                    "edited_at",
+                    "updated_at",
+                ]
             )
         else:
             # Comentário folha: exclusão física e poda de ancestrais tombstones

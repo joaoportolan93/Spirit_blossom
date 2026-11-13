@@ -16,7 +16,10 @@ from core.utils.visibility import can_view_post
 
 
 def get_user_notifications(*, user, limit: int = 50) -> QuerySet:
-    """Retorna as notificações mais recentes de um usuário, excluindo remetentes bloqueados ou silenciados (ADR-N24)."""
+    """Retorna as notificações mais recentes de um usuário.
+
+    Exclui remetentes bloqueados ou silenciados (ADR-N24).
+    """
     blocked_by_user = Block.objects.filter(blocker=user, blocked=OuterRef("sender"))
     blocker_of_user = Block.objects.filter(blocker=OuterRef("sender"), blocked=user)
     muted_by_user = Mute.objects.filter(muter=user, muted=OuterRef("sender"))
@@ -32,7 +35,10 @@ def get_user_notifications(*, user, limit: int = 50) -> QuerySet:
 
 
 def get_unread_notifications_count(*, user) -> int:
-    """Retorna a contagem de notificações não lidas excluindo remetentes bloqueados ou silenciados (ADR-N24)."""
+    """Retorna a contagem de notificações não lidas.
+
+    Exclui remetentes bloqueados ou silenciados (ADR-N24).
+    """
     blocked_by_user = Block.objects.filter(blocker=user, blocked=OuterRef("sender"))
     blocker_of_user = Block.objects.filter(blocker=OuterRef("sender"), blocked=user)
     muted_by_user = Mute.objects.filter(muter=user, muted=OuterRef("sender"))

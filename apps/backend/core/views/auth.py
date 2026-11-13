@@ -420,4 +420,3 @@ class UserDataExportView(APIView):
             "muted_users": muted_by_me,
         }
         return Response(data, status=status.HTTP_200_OK)
-

@@ -31,7 +31,6 @@ from comments.services import (
     hide_comment,
     toggle_comment_bookmark,
     toggle_comment_like,
-    unhide_comment,
 )
 from core.factories import PostFactory, UserFactory
 from core.models import Block, Notification, Post
@@ -194,7 +193,9 @@ class TestCommentTombstoneAndPrune:
 
     def test_post_owner_cannot_delete_other_user_comment(self, public_post, author, commenter):
         """O dono do post não pode excluir comentários alheios (deve ocultar)."""
-        comment = create_comment(author=commenter, post=public_post, content_text="Comentário alheio")
+        comment = create_comment(
+            author=commenter, post=public_post, content_text="Comentário alheio"
+        )
         with pytest.raises(PermissionDenied):
             delete_comment(comment=comment, user=author)
 
@@ -540,7 +541,9 @@ class TestCommentsAPIEndpoints:
 @pytest.mark.django_db
 class TestHideAndUnhideReplies:
     def test_post_owner_can_hide_comment(self, api_client, public_post, author, commenter):
-        comment = create_comment(author=commenter, post=public_post, content_text="Comentário a ocultar")
+        comment = create_comment(
+            author=commenter, post=public_post, content_text="Comentário a ocultar"
+        )
         public_post.refresh_from_db()
         assert public_post.comments_count == 1
         assert public_post.hidden_comments_count == 0
@@ -564,8 +567,10 @@ class TestHideAndUnhideReplies:
         self, api_client, public_post, author, commenter, reader
     ):
         root = create_comment(author=commenter, post=public_post, content_text="Raiz")
-        reply1 = create_comment(author=reader, post=public_post, content_text="Resposta 1", parent=root)
-        reply2 = create_comment(author=commenter, post=public_post, content_text="Resposta 2", parent=reply1)
+        reply1 = create_comment(
+            author=reader, post=public_post, content_text="Resposta 1", parent=root
+        )
+        create_comment(author=commenter, post=public_post, content_text="Resposta 2", parent=reply1)
 
         public_post.refresh_from_db()
         assert public_post.comments_count == 3
@@ -582,7 +587,9 @@ class TestHideAndUnhideReplies:
         assert public_post.hidden_comments_count == 1
 
     def test_unhide_comment_restores_counters(self, api_client, public_post, author, commenter):
-        comment = create_comment(author=commenter, post=public_post, content_text="Ocultar e reexibir")
+        comment = create_comment(
+            author=commenter, post=public_post, content_text="Ocultar e reexibir"
+        )
         hide_comment(comment=comment, user=author)
 
         public_post.refresh_from_db()
@@ -607,7 +614,9 @@ class TestHideAndUnhideReplies:
     def test_third_party_or_author_hide_returns_404(
         self, api_client, public_post, author, commenter, reader
     ):
-        comment = create_comment(author=commenter, post=public_post, content_text="Tentativa de invasão")
+        comment = create_comment(
+            author=commenter, post=public_post, content_text="Tentativa de invasão"
+        )
 
         # Autor do comentário tenta ocultar -> 404 (indistinguível)
         api_client.force_authenticate(user=commenter)
@@ -625,7 +634,9 @@ class TestHideAndUnhideReplies:
         assert res_del.status_code == status.HTTP_404_NOT_FOUND
 
     def test_cannot_hide_own_comment(self, api_client, public_post, author):
-        comment = create_comment(author=author, post=public_post, content_text="Meu próprio comentário")
+        comment = create_comment(
+            author=author, post=public_post, content_text="Meu próprio comentário"
+        )
         api_client.force_authenticate(user=author)
         url = reverse("comment-hide", kwargs={"pk": comment.id})
         res = api_client.post(url)
@@ -656,7 +667,7 @@ class TestHideAndUnhideReplies:
         self, api_client, public_post, commenter, reader
     ):
         parent = create_comment(author=commenter, post=public_post, content_text="Pai ativo")
-        child = create_comment(author=reader, post=public_post, content_text="Filho", parent=parent)
+        create_comment(author=reader, post=public_post, content_text="Filho", parent=parent)
         delete_comment(comment=parent, user=commenter)
 
         api_client.force_authenticate(user=reader)
@@ -683,8 +694,8 @@ class TestHideAndUnhideReplies:
 class TestHiddenCommentsLeakageMatrixAndMutation:
     """
     Matriz de vazamento:
-    Comentário Oculto × (conversa, respostas, Focar, contadores, notificações, favoritos)
-                     × (dono, autor, terceiros, bloqueados, anônimo)
+    Comentario Oculto x (conversa, respostas, Focar, contadores, notificacoes, favoritos)
+                     x (dono, autor, terceiros, bloqueados, anonimo)
     """
 
     def test_hidden_comment_leakage_matrix(
@@ -693,8 +704,12 @@ class TestHiddenCommentsLeakageMatrixAndMutation:
         blocked_user = UserFactory(username="blocked_user")
         Block.objects.create(blocker=author, blocked=blocked_user)
 
-        root = create_comment(author=commenter, post=public_post, content_text="Comentário Ocultado")
-        reply = create_comment(author=commenter, post=public_post, content_text="Resposta do Ocultado", parent=root)
+        root = create_comment(
+            author=commenter, post=public_post, content_text="Comentário Ocultado"
+        )
+        reply = create_comment(
+            author=commenter, post=public_post, content_text="Resposta do Ocultado", parent=root
+        )
 
         # Adiciona aos favoritos de terceiro e do autor antes de ocultar
         toggle_comment_bookmark(user=reader, comment=root)
@@ -759,7 +774,9 @@ class TestHiddenCommentsLeakageMatrixAndMutation:
         # 5. Superfície: Notificações
         # Nenhuma notificação nasce dentro de uma conversa oculta
         notifs_before = Notification.objects.count()
-        create_comment(author=commenter, post=public_post, content_text="Tentativa de notificação", parent=root)
+        create_comment(
+            author=commenter, post=public_post, content_text="Tentativa de notificação", parent=root
+        )
         assert Notification.objects.count() == notifs_before
 
         # 6. Superfície: Favoritos de terceiros
@@ -781,7 +798,9 @@ class TestHiddenCommentsLeakageMatrixAndMutation:
         Teste de mutação: quebra deliberadamente o filtro de is_hidden no selector
         e comprova que a quebra é imediatamente detectada pela suíte.
         """
-        root = create_comment(author=commenter, post=public_post, content_text="Oculto para mutação")
+        root = create_comment(
+            author=commenter, post=public_post, content_text="Oculto para mutação"
+        )
         hide_comment(comment=root, user=author)
 
         # Mutação: selector que não filtra is_hidden

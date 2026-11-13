@@ -14,7 +14,11 @@ from comments.views import (
 
 urlpatterns = [
     path("posts/<uuid:pk>/comments/", PostCommentsView.as_view(), name="post-comments"),
-    path("posts/<uuid:pk>/hidden-comments/", PostHiddenCommentsView.as_view(), name="post-hidden-comments"),
+    path(
+        "posts/<uuid:pk>/hidden-comments/",
+        PostHiddenCommentsView.as_view(),
+        name="post-hidden-comments",
+    ),
     path("comments/bookmarks/", CommentBookmarksListView.as_view(), name="comment-bookmarks-list"),
     path("comments/<uuid:pk>/", CommentDetailView.as_view(), name="comment-detail"),
     path("comments/<uuid:pk>/replies/", CommentRepliesView.as_view(), name="comment-replies"),

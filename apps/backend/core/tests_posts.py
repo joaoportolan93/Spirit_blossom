@@ -165,10 +165,16 @@ class TestPostCRUD:
         comment = Comment.objects.create(post=post, author=commenter, content_text="Comentário")
 
         Notification.objects.create(
-            recipient=author, sender=commenter, notification_type=Notification.Type.LIKE, ref_id=post.id
+            recipient=author,
+            sender=commenter,
+            notification_type=Notification.Type.LIKE,
+            ref_id=post.id,
         )
         Notification.objects.create(
-            recipient=author, sender=commenter, notification_type=Notification.Type.REPLY, ref_id=comment.id
+            recipient=author,
+            sender=commenter,
+            notification_type=Notification.Type.REPLY,
+            ref_id=comment.id,
         )
 
         client = _client_for(author)

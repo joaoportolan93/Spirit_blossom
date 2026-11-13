@@ -27,4 +27,3 @@ class BlockRateThrottle(UserRateThrottle):
     """10 operações de bloqueio/desbloqueio por minuto por usuário (ADR-N24)."""
 
     scope = "block"
-

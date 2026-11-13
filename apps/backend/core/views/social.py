@@ -13,7 +13,7 @@ from rest_framework.response import Response
 from rest_framework.throttling import UserRateThrottle
 from rest_framework.views import APIView
 
-from core.models import Block, Follow, Mute
+from core.models import Block, Follow
 from core.serializers.posts import PostSerializer
 from core.serializers.social import FollowRequestSerializer
 from core.services.social import (
@@ -115,7 +115,11 @@ class ProfileDetailView(APIView):
 
     def get(self, request, username):
         target = User.objects.filter(username=username).select_related("profile").first()
-        if not target or is_user_blocked(request.user, target) or not getattr(target, "is_valid_for_auth", True):
+        if (
+            not target
+            or is_user_blocked(request.user, target)
+            or not getattr(target, "is_valid_for_auth", True)
+        ):
             raise Http404()
 
         profile = getattr(target, "profile", None)
