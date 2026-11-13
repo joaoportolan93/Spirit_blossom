@@ -89,5 +89,40 @@ describe("SettingsBlocked Component (Onda 4c / ADR-N24)", () => {
       expect(screen.getByText("Algo deu errado. Tente novamente.")).toBeInTheDocument();
     });
   });
+
+  it("5. Trata erro ao desbloquear e erro ao desfazer", async () => {
+    vi.spyOn(api, "get").mockResolvedValueOnce({
+      data: {
+        items: [{ id: "1", username: "usuario_falha", avatar: null }],
+      },
+    });
+    vi.spyOn(api, "delete").mockRejectedValueOnce(new Error("Erro ao desbloquear"));
+
+    render(<SettingsBlocked />);
+
+    await waitFor(() => {
+      expect(screen.getByText("@usuario_falha")).toBeInTheDocument();
+    });
+
+    // Erro ao desbloquear
+    fireEvent.click(screen.getByTestId("unblock-btn-usuario_falha"));
+    await waitFor(() => {
+      expect(screen.getByText("Algo deu errado. Tente novamente.")).toBeInTheDocument();
+    });
+
+    // Desbloqueia com sucesso e falha ao desfazer
+    vi.spyOn(api, "delete").mockResolvedValueOnce({});
+    vi.spyOn(api, "post").mockRejectedValueOnce(new Error("Erro ao desfazer"));
+
+    fireEvent.click(screen.getByTestId("unblock-btn-usuario_falha"));
+    await waitFor(() => {
+      expect(screen.getByTestId("undo-unblock-btn")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByTestId("undo-unblock-btn"));
+    await waitFor(() => {
+      expect(screen.getByText("Algo deu errado. Tente novamente.")).toBeInTheDocument();
+    });
+  });
 });
 

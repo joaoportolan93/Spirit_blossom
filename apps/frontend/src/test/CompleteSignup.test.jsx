@@ -142,5 +142,92 @@ describe("CompleteSignup Component - Google OAuth 18+ (Onda 2)", () => {
       );
     });
   });
+
+  it("4. Trata erros 429 e validação da API no onboarding", async () => {
+    vi.spyOn(api, "post").mockRejectedValueOnce({
+      response: { status: 429 },
+    });
+
+    render(
+      <MemoryRouter
+        initialEntries={[
+          {
+            pathname: "/complete-signup",
+            state: { onboarding_token: "token123", email: "google@example.com" },
+          },
+        ]}
+      >
+        <Routes>
+          <Route path="/complete-signup" element={<CompleteSignup />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    fireEvent.change(screen.getByTestId("complete-username-input"), { target: { value: "googler" } });
+    fireEvent.change(screen.getByTestId("complete-birth-date-input"), { target: { value: "1998-05-20" } });
+    fireEvent.click(screen.getByTestId("complete-terms-checkbox"));
+
+    fireEvent.submit(screen.getByTestId("complete-signup-form"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("complete-signup-error")).toHaveTextContent("Muitas tentativas");
+    });
+
+    // Erro de campo retornado pelo backend
+    vi.spyOn(api, "post").mockRejectedValueOnce({
+      response: {
+        status: 400,
+        data: { username: ["Este nome de usuário já está em uso."] },
+      },
+    });
+
+    fireEvent.submit(screen.getByTestId("complete-signup-form"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("complete-signup-error")).toHaveTextContent("Este nome de usuário já está em uso.");
+    });
+  });
+
+  it("5. Valida campos obrigatórios vazios e erro genérico", async () => {
+    render(
+      <MemoryRouter
+        initialEntries={[
+          {
+            pathname: "/complete-signup",
+            state: { onboarding_token: "token123", email: "google@example.com" },
+          },
+        ]}
+      >
+        <Routes>
+          <Route path="/complete-signup" element={<CompleteSignup />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    // Envio vazio
+    fireEvent.submit(screen.getByTestId("complete-signup-form"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("complete-signup-error")).toHaveTextContent("Preencha todos os campos obrigatórios.");
+    });
+
+    // Erro de detalhe vindo da API
+    fireEvent.change(screen.getByTestId("complete-username-input"), { target: { value: "googler123" } });
+    fireEvent.change(screen.getByTestId("complete-birth-date-input"), { target: { value: "1998-05-20" } });
+    fireEvent.click(screen.getByTestId("complete-terms-checkbox"));
+
+    vi.spyOn(api, "post").mockRejectedValueOnce({
+      response: {
+        status: 400,
+        data: { detail: "Token inválido." },
+      },
+    });
+
+    fireEvent.submit(screen.getByTestId("complete-signup-form"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("complete-signup-error")).toHaveTextContent("Token inválido.");
+    });
+  });
 });
 

@@ -89,5 +89,40 @@ describe("SettingsMuted Component (Onda 4c / ADR-N24)", () => {
       expect(screen.getByText("Algo deu errado. Tente novamente.")).toBeInTheDocument();
     });
   });
+
+  it("5. Trata erro ao reativar e erro ao desfazer", async () => {
+    vi.spyOn(api, "get").mockResolvedValueOnce({
+      data: {
+        items: [{ id: "1", username: "usuario_falha", avatar: null }],
+      },
+    });
+    vi.spyOn(api, "delete").mockRejectedValueOnce(new Error("Erro ao reativar"));
+
+    render(<SettingsMuted />);
+
+    await waitFor(() => {
+      expect(screen.getByText("@usuario_falha")).toBeInTheDocument();
+    });
+
+    // Erro ao reativar
+    fireEvent.click(screen.getByTestId("unmute-btn-usuario_falha"));
+    await waitFor(() => {
+      expect(screen.getByText("Algo deu errado. Tente novamente.")).toBeInTheDocument();
+    });
+
+    // Reativa com sucesso e falha ao desfazer
+    vi.spyOn(api, "delete").mockResolvedValueOnce({});
+    vi.spyOn(api, "post").mockRejectedValueOnce(new Error("Erro ao desfazer"));
+
+    fireEvent.click(screen.getByTestId("unmute-btn-usuario_falha"));
+    await waitFor(() => {
+      expect(screen.getByTestId("undo-unmute-btn")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByTestId("undo-unmute-btn"));
+    await waitFor(() => {
+      expect(screen.getByText("Algo deu errado. Tente novamente.")).toBeInTheDocument();
+    });
+  });
 });
 
