@@ -6,7 +6,9 @@ Preserva todas as rotas públicas, caminhos e namespaces.
 from django.urls import include, path
 
 from core.views.auth import (
+    ChangePasswordView,
     CSRFView,
+    CurrentUserView,
     GoogleAuthView,
     GoogleCompleteSignupView,
     LoginView,
@@ -16,8 +18,8 @@ from core.views.auth import (
     RegisterView,
     TokenRefreshView,
     UserDataExportView,
-    UserProfileUpdateView,
     UserSearchView,
+    UserSettingsView,
 )
 from core.views.feed import ExploreFeedView, FollowingFeedView
 from core.views.notifications import NotificationListView, NotificationMarkReadView
@@ -44,6 +46,7 @@ from core.views.social import (
     MutedUsersListView,
     MuteView,
     ProfileDetailView,
+    ProfileLikesView,
 )
 
 auth_patterns = [
@@ -52,6 +55,8 @@ auth_patterns = [
     path("login/", LoginView.as_view(), name="login"),
     path("refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("logout/", LogoutView.as_view(), name="logout"),
+    path("me/", CurrentUserView.as_view(), name="current_user"),
+    path("change-password/", ChangePasswordView.as_view(), name="change_password"),
     path(
         "password-reset/request/",
         PasswordResetRequestView.as_view(),
@@ -67,7 +72,8 @@ auth_patterns = [
 ]
 
 users_patterns = [
-    path("profile/", UserProfileUpdateView.as_view(), name="profile_update"),
+    path("profile/", UserSettingsView.as_view(), name="profile_update"),
+    path("settings/", UserSettingsView.as_view(), name="user_settings"),
     path("search/", UserSearchView.as_view(), name="search"),
     path("export-data/", UserDataExportView.as_view(), name="export_data"),
 ]
@@ -108,6 +114,7 @@ social_patterns = [
     ),
     path("close-friends/<str:username>/", CloseFriendsView.as_view(), name="close-friends"),
     path("profile/<str:username>/", ProfileDetailView.as_view(), name="profile"),
+    path("profile/<str:username>/likes/", ProfileLikesView.as_view(), name="profile_likes"),
 ]
 
 feed_patterns = [
@@ -122,7 +129,7 @@ notifications_patterns = [
 ]
 
 urlpatterns = [
-    path("auth/", include((auth_patterns, "accounts"))),
+    path("auth/", include((auth_patterns, "auth"))),
     path("users/", include((users_patterns, "users"))),
     path("posts/", include((posts_patterns, "posts"))),
     path("social/", include((social_patterns, "social"))),

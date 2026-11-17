@@ -15,6 +15,10 @@ export function Profile() {
   const isOwnProfile = !routeUsername || routeUsername === user?.username;
 
   const [posts, setPosts] = useState([]);
+  const [likedPosts, setLikedPosts] = useState([]);
+  const [activeTab, setActiveTab] = useState("posts");
+  const [likesLoading, setLikesLoading] = useState(false);
+  const [showLikesTab, setShowLikesTab] = useState(true);
   const [stats, setStats] = useState({
     followers_count: 0,
     following_count: 0,
@@ -26,6 +30,7 @@ export function Profile() {
   const [blockLoading, setBlockLoading] = useState(false);
   const [toast, setToast] = useState(null);
   const [isPrivate, setIsPrivate] = useState(false);
+  const [profileData, setProfileData] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -47,13 +52,16 @@ export function Profile() {
             setPosts(userPosts);
           }
           if (profileRes.status === "fulfilled") {
+            const pData = profileRes.value.data;
+            setProfileData(pData);
             setStats({
-              followers_count: profileRes.value.data.followers_count ?? 0,
-              following_count: profileRes.value.data.following_count ?? 0,
-              is_following: Boolean(profileRes.value.data.is_following),
+              followers_count: pData.followers_count ?? 0,
+              following_count: pData.following_count ?? 0,
+              is_following: Boolean(pData.is_following),
             });
-            setIsMuting(Boolean(profileRes.value.data.is_muting));
-            setIsPrivate(Boolean(profileRes.value.data.is_private));
+            setIsMuting(Boolean(pData.is_muting));
+            setIsPrivate(Boolean(pData.is_private));
+            setShowLikesTab(pData.show_likes_tab !== false);
           }
         }
       } finally {
@@ -66,6 +74,22 @@ export function Profile() {
       isMounted = false;
     };
   }, [currentUsername]);
+
+  const handleSelectTab = async (tab) => {
+    setActiveTab(tab);
+    if (tab === "likes" && likedPosts.length === 0) {
+      setLikesLoading(true);
+      try {
+        const res = await api.get(`/api/social/profile/${currentUsername}/likes/`);
+        const data = res.data;
+        setLikedPosts(Array.isArray(data) ? data : data.results ?? []);
+      } catch {
+        setLikedPosts([]);
+      } finally {
+        setLikesLoading(false);
+      }
+    }
+  };
 
   const handleFollowToggle = (nowFollowing) => {
     setStats((prev) => ({
@@ -98,6 +122,7 @@ export function Profile() {
 
   const handleBlockToggle = async () => {
     if (blockLoading) return;
+
     if (
       !isBlocked &&
       !window.confirm(
@@ -146,6 +171,9 @@ export function Profile() {
     }
   };
 
+  // Visibilidade da aba de curtidas
+  const canSeeLikesTab = isOwnProfile || showLikesTab;
+
   return (
     <div className="max-w-2xl mx-auto py-8 px-4">
       {toast && (
@@ -166,12 +194,30 @@ export function Profile() {
       <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 mb-8">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center font-bold text-xl text-zinc-200">
-              {currentUsername[0]?.toUpperCase()}
+            <div className="w-16 h-16 rounded-full overflow-hidden bg-zinc-800 border border-zinc-700 flex items-center justify-center font-bold text-xl text-zinc-200 shrink-0">
+              {profileData?.avatar ? (
+                <img
+                  src={profileData.avatar}
+                  alt={profileData.display_name || currentUsername}
+                  className="w-full h-full object-cover"
+                  data-testid="profile-avatar-img"
+                />
+              ) : (
+                <span>{((profileData?.display_name || currentUsername)[0] || "U").toUpperCase()}</span>
+              )}
             </div>
             <div>
-              <h1 className="text-xl font-bold text-white">@{currentUsername}</h1>
-              <p className="text-xs text-zinc-400 mt-1">{t("profile.bio")}</p>
+              {profileData?.display_name ? (
+                <>
+                  <h1 className="text-xl font-bold text-white">{profileData.display_name}</h1>
+                  <p className="text-xs text-zinc-400">@{currentUsername}</p>
+                </>
+              ) : (
+                <h1 className="text-xl font-bold text-white">@{currentUsername}</h1>
+              )}
+              {profileData?.bio && (
+                <p className="text-xs text-zinc-300 mt-2 whitespace-pre-wrap">{profileData.bio}</p>
+              )}
             </div>
           </div>
 
@@ -229,7 +275,7 @@ export function Profile() {
           </div>
         </div>
 
-        {/* Selo de Conta Privada (visível apenas ao próprio dono) */}
+        {/* Selo de Conta Privada */}
         {isOwnProfile && isPrivate && (
           <div className="mt-6 pt-6 border-t border-zinc-800">
             <span
@@ -243,20 +289,73 @@ export function Profile() {
         )}
       </div>
 
-      {/* Lista de publicações */}
-      <div>
-        <h2 className="text-lg font-bold text-white mb-4">{t("profile.posts")}</h2>
+      {/* Abas Publicações / Curtidas */}
+      <div className="flex border-b border-zinc-800 mb-6">
+        <button
+          type="button"
+          data-testid="tab-posts"
+          onClick={() => handleSelectTab("posts")}
+          className={`flex-1 py-2 text-sm font-medium transition border-b-2 ${
+            activeTab === "posts"
+              ? "border-indigo-500 text-white"
+              : "border-transparent text-zinc-400 hover:text-zinc-200"
+          }`}
+        >
+          {t("profile.tab_posts", "Publicações")}
+        </button>
 
-        {loading ? (
-          <p className="text-sm text-zinc-500">{t("feed.loading")}</p>
-        ) : posts.length === 0 ? (
-          <p className="text-sm text-zinc-500 py-8 text-center bg-zinc-900/40 rounded-xl border border-zinc-800">
-            {t("profile.empty_posts")}
-          </p>
-        ) : (
-          posts.map((post) => <PostCard key={post.id} post={post} />)
+        {canSeeLikesTab && (
+          <button
+            type="button"
+            data-testid="tab-likes"
+            onClick={() => handleSelectTab("likes")}
+            className={`flex-1 py-2 text-sm font-medium transition border-b-2 inline-flex items-center justify-center gap-1.5 ${
+              activeTab === "likes"
+                ? "border-indigo-500 text-white"
+                : "border-transparent text-zinc-400 hover:text-zinc-200"
+            }`}
+          >
+            {t("profile.tab_likes", "Curtidas")}
+            {isOwnProfile && !showLikesTab && (
+              <span
+                data-testid="likes-tab-private-badge"
+                className="text-xs bg-zinc-700 text-zinc-400 px-1.5 py-0.5 rounded"
+              >
+                🔒 {t("profile.likes_private_badge", "Privada")}
+              </span>
+            )}
+          </button>
         )}
       </div>
+
+      {/* Conteúdo da aba ativa */}
+      {activeTab === "posts" ? (
+        <div>
+          {loading ? (
+            <p className="text-sm text-zinc-500">{t("feed.loading")}</p>
+          ) : posts.length === 0 ? (
+            <p className="text-sm text-zinc-500 py-8 text-center bg-zinc-900/40 rounded-xl border border-zinc-800">
+              {t("profile.empty_posts")}
+            </p>
+          ) : (
+            posts.map((post) => <PostCard key={post.id} post={post} />)
+          )}
+        </div>
+      ) : (
+        <div>
+          {likesLoading ? (
+            <p className="text-sm text-zinc-500">{t("feed.loading")}</p>
+          ) : likedPosts.length === 0 ? (
+            <p className="text-sm text-zinc-500 py-8 text-center bg-zinc-900/40 rounded-xl border border-zinc-800">
+              {t("profile.empty_likes", "Nenhuma curtida ainda.")}
+            </p>
+          ) : (
+            likedPosts.map((post) => <PostCard key={post.id} post={post} />)
+          )}
+        </div>
+      )}
     </div>
   );
 }
+
+export default Profile;

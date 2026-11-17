@@ -1,11 +1,18 @@
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { api, initCsrf } from "../services/api";
+import { applyTheme, getInitialTheme } from "../utils/theme";
+import i18n from "../i18n";
 
 export const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // Aplica tema inicial
+  useEffect(() => {
+    applyTheme(getInitialTheme());
+  }, []);
 
   // Verifica estado de autenticação na inicialização sem depender de storage
   useEffect(() => {
@@ -17,8 +24,20 @@ export function AuthProvider({ children }) {
         // Testa se o cookie de acesso/refresh é válido buscando notificações ou feed
         const res = await api.get("/api/notifications/");
         if (isMounted && res.status === 200) {
-          // Usuário autenticado
-          setUser((prev) => prev || { is_authenticated: true });
+          let userData = { is_authenticated: true };
+          try {
+            const meRes = await api.get("/api/auth/me/");
+            if (meRes?.data && Object.keys(meRes.data).length > 0) {
+              userData = { ...meRes.data, is_authenticated: true };
+              if (meRes.data.theme) applyTheme(meRes.data.theme);
+              if (meRes.data.language) i18n.changeLanguage(meRes.data.language);
+            }
+          } catch {
+            // fallback
+          }
+          if (isMounted) {
+            setUser((prev) => prev || userData);
+          }
         }
       } catch {
         if (isMounted) {
@@ -39,7 +58,25 @@ export function AuthProvider({ children }) {
 
   const login = useCallback(async (email, password) => {
     const response = await api.post("/api/auth/login/", { email, password });
-    setUser({ email, is_authenticated: true });
+    let userData = { email, is_authenticated: true };
+    try {
+      const meRes = await api.get("/api/auth/me/");
+      if (meRes?.data && Object.keys(meRes.data).length > 0) {
+        userData = { ...meRes.data, email: meRes.data.email || email, is_authenticated: true };
+        if (meRes.data.theme) applyTheme(meRes.data.theme);
+        if (meRes.data.language) {
+          i18n.changeLanguage(meRes.data.language);
+          try {
+            localStorage.setItem("lumem_language", meRes.data.language);
+          } catch {
+            // ignore
+          }
+        }
+      }
+    } catch {
+      // fallback
+    }
+    setUser(userData);
     return response.data;
   }, []);
 

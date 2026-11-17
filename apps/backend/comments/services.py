@@ -77,6 +77,10 @@ def notify_comment_created(*, sender, comment: Comment) -> None:
     if not recipient or sender == recipient:
         return
 
+    profile = getattr(recipient, "profile", None)
+    if profile is not None and not profile.notify_comments:
+        return
+
     # Conversa oculta não gera notificações
     if is_in_hidden_thread(comment):
         return
@@ -113,6 +117,10 @@ def notify_comment_liked(*, sender, comment: Comment) -> None:
     """
     recipient = comment.author
     if not recipient or sender == recipient:
+        return
+
+    profile = getattr(recipient, "profile", None)
+    if profile is not None and not profile.notify_likes:
         return
 
     # Conversa oculta não gera notificações

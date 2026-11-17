@@ -23,6 +23,12 @@ import {
   hideComment,
   unhideComment,
   getPostHiddenComments,
+  exportUserData,
+  getUserSettings,
+  updateUserSettings,
+  changePassword,
+  getCurrentUser,
+  getProfileLikes,
 } from "../services/api";
 
 describe("API Service — CSRF & Interceptors", () => {
@@ -278,6 +284,38 @@ describe("API Service — CSRF & Interceptors", () => {
       const getSpy = vi.spyOn(api, "get").mockResolvedValueOnce({ data: { items: [] } });
       await getPostHiddenComments("p-1", "cursor-xyz");
       expect(getSpy).toHaveBeenCalledWith("/api/posts/p-1/hidden-comments/?cursor=cursor-xyz");
+    });
+
+    it("Onda 5 settings e user helpers chamam endpoints corretos", async () => {
+      const getSpy = vi.spyOn(api, "get").mockResolvedValue({ data: { ok: true } });
+      const patchSpy = vi.spyOn(api, "patch").mockResolvedValue({ data: { ok: true } });
+      const postSpy = vi.spyOn(api, "post").mockResolvedValue({ data: { ok: true } });
+
+      await exportUserData();
+      expect(getSpy).toHaveBeenCalledWith("/api/users/export-data/");
+
+      await getUserSettings();
+      expect(getSpy).toHaveBeenCalledWith("/api/users/settings/");
+
+      await getCurrentUser();
+      expect(getSpy).toHaveBeenCalledWith("/api/auth/me/");
+
+      await getProfileLikes("alice");
+      expect(getSpy).toHaveBeenCalledWith("/api/social/profile/alice/likes/");
+
+      await updateUserSettings({ theme: "oled" });
+      expect(patchSpy).toHaveBeenCalledWith("/api/users/settings/", { theme: "oled" }, { headers: {} });
+
+      const fd = new FormData();
+      await updateUserSettings(fd);
+      expect(patchSpy).toHaveBeenCalledWith("/api/users/settings/", fd, { headers: { "Content-Type": "multipart/form-data" } });
+
+      await changePassword({ current_password: "a", new_password: "b", new_password_confirm: "b" });
+      expect(postSpy).toHaveBeenCalledWith("/api/auth/change-password/", {
+        current_password: "a",
+        new_password: "b",
+        new_password_confirm: "b",
+      });
     });
   });
 });

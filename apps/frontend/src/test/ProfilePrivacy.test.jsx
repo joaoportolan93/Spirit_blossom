@@ -204,4 +204,32 @@ describe("Profile Privacy & Settings Privacy (Onda 3d)", () => {
       expect(api.delete).toHaveBeenCalledWith("/api/social/block/outro/");
     });
   });
+
+  it("6. SettingsPrivacy: alterna toggle de exibir aba de curtidas (show_likes_tab)", async () => {
+    vi.spyOn(api, "get").mockImplementation((url) => {
+      if (url.includes("/api/social/profile/me/")) {
+        return Promise.resolve({ data: { username: "me", is_private: false } });
+      }
+      if (url.includes("/api/users/settings/")) {
+        return Promise.resolve({ data: { show_likes_tab: true } });
+      }
+      return Promise.resolve({ data: {} });
+    });
+
+    const patchSpy = vi.spyOn(api, "patch").mockResolvedValue({ data: { show_likes_tab: false } });
+
+    renderWithAuth(<SettingsPrivacy />, { username: "me" }, "/settings/privacy");
+
+    await waitFor(() => {
+      expect(screen.getByTestId("show-likes-tab-toggle")).toBeInTheDocument();
+      expect(screen.getByTestId("show-likes-tab-toggle")).toBeChecked();
+    });
+
+    fireEvent.click(screen.getByTestId("show-likes-tab-toggle"));
+
+    await waitFor(() => {
+      expect(patchSpy).toHaveBeenCalledWith("/api/users/settings/", { show_likes_tab: false }, { headers: {} });
+      expect(screen.getByTestId("privacy-success")).toBeInTheDocument();
+    });
+  });
 });

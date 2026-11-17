@@ -6,19 +6,11 @@ Testes de interações sociais: curtir, favoritar, rascunhos e paginação de fa
 import pytest
 from django.db import IntegrityError
 from rest_framework import status
-from rest_framework.test import APIClient
-from rest_framework_simplejwt.tokens import RefreshToken
 
+from conftest import auth_client
 from core.factories import PostFactory, UserFactory
 from core.models import Block, Draft, Notification, Post, PostBookmark, PostLike, UserProfile
 from core.services.posts import list_bookmarked_posts
-
-
-def _client_for(user):
-    client = APIClient()
-    refresh = RefreshToken.for_user(user)
-    client.cookies["access_token"] = str(refresh.access_token)
-    return client
 
 
 @pytest.mark.django_db(transaction=True)
@@ -28,7 +20,7 @@ class TestPostLike:
         viewer = UserFactory()
         post = PostFactory(author=author, visibility=Post.Visibility.PUBLIC)
 
-        client = _client_for(viewer)
+        client = auth_client(viewer)
         res = client.post(f"/api/posts/{post.id}/like/")
         assert res.status_code == status.HTTP_201_CREATED
         assert res.json()["detail"] == "Publicação curtida."
@@ -48,7 +40,7 @@ class TestPostLike:
         author = UserFactory()
         post = PostFactory(author=author, visibility=Post.Visibility.PUBLIC)
 
-        client = _client_for(author)
+        client = auth_client(author)
         res = client.post(f"/api/posts/{post.id}/like/")
         assert res.status_code == status.HTTP_201_CREATED
 
@@ -67,7 +59,7 @@ class TestPostLike:
         viewer = UserFactory()
         post = PostFactory(author=author, visibility=Post.Visibility.PUBLIC)
 
-        client = _client_for(viewer)
+        client = auth_client(viewer)
         res = client.post(f"/api/posts/{post.id}/like/")
         assert res.status_code == status.HTTP_404_NOT_FOUND
         assert not PostLike.objects.filter(post=post, user=viewer).exists()
@@ -78,7 +70,7 @@ class TestPostLike:
         post = PostFactory(author=author, visibility=Post.Visibility.PUBLIC, likes_count=1)
         PostLike.objects.create(post=post, user=viewer)
 
-        client = _client_for(viewer)
+        client = auth_client(viewer)
         res = client.delete(f"/api/posts/{post.id}/like/")
         assert res.status_code == status.HTTP_204_NO_CONTENT
 
@@ -91,7 +83,7 @@ class TestPostLike:
         viewer = UserFactory()
         post = PostFactory(author=author, visibility=Post.Visibility.PUBLIC)
 
-        client = _client_for(viewer)
+        client = auth_client(viewer)
         res = client.delete(f"/api/posts/{post.id}/like/")
         assert res.status_code == status.HTTP_404_NOT_FOUND
 
@@ -112,7 +104,7 @@ class TestPostBookmark:
         viewer = UserFactory()
         post = PostFactory(author=author, visibility=Post.Visibility.PUBLIC)
 
-        client = _client_for(viewer)
+        client = auth_client(viewer)
         res = client.post(f"/api/posts/{post.id}/bookmark/")
         assert res.status_code == status.HTTP_201_CREATED
         post.refresh_from_db()
@@ -137,7 +129,7 @@ class TestPostBookmark:
 
         PostBookmark.objects.create(post=post, user=viewer)
 
-        client = _client_for(viewer)
+        client = auth_client(viewer)
         res_init = client.get("/api/posts/bookmarks/")
         assert str(post.id) in [p["id"] for p in res_init.json()]
 
@@ -149,7 +141,7 @@ class TestPostBookmark:
     def test_bookmarked_posts_invalid_cursor_returns_400(self):
         """Cursor malformado em favoritos retorna 400 Bad Request."""
         user = UserFactory()
-        client = _client_for(user)
+        client = auth_client(user)
         resp = client.get("/api/posts/bookmarks/?cursor=cursor-invalido-nao-uuid")
         assert resp.status_code == status.HTTP_400_BAD_REQUEST
         assert "Cursor inválido" in resp.json()["detail"]
@@ -165,7 +157,7 @@ class TestPostBookmark:
         PostBookmark.objects.create(user=user, post=p2)
         PostBookmark.objects.create(user=user, post=p3)
 
-        client = _client_for(user)
+        client = auth_client(user)
 
         qs1 = list_bookmarked_posts(user=user, limit=2)
         assert len(qs1) == 2
@@ -184,8 +176,8 @@ class TestDrafts:
         user1 = UserFactory()
         user2 = UserFactory()
 
-        c1 = _client_for(user1)
-        c2 = _client_for(user2)
+        c1 = auth_client(user1)
+        c2 = auth_client(user2)
 
         res = c1.post("/api/posts/drafts/", {"content_text": "Meu rascunho secreto"})
         assert res.status_code == status.HTTP_201_CREATED
@@ -210,6 +202,6 @@ class TestDrafts:
 
     def test_draft_max_chars_validation(self):
         user = UserFactory()
-        client = _client_for(user)
+        client = auth_client(user)
         res = client.post("/api/posts/drafts/", {"content_text": "x" * 3001})
         assert res.status_code == status.HTTP_400_BAD_REQUEST

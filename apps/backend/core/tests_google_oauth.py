@@ -11,26 +11,17 @@ from datetime import date
 
 import pytest
 from rest_framework import status
-from rest_framework.test import APIClient
 
+from conftest import get_csrf_token, make_client
 from core.factories import UserFactory
 from core.models import OAuthAccount, User
-
-
-def _make_client(enforce_csrf: bool = False) -> APIClient:
-    return APIClient(enforce_csrf_checks=enforce_csrf)
-
-
-def _get_csrf(client: APIClient) -> str:
-    response = client.get("/api/auth/csrf/")
-    return response.cookies["csrftoken"].value
 
 
 @pytest.mark.django_db(transaction=True)
 class TestGoogleOAuthFlow:
     def test_google_login_email_unverified_returns_400(self):
-        client = _make_client(enforce_csrf=True)
-        csrf = _get_csrf(client)
+        client = make_client(enforce_csrf=True)
+        csrf = get_csrf_token(client)
 
         token = "mock-google-token:sub123:unverified@example.com:false"
         resp = client.post(
@@ -44,8 +35,8 @@ class TestGoogleOAuthFlow:
 
     def test_google_login_email_already_exists_with_password_refuses_auto_link(self):
         UserFactory(email="existente_com_senha@example.com")
-        client = _make_client(enforce_csrf=True)
-        csrf = _get_csrf(client)
+        client = make_client(enforce_csrf=True)
+        csrf = get_csrf_token(client)
 
         token = "mock-google-token:sub456:existente_com_senha@example.com:true"
         resp = client.post(
@@ -59,8 +50,8 @@ class TestGoogleOAuthFlow:
         assert "vincule sua conta Google" in str(resp.data)
 
     def test_google_login_new_user_returns_needs_signup_and_onboarding_token(self):
-        client = _make_client(enforce_csrf=True)
-        csrf = _get_csrf(client)
+        client = make_client(enforce_csrf=True)
+        csrf = get_csrf_token(client)
 
         token = "mock-google-token:sub_novo_789:novo_google@example.com:true"
         resp = client.post(
@@ -75,8 +66,8 @@ class TestGoogleOAuthFlow:
         assert resp.data["email"] == "novo_google@example.com"
 
     def test_google_complete_signup_underage_rejected(self):
-        client = _make_client(enforce_csrf=True)
-        csrf = _get_csrf(client)
+        client = make_client(enforce_csrf=True)
+        csrf = get_csrf_token(client)
 
         token = "mock-google-token:sub_menor:menor_google@example.com:true"
         resp = client.post(
@@ -105,8 +96,8 @@ class TestGoogleOAuthFlow:
         assert "18 anos" in str(complete_resp.data)
 
     def test_google_complete_signup_without_terms_rejected(self):
-        client = _make_client(enforce_csrf=True)
-        csrf = _get_csrf(client)
+        client = make_client(enforce_csrf=True)
+        csrf = get_csrf_token(client)
 
         token = "mock-google-token:sub_sem_termos:semtermos_google@example.com:true"
         resp = client.post(
@@ -132,8 +123,8 @@ class TestGoogleOAuthFlow:
         assert "terms_accepted" in complete_resp.data
 
     def test_google_full_signup_and_subsequent_login_flow(self):
-        client = _make_client(enforce_csrf=True)
-        csrf = _get_csrf(client)
+        client = make_client(enforce_csrf=True)
+        csrf = get_csrf_token(client)
 
         google_token = "mock-google-token:google_sub_unique_999:sucesso_google@example.com:true"
 
@@ -173,8 +164,8 @@ class TestGoogleOAuthFlow:
         assert oauth.uid == "google_sub_unique_999"
 
         # 3. Próximo acesso com o mesmo token Google -> logged_in direto!
-        client2 = _make_client(enforce_csrf=True)
-        csrf2 = _get_csrf(client2)
+        client2 = make_client(enforce_csrf=True)
+        csrf2 = get_csrf_token(client2)
 
         step3 = client2.post(
             "/api/auth/google/",
@@ -188,8 +179,8 @@ class TestGoogleOAuthFlow:
         assert "refresh_token" in step3.cookies
 
     def test_google_complete_signup_non_alphanumeric_username_rejected(self):
-        client = _make_client(enforce_csrf=True)
-        csrf = _get_csrf(client)
+        client = make_client(enforce_csrf=True)
+        csrf = get_csrf_token(client)
 
         token = "mock-google-token:sub_alpha:alpha@example.com:true"
         resp = client.post(
@@ -213,8 +204,8 @@ class TestGoogleOAuthFlow:
 
     def test_google_complete_signup_username_taken_rejected(self):
         UserFactory(username="existente")
-        client = _make_client(enforce_csrf=True)
-        csrf = _get_csrf(client)
+        client = make_client(enforce_csrf=True)
+        csrf = get_csrf_token(client)
 
         token = "mock-google-token:sub_taken:taken@example.com:true"
         resp = client.post(
@@ -237,8 +228,8 @@ class TestGoogleOAuthFlow:
         assert "já está em uso" in str(step.data)
 
     def test_google_complete_signup_tampered_token_rejected(self):
-        client = _make_client(enforce_csrf=True)
-        csrf = _get_csrf(client)
+        client = make_client(enforce_csrf=True)
+        csrf = get_csrf_token(client)
 
         step = client.post(
             "/api/auth/google/complete/",

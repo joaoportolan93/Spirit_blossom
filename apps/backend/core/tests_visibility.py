@@ -1004,7 +1004,7 @@ class TestVisibilityEdgeCases:
 
 @pytest.mark.django_db(transaction=True)
 class TestPrivateAccountTransitions:
-    def test_transicao_privada_para_publica_aprova_pedidos_pendentes_idempotente(self):
+    def test_transicao_privada_para_publica_deleta_pedidos_pendentes_idempotente(self):
         author = UserFactory()
         _make_private(author)
 
@@ -1027,16 +1027,14 @@ class TestPrivateAccountTransitions:
         assert res_patch.status_code == status.HTTP_200_OK
         assert res_patch.json() == {"username": author.username, "is_private": False}
 
-        # Pedidos pending viraram active
-        follow_b = Follow.objects.get(follower=pending_user_b, followed=author)
-        follow_c = Follow.objects.get(follower=pending_user_c, followed=author)
-        assert follow_b.status == Follow.Status.ACTIVE
-        assert follow_c.status == Follow.Status.ACTIVE
+        # Onda 5: Pedidos pending são deletados (não viram active)
+        assert not Follow.objects.filter(follower=pending_user_b, followed=author).exists()
+        assert not Follow.objects.filter(follower=pending_user_c, followed=author).exists()
 
         # Sem notificações em massa
         assert Notification.objects.filter(sender=author).count() == 0
 
-        # Post público agora é visível para os novos seguidores ativos
+        # Post público agora é visível para qualquer usuário autenticado (pois a conta é pública)
         res_after = client_b.get("/api/posts/")
         assert str(post_public.pk) in [p["id"] for p in res_after.json()]
 

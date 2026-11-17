@@ -12,7 +12,15 @@ from core.models import Post
 class AuthorSummarySerializer(serializers.Serializer):
     id = serializers.CharField()
     username = serializers.CharField()
+    display_name = serializers.SerializerMethodField()
     avatar = serializers.SerializerMethodField()
+
+    def get_display_name(self, user):
+        try:
+            profile = getattr(user, "profile", None)
+            return getattr(profile, "display_name", "") or user.username
+        except Exception:
+            return getattr(user, "username", "")
 
     def get_avatar(self, user):
         try:

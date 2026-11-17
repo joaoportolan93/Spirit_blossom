@@ -127,6 +127,33 @@ def can_view_profile(viewer, target_user) -> bool:
     return True
 
 
+def can_view_likes_tab(viewer, target_user) -> bool:
+    """
+    Retorna True se o viewer puder ver a aba de curtidas de target_user (Onda 5).
+    Regras:
+    1. O próprio dono da conta sempre pode ver sua própria aba de curtidas.
+    2. Se houver bloqueio bilateral ou perfil privado sem follow ativo, retorna False.
+    3. Visitantes só podem ver se target_user tiver show_likes_tab=True.
+    """
+    if not target_user or not getattr(target_user, "is_valid_for_auth", True):
+        return False
+
+    if viewer and getattr(viewer, "is_authenticated", False) and viewer == target_user:
+        return True
+
+    if not can_view_profile(viewer, target_user):
+        return False
+
+    try:
+        profile = UserProfile.objects.filter(user=target_user).first()
+    except Exception:
+        profile = getattr(target_user, "profile", None)
+
+    if profile is not None:
+        return bool(profile.show_likes_tab)
+    return True
+
+
 def get_profile_counters(*, target_user, viewer=None) -> Dict[str, int]:
     """
     Retorna os contadores públicos de um perfil de usuário.

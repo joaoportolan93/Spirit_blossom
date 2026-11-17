@@ -11,6 +11,9 @@ patch_sqlite()
 
 from .settings_test import *
 
+MEDIA_URL = "/media/"
+APP_NAME = "Spirit Blossom (Dev)"
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 DATABASES = {

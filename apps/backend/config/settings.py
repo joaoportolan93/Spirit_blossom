@@ -272,7 +272,7 @@ FEED_SERVICE_URL = os.environ.get("FEED_SERVICE_URL", "http://feed:3000")
 # Media / uploads
 # ---------------------------------------------------------------------------
 MEDIA_ROOT = Path(os.environ.get("MEDIA_ROOT", BASE_DIR / "media"))
-MEDIA_URL = "/protected-media/"  # servido via X-Accel-Redirect (N5)
+MEDIA_URL = os.environ.get("MEDIA_URL", "/media/")  # /media/ em dev / local
 MAX_UPLOAD_MB = int(os.environ.get("MAX_UPLOAD_MB", "10"))
 DATA_UPLOAD_MAX_MEMORY_SIZE = MAX_UPLOAD_MB * 1024 * 1024
 

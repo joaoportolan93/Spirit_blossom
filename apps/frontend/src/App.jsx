@@ -18,6 +18,9 @@ import { SettingsPrivacy } from "./pages/settings/SettingsPrivacy";
 import { SettingsCircle } from "./pages/settings/SettingsCircle";
 import { SettingsBlocked } from "./pages/settings/SettingsBlocked";
 import { SettingsMuted } from "./pages/settings/SettingsMuted";
+import { SettingsAccount } from "./pages/settings/SettingsAccount";
+import { SettingsNotifications } from "./pages/settings/SettingsNotifications";
+import { SettingsAppearance } from "./pages/settings/SettingsAppearance";
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -82,8 +85,11 @@ export function App() {
                   </ProtectedRoute>
                 }
               >
-                <Route index element={<Navigate to="/settings/privacy" replace />} />
+                <Route index element={<Navigate to="/settings/account" replace />} />
+                <Route path="account" element={<SettingsAccount />} />
+                <Route path="notifications" element={<SettingsNotifications />} />
                 <Route path="privacy" element={<SettingsPrivacy />} />
+                <Route path="appearance" element={<SettingsAppearance />} />
                 <Route path="circle" element={<SettingsCircle />} />
                 <Route path="blocked" element={<SettingsBlocked />} />
                 <Route path="muted" element={<SettingsMuted />} />

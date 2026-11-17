@@ -1,7 +1,7 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import ptBR from "../locales/pt-BR.json";
 import en from "../locales/en.json";
-import i18n from "../i18n";
+import i18n, { detectBrowserLanguage, resolveInitialLanguage } from "../i18n";
 import { api } from "../services/api";
 
 function getLeafKeys(obj, prefix = "") {
@@ -18,6 +18,11 @@ function getLeafKeys(obj, prefix = "") {
 }
 
 describe("i18n Localization & Accept-Language (ADR-N23)", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    vi.restoreAllMocks();
+  });
+
   it("1. Garante paridade total de chaves entre pt-BR.json e en.json", () => {
     const ptKeys = getLeafKeys(ptBR);
     const enKeys = getLeafKeys(en);
@@ -45,5 +50,39 @@ describe("i18n Localization & Accept-Language (ADR-N23)", () => {
     // Restaura idioma padrão
     i18n.changeLanguage("pt-BR");
   });
-});
 
+  it("3. detectBrowserLanguage retorna pt-BR quando fuso horário for brasileiro", () => {
+    vi.spyOn(Intl, "DateTimeFormat").mockImplementation(() => ({
+      resolvedOptions: () => ({ timeZone: "America/Sao_Paulo" }),
+    }));
+    expect(detectBrowserLanguage()).toBe("pt-BR");
+  });
+
+  it("4. detectBrowserLanguage retorna pt-BR quando navigator.language inicia com pt", () => {
+    vi.spyOn(Intl, "DateTimeFormat").mockImplementation(() => ({
+      resolvedOptions: () => ({ timeZone: "Europe/London" }),
+    }));
+    Object.defineProperty(window.navigator, "language", {
+      value: "pt-PT",
+      configurable: true,
+    });
+    expect(detectBrowserLanguage()).toBe("pt-BR");
+  });
+
+  it("5. detectBrowserLanguage retorna en para outros fusos e idiomas", () => {
+    vi.spyOn(Intl, "DateTimeFormat").mockImplementation(() => ({
+      resolvedOptions: () => ({ timeZone: "Europe/London" }),
+    }));
+    Object.defineProperty(window.navigator, "language", {
+      value: "en-US",
+      configurable: true,
+    });
+    expect(detectBrowserLanguage()).toBe("en");
+  });
+
+  it("6. resolveInitialLanguage respeita ordem de prioridade (user > localStorage > auto)", () => {
+    localStorage.setItem("lumem_language", "en");
+    expect(resolveInitialLanguage("pt-BR")).toBe("pt-BR");
+    expect(resolveInitialLanguage(null)).toBe("en");
+  });
+});

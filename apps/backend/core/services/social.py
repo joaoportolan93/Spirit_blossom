@@ -263,10 +263,11 @@ def remove_from_close_friends(*, user, target_user) -> bool:
 @transaction.atomic
 def update_user_privacy(*, user, is_private: bool) -> UserProfile:
     """
-    Atualiza a privacidade da conta do usuário (Onda 3c).
-    - Privada para pública: todos os pedidos pending do alvo viram active
-      numa única transação atômica, de forma idempotente, sem notificações em massa.
-    - Pública para privada: seguidores ativos continuam ativos; novos seguidores viram pending.
+    Atualiza a privacidade da conta do usuário (Onda 5).
+    - Privada para pública: solicitações status='pending' NÃO são aprovadas automaticamente.
+      Elas devem ser deletadas (Follow.objects.filter(followed=user, status=PENDING).delete()),
+      obrigando quem tinha pedido pendente a clicar em 'Seguir' novamente.
+    - Pública para privada: seguidores ativos continuam ativos; novos solicitantes viram pending.
     """
     profile, _ = UserProfile.objects.get_or_create(user=user)
     if profile.is_private == is_private:
@@ -276,7 +277,7 @@ def update_user_privacy(*, user, is_private: bool) -> UserProfile:
         Follow.objects.filter(
             followed=user,
             status=Follow.Status.PENDING,
-        ).update(status=Follow.Status.ACTIVE)
+        ).delete()
 
     profile.is_private = is_private
     profile.save(update_fields=["is_private"])

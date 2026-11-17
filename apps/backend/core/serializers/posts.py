@@ -13,7 +13,12 @@ class AuthorSerializer(serializers.Serializer):
 
     id = serializers.UUIDField(read_only=True)
     username = serializers.CharField(read_only=True)
+    display_name = serializers.SerializerMethodField()
     avatar = serializers.SerializerMethodField()
+
+    def get_display_name(self, obj):
+        profile = getattr(obj, "profile", None)
+        return getattr(profile, "display_name", "") or obj.username
 
     def get_avatar(self, obj):
         profile = getattr(obj, "profile", None)

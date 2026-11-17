@@ -7,7 +7,7 @@ from typing import Optional
 from django.db import transaction
 from django.db.models import Exists, OuterRef, Q, QuerySet
 
-from core.models import Block, Mute, Notification
+from core.models import Block, Mute, Notification, UserProfile
 from core.utils.visibility import can_view_post
 
 # -----------------------------------------------------------------------------
@@ -63,8 +63,30 @@ def create_notification(
     sender=None,
     notification_type: str = Notification.Type.SYSTEM,
     ref_id: Optional[str] = None,
-) -> Notification:
-    """Cria uma notificação in-app (com chave de idempotência quando ref_id fornecido)."""
+) -> Optional[Notification]:
+    """Cria uma notificação in-app (com chave de idempotência quando ref_id fornecido).
+
+    Regra Onda 5: Quando o interruptor de notificação estiver desativado (False)
+    no perfil do destinatário, nenhum registro Notification é criado no banco de dados.
+    """
+    try:
+        profile = UserProfile.objects.filter(user=recipient).first()
+    except Exception:
+        profile = getattr(recipient, "profile", None)
+
+    if profile is not None:
+        if notification_type == Notification.Type.LIKE and not profile.notify_likes:
+            return None
+        if (
+            notification_type in (Notification.Type.REPLY, "reply", "comment")
+            and not profile.notify_comments
+        ):
+            return None
+        if notification_type == Notification.Type.FOLLOW and not profile.notify_follows:
+            return None
+        if notification_type == Notification.Type.MENTION and not profile.notify_mentions:
+            return None
+
     if ref_id is not None:
         notif, _ = Notification.objects.get_or_create(
             recipient=recipient,
@@ -89,8 +111,16 @@ def notify_user_followed(*, follower, followed) -> None:
     - Não notifica a si mesmo
     - Não notifica se houver bloqueio bilateral
     - Não notifica se recipient silenciou sender
+    - Não notifica se followed desativou notify_follows (Onda 5)
     """
     if follower == followed:
+        return
+
+    try:
+        profile = UserProfile.objects.filter(user=followed).first()
+    except Exception:
+        profile = getattr(followed, "profile", None)
+    if profile is not None and not profile.notify_follows:
         return
 
     if Block.objects.filter(
@@ -120,8 +150,16 @@ def notify_follow_request_accepted(*, follower, followed) -> None:
     - Não notifica a si mesmo
     - Não notifica se houver bloqueio bilateral
     - Não notifica se recipient (follower) silenciou sender (followed)
+    - Não notifica se follower desativou notify_follows (Onda 5)
     """
     if follower == followed:
+        return
+
+    try:
+        profile = UserProfile.objects.filter(user=follower).first()
+    except Exception:
+        profile = getattr(follower, "profile", None)
+    if profile is not None and not profile.notify_follows:
         return
 
     if Block.objects.filter(
@@ -152,9 +190,17 @@ def notify_post_liked(*, sender, post) -> None:
     - Não notifica se houver bloqueio bilateral
     - Não notifica se o autor silenciou o sender
     - Nunca notifica se sender ou recipient não puder ver o post
+    - Não notifica se autor desativou notify_likes (Onda 5)
     """
     recipient = post.author
     if sender == recipient:
+        return
+
+    try:
+        profile = UserProfile.objects.filter(user=recipient).first()
+    except Exception:
+        profile = getattr(recipient, "profile", None)
+    if profile is not None and not profile.notify_likes:
         return
 
     # Checa bloqueio bilateral

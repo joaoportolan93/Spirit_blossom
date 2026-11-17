@@ -228,3 +228,33 @@ export async function exportUserData() {
   const res = await api.get("/api/users/export-data/");
   return res.data;
 }
+
+export async function getUserSettings() {
+  const res = await api.get("/api/users/settings/");
+  return res.data;
+}
+
+export async function updateUserSettings(data) {
+  const headers = data instanceof FormData ? { "Content-Type": "multipart/form-data" } : {};
+  const res = await api.patch("/api/users/settings/", data, { headers });
+  return res.data;
+}
+
+export async function changePassword({ current_password, new_password, new_password_confirm }) {
+  const res = await api.post("/api/auth/change-password/", {
+    current_password,
+    new_password,
+    new_password_confirm,
+  });
+  return res.data;
+}
+
+export async function getCurrentUser() {
+  const res = await api.get("/api/auth/me/");
+  return res.data;
+}
+
+export async function getProfileLikes(username) {
+  const res = await api.get(`/api/social/profile/${username}/likes/`);
+  return res.data;
+}

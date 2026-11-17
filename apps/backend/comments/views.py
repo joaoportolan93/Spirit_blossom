@@ -72,12 +72,6 @@ class PostCommentsView(APIView):
         )
 
     def post(self, request, pk):
-        if not request.user or not request.user.is_authenticated:
-            return Response(
-                {"detail": _("Authentication credentials were not provided.")},
-                status=status.HTTP_401_UNAUTHORIZED,
-            )
-
         post = self._get_post_or_404(pk, request.user)
         serializer = CommentCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -203,12 +197,6 @@ class CommentDetailView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def patch(self, request, pk):
-        if not request.user or not request.user.is_authenticated:
-            return Response(
-                {"detail": _("Authentication credentials were not provided.")},
-                status=status.HTTP_401_UNAUTHORIZED,
-            )
-
         comment = self._get_comment_or_404(pk, request.user)
         serializer = CommentUpdateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -233,12 +221,6 @@ class CommentDetailView(APIView):
         )
 
     def delete(self, request, pk):
-        if not request.user or not request.user.is_authenticated:
-            return Response(
-                {"detail": _("Authentication credentials were not provided.")},
-                status=status.HTTP_401_UNAUTHORIZED,
-            )
-
         comment = self._get_comment_or_404(pk, request.user)
         try:
             delete_comment(comment=comment, user=request.user)

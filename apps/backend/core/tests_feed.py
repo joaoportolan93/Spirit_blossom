@@ -10,9 +10,8 @@ import uuid
 import jsonschema
 import pytest
 from rest_framework import status
-from rest_framework.test import APIClient
-from rest_framework_simplejwt.tokens import RefreshToken
 
+from conftest import auth_client
 from core.factories import BlockFactory, FollowFactory, PostFactory, UserFactory
 from core.models import Block, Mute, Post, UserProfile
 
@@ -24,18 +23,11 @@ SCHEMA_PATH = (
 )
 
 
-def _client_for(user):
-    client = APIClient()
-    refresh = RefreshToken.for_user(user)
-    client.cookies["access_token"] = str(refresh.access_token)
-    return client
-
-
 @pytest.mark.django_db
 class TestFollowingFeed:
     def test_feed_vazio_para_usuario_sem_seguidos(self):
         user = UserFactory()
-        client = _client_for(user)
+        client = auth_client(user)
         response = client.get("/api/feed/following/")
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
@@ -49,7 +41,7 @@ class TestFollowingFeed:
         p1 = PostFactory(author=followed)
         p2 = PostFactory(author=followed)
         p3 = PostFactory(author=followed)
-        client = _client_for(user)
+        client = auth_client(user)
         data = client.get("/api/feed/following/").json()
         ids = [item["post_id"] for item in data["items"]]
         assert ids.index(str(p3.pk)) < ids.index(str(p2.pk)) < ids.index(str(p1.pk))
@@ -58,13 +50,13 @@ class TestFollowingFeed:
         user = UserFactory()
         stranger = UserFactory()
         post = PostFactory(author=stranger)
-        client = _client_for(user)
+        client = auth_client(user)
         ids = [item["post_id"] for item in client.get("/api/feed/following/").json()["items"]]
         assert str(post.pk) not in ids
 
     def test_cursor_invalido_retorna_400(self):
         user = UserFactory()
-        client = _client_for(user)
+        client = auth_client(user)
         response = client.get("/api/feed/following/?cursor=nao-e-uuid")
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
@@ -73,7 +65,7 @@ class TestFollowingFeed:
         followed = UserFactory()
         FollowFactory(follower=user, followed=followed)
         [PostFactory(author=followed) for _ in range(5)]
-        client = _client_for(user)
+        client = auth_client(user)
         data_first = client.get("/api/feed/following/").json()
         cursor = data_first["items"][-1]["cursor"]
         data_next = client.get(f"/api/feed/following/?cursor={cursor}").json()
@@ -87,7 +79,7 @@ class TestFollowingFeed:
         FollowFactory(follower=user, followed=blocked)
         BlockFactory(blocker=user, blocked=blocked)
         PostFactory(author=blocked)
-        client = _client_for(user)
+        client = auth_client(user)
         data = client.get("/api/feed/following/").json()
         assert data["items"] == []
 
@@ -101,7 +93,7 @@ class TestFeedContract:
         followed = UserFactory()
         FollowFactory(follower=user, followed=followed)
         PostFactory(author=followed)
-        client = _client_for(user)
+        client = auth_client(user)
         data = client.get("/api/feed/following/").json()
         jsonschema.validate(instance=data, schema=schema)
 
@@ -111,7 +103,7 @@ class TestFeedContract:
         followed = UserFactory()
         FollowFactory(follower=user, followed=followed)
         PostFactory(author=followed)
-        client = _client_for(user)
+        client = auth_client(user)
         data = client.get("/api/feed/following/").json()
         for item in data["items"]:
             assert item["reason"] == "following"
@@ -122,7 +114,7 @@ class TestFeedContract:
         followed = UserFactory()
         FollowFactory(follower=user, followed=followed)
         [PostFactory(author=followed) for _ in range(20)]
-        client = _client_for(user)
+        client = auth_client(user)
         data = client.get("/api/feed/following/").json()
         assert len(data["items"]) == 20
         assert data["next_cursor"] is not None
@@ -133,7 +125,7 @@ class TestFeedContract:
         followed = UserFactory()
         FollowFactory(follower=user, followed=followed)
         [PostFactory(author=followed) for _ in range(5)]
-        client = _client_for(user)
+        client = auth_client(user)
         data = client.get("/api/feed/following/").json()
         assert len(data["items"]) == 5
         assert data["next_cursor"] is None
@@ -144,7 +136,7 @@ class TestFeedContract:
         followed = UserFactory()
         FollowFactory(follower=user, followed=followed)
         PostFactory(author=followed)
-        client = _client_for(user)
+        client = auth_client(user)
         data = client.get("/api/feed/following/").json()
         for item in data["items"]:
             uuid.UUID(item["post_id"])
@@ -157,7 +149,7 @@ class TestExploreFeedEndpoint:
         author = UserFactory()
         post = PostFactory(author=author, visibility=Post.Visibility.PUBLIC)
 
-        client = _client_for(viewer)
+        client = auth_client(viewer)
         res = client.get("/api/feed/explore/")
         assert res.status_code == status.HTTP_200_OK
         data = res.json()
@@ -178,7 +170,7 @@ class TestExploreFeedEndpoint:
         normal_author = UserFactory()
         post_circle = PostFactory(author=normal_author, visibility=Post.Visibility.CIRCLE)
 
-        client = _client_for(viewer)
+        client = auth_client(viewer)
         res = client.get("/api/feed/explore/")
         assert res.status_code == status.HTTP_200_OK
         post_ids = [item["post_id"] for item in res.json()["items"]]
@@ -201,7 +193,7 @@ class TestExploreFeedEndpoint:
         p_muted = PostFactory(author=author_muted, visibility=Post.Visibility.PUBLIC)
         p_normal = PostFactory(author=normal_author, visibility=Post.Visibility.PUBLIC)
 
-        client = _client_for(viewer)
+        client = auth_client(viewer)
         res = client.get("/api/feed/explore/")
         assert res.status_code == status.HTTP_200_OK
         post_ids = [item["post_id"] for item in res.json()["items"]]
@@ -212,6 +204,6 @@ class TestExploreFeedEndpoint:
 
     def test_explore_invalid_cursor_returns_400(self):
         viewer = UserFactory()
-        client = _client_for(viewer)
+        client = auth_client(viewer)
         res = client.get("/api/feed/explore/?cursor=invalid-uuid")
         assert res.status_code == status.HTTP_400_BAD_REQUEST

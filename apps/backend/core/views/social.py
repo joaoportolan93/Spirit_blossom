@@ -13,7 +13,7 @@ from rest_framework.response import Response
 from rest_framework.throttling import UserRateThrottle
 from rest_framework.views import APIView
 
-from core.models import Block, Follow
+from core.models import Block, Follow, PostLike
 from core.serializers.posts import PostSerializer
 from core.serializers.social import FollowRequestSerializer
 from core.services.social import (
@@ -33,6 +33,7 @@ from core.services.social import (
 )
 from core.throttles import BlockRateThrottle
 from core.utils.visibility import (
+    can_view_likes_tab,
     can_view_profile,
     get_profile_counters,
     get_relationship_status,
@@ -128,14 +129,20 @@ class ProfileDetailView(APIView):
 
         avatar_url = profile.avatar.url if profile and profile.avatar else None
 
+        show_likes_tab = getattr(profile, "show_likes_tab", True) if profile else True
+
+        display_name = getattr(profile, "display_name", "") if profile else ""
+
         # 2. Se for conta privada e viewer não puder ver perfil completo -> perfil mínimo (200 OK)
         if not can_view_profile(request.user, target):
             return Response(
                 {
                     "username": target.username,
+                    "display_name": display_name,
                     "bio": "",
                     "avatar": avatar_url,
                     "is_private": True,
+                    "show_likes_tab": show_likes_tab,
                     "posts_count": 0,
                     "followers_count": 0,
                     "following_count": 0,
@@ -153,15 +160,51 @@ class ProfileDetailView(APIView):
         return Response(
             {
                 "username": target.username,
+                "display_name": display_name,
                 "bio": getattr(profile, "bio", "") if profile else "",
                 "avatar": avatar_url,
                 "is_private": is_private,
+                "show_likes_tab": show_likes_tab,
                 **counters,
                 **relationship,
                 "posts": posts_data,
             },
             status=status.HTTP_200_OK,
         )
+
+
+class ProfileLikesView(APIView):
+    """
+    GET /api/social/profile/<username>/likes/
+    Retorna publicações curtidas pelo usuário (respeitando show_likes_tab e visibilidade).
+    Dono da conta vê sempre. Visitante é bloqueado (403) se show_likes_tab=False (Onda 5).
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, username):
+        target = User.objects.filter(username=username).select_related("profile").first()
+        if (
+            not target
+            or is_user_blocked(request.user, target)
+            or not getattr(target, "is_valid_for_auth", True)
+        ):
+            raise Http404()
+
+        if not can_view_likes_tab(request.user, target):
+            return Response(
+                {"detail": "Aba de curtidas indisponível."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        liked_post_ids = PostLike.objects.filter(user=target).values_list("post_id", flat=True)
+        posts_qs = (
+            visible_posts_for(request.user)
+            .filter(id__in=liked_post_ids)
+            .order_by("-id")[:20]
+        )
+        posts_data = PostSerializer(posts_qs, many=True, context={"request": request}).data
+        return Response(posts_data, status=status.HTTP_200_OK)
 
 
 class CloseFriendsView(APIView):

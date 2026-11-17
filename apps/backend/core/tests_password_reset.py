@@ -13,27 +13,18 @@ import pytest
 from django.core import mail
 from django.utils import timezone
 from rest_framework import status
-from rest_framework.test import APIClient
 
+from conftest import get_csrf_token, make_client
 from core.factories import UserFactory
 from core.models import PasswordResetToken
-
-
-def _make_client(enforce_csrf: bool = False) -> APIClient:
-    return APIClient(enforce_csrf_checks=enforce_csrf)
-
-
-def _get_csrf(client: APIClient) -> str:
-    response = client.get("/api/auth/csrf/")
-    return response.cookies["csrftoken"].value
 
 
 @pytest.mark.django_db(transaction=True)
 class TestPasswordResetFlow:
     def test_request_reset_existing_email_sends_email_with_hash_fragment(self):
         user = UserFactory(email="recuperar@example.com")
-        client = _make_client(enforce_csrf=True)
-        csrf = _get_csrf(client)
+        client = make_client(enforce_csrf=True)
+        csrf = get_csrf_token(client)
 
         response = client.post(
             "/api/auth/password-reset/request/",
@@ -57,8 +48,8 @@ class TestPasswordResetFlow:
         assert token_obj.expires_at > timezone.now()
 
     def test_request_reset_nonexistent_email_returns_identical_response_and_no_email(self):
-        client = _make_client(enforce_csrf=True)
-        csrf = _get_csrf(client)
+        client = make_client(enforce_csrf=True)
+        csrf = get_csrf_token(client)
 
         response = client.post(
             "/api/auth/password-reset/request/",
@@ -75,8 +66,8 @@ class TestPasswordResetFlow:
         user.set_password("SenhaAntiga123!")
         user.save()
 
-        client = _make_client(enforce_csrf=True)
-        csrf = _get_csrf(client)
+        client = make_client(enforce_csrf=True)
+        csrf = get_csrf_token(client)
 
         # Solicita reset
         client.post(
@@ -121,8 +112,8 @@ class TestPasswordResetFlow:
 
     def test_confirm_reset_reused_token_fails(self):
         UserFactory(email="reuso@example.com")
-        client = _make_client(enforce_csrf=True)
-        csrf = _get_csrf(client)
+        client = make_client(enforce_csrf=True)
+        csrf = get_csrf_token(client)
 
         client.post(
             "/api/auth/password-reset/request/",
@@ -160,8 +151,8 @@ class TestPasswordResetFlow:
 
     def test_confirm_reset_expired_token_fails(self):
         user = UserFactory(email="expirado@example.com")
-        client = _make_client(enforce_csrf=True)
-        csrf = _get_csrf(client)
+        client = make_client(enforce_csrf=True)
+        csrf = get_csrf_token(client)
 
         client.post(
             "/api/auth/password-reset/request/",
@@ -189,8 +180,8 @@ class TestPasswordResetFlow:
         assert resp.status_code == status.HTTP_400_BAD_REQUEST
 
     def test_confirm_reset_passwords_mismatch_returns_400(self):
-        client = _make_client(enforce_csrf=True)
-        csrf = _get_csrf(client)
+        client = make_client(enforce_csrf=True)
+        csrf = get_csrf_token(client)
 
         resp = client.post(
             "/api/auth/password-reset/confirm/",

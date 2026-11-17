@@ -12,7 +12,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from core.factories import BlockFactory, FollowFactory, UserFactory
 from core.models import Block, Follow, Mute, Notification, UserProfile
-from core.serializers.auth import UserProfilePrivacySerializer
+from core.serializers.auth import UserSettingsUpdateSerializer
 from core.serializers.social import FollowRequestSerializer, FollowSerializer
 from core.utils.visibility import can_view_profile, get_profile_counters, get_relationship_status
 
@@ -688,6 +688,6 @@ class TestProfilePrivacyToggle:
         assert res.status_code == status.HTTP_400_BAD_REQUEST
 
     def test_serializer_privacidade_campos_restritos(self):
-        s = UserProfilePrivacySerializer(data={"is_private": True, "extra_field": "hack"})
+        s = UserSettingsUpdateSerializer(data={"is_private": True, "extra_field": "hack"})
         assert s.is_valid()
         assert set(s.validated_data.keys()) == {"is_private"}

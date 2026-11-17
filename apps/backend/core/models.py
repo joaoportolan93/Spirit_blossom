@@ -75,11 +75,26 @@ class User(AbstractBaseUser, PermissionsMixin):
 
 
 class UserProfile(models.Model):
+    class Theme(models.TextChoices):
+        LIGHT = "light", _("Branco")
+        DARK = "dark", _("Preto")
+        OLED = "oled", _("Preto OLED")
+
+    class Language(models.TextChoices):
+        PT_BR = "pt-BR", _("Português")
+        EN = "en", _("Inglês")
+
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         primary_key=True,
         related_name="profile",
+    )
+    display_name = models.CharField(
+        max_length=60,
+        blank=True,
+        default="",
+        help_text=_("Nome completo ou apelido de exibição."),
     )
     bio = models.CharField(max_length=160, blank=True, default="")
     avatar = models.ImageField(upload_to="avatars/", null=True, blank=True)
@@ -91,6 +106,38 @@ class UserProfile(models.Model):
     is_private = models.BooleanField(
         default=False,
         help_text=_("Indica se a conta é privada."),
+    )
+    show_likes_tab = models.BooleanField(
+        default=True,
+        help_text=_("Controla se visitantes podem ver a aba de curtidas no perfil."),
+    )
+    notify_likes = models.BooleanField(
+        default=True,
+        help_text=_("Receber notificações de curtidas."),
+    )
+    notify_comments = models.BooleanField(
+        default=True,
+        help_text=_("Receber notificações de comentários e respostas."),
+    )
+    notify_follows = models.BooleanField(
+        default=True,
+        help_text=_("Receber notificações de novos seguidores."),
+    )
+    notify_mentions = models.BooleanField(
+        default=True,
+        help_text=_("Receber notificações de menções."),
+    )
+    theme = models.CharField(
+        max_length=10,
+        choices=Theme.choices,
+        default=Theme.LIGHT,
+        help_text=_("Tema visual da aplicação."),
+    )
+    language = models.CharField(
+        max_length=10,
+        choices=Language.choices,
+        default=Language.PT_BR,
+        help_text=_("Idioma preferencial do usuário."),
     )
     terms_accepted_at = models.DateTimeField(
         null=True,

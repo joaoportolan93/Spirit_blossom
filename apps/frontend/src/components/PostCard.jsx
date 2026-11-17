@@ -243,16 +243,31 @@ export function PostCard({
     >
       <header className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center font-bold text-xs text-zinc-300">
-            {authorName[0]?.toUpperCase()}
+          <div className="w-8 h-8 rounded-full overflow-hidden bg-zinc-800 border border-zinc-700 flex items-center justify-center font-bold text-xs text-zinc-300 shrink-0">
+            {post.author?.avatar ? (
+              <img
+                src={post.author.avatar}
+                alt={post.author?.display_name || authorName}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              ((post.author?.display_name || authorName)[0] || "U").toUpperCase()
+            )}
           </div>
-          <Link
-            to={`/profile/${authorName}`}
-            onClick={(e) => e.stopPropagation()}
-            className="font-semibold text-sm text-zinc-200 hover:text-white hover:underline transition"
-          >
-            @{authorName}
-          </Link>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {post.author?.display_name && (
+              <span className="font-semibold text-sm text-zinc-100">
+                {post.author.display_name}
+              </span>
+            )}
+            <Link
+              to={`/profile/${authorName}`}
+              onClick={(e) => e.stopPropagation()}
+              className="text-xs text-zinc-400 hover:text-zinc-200 hover:underline transition"
+            >
+              @{authorName}
+            </Link>
+          </div>
           {post.visibility === "circle" && (
             <span
               data-testid="post-circle-badge"

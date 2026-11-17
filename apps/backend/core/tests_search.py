@@ -15,9 +15,9 @@ from core.factories import BlockFactory, PostFactory, UserFactory
 from core.models import Block, Post, UserProfile
 from core.services.posts import search_posts
 
-_is_sqlite = (
-    os.environ.get("DJANGO_SETTINGS_MODULE", "config.settings_test") == "config.settings_test"
-)
+# settings_test e settings_dev usam SQLite; settings_ci usa Postgres
+_SQLITE_SETTINGS = {"config.settings_test", "config.settings_dev"}
+_is_sqlite = os.environ.get("DJANGO_SETTINGS_MODULE", "config.settings_test") in _SQLITE_SETTINGS
 requires_postgres = pytest.mark.skipif(
     _is_sqlite,
     reason="Busca full-text exige Postgres (tsvector/GIN). Rode com DJANGO_SETTINGS_MODULE=config.settings_ci.",

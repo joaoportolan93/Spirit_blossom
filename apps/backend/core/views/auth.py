@@ -9,6 +9,7 @@ from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
 from django.views.decorators.csrf import ensure_csrf_cookie
 from rest_framework import status
+from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.throttling import UserRateThrottle
@@ -17,15 +18,18 @@ from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from core.authentication import _enforce_csrf
-from core.models import Follow
+from core.models import Follow, UserProfile
 from core.serializers.auth import (
+    ChangePasswordSerializer,
+    CurrentUserSerializer,
     GoogleAuthSerializer,
     GoogleCompleteSignupSerializer,
     LoginSerializer,
     PasswordResetConfirmSerializer,
     PasswordResetRequestSerializer,
     RegisterSerializer,
-    UserProfilePrivacySerializer,
+    UserSettingsSerializer,
+    UserSettingsUpdateSerializer,
 )
 from core.services.auth import (
     authenticate_user,
@@ -44,7 +48,6 @@ from core.services.auth import (
 from core.services.social import (
     list_blocked_users,
     list_muted_users,
-    update_user_privacy,
 )
 from core.throttles import (
     LoginRateThrottle,
@@ -115,7 +118,7 @@ class LoginView(APIView):
         if not user or not refresh:
             return Response(
                 {"detail": "Credenciais inválidas ou conta inativa."},
-                status=status.HTTP_401_UNAUTHORIZED,
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         response = Response({"detail": "Login realizado com sucesso."})
@@ -345,32 +348,6 @@ class UserSearchView(APIView):
         return Response({"results": results})
 
 
-class UserProfileUpdateView(APIView):
-    """
-    PATCH /api/users/profile/
-    Atualiza configurações de privacidade do perfil do usuário autenticado.
-    Exige autenticação, CSRF e throttle.
-    """
-
-    permission_classes = [IsAuthenticated]
-    throttle_classes = [UserRateThrottle]
-
-    def patch(self, request):
-        serializer = UserProfilePrivacySerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        is_private = serializer.validated_data["is_private"]
-
-        profile = update_user_privacy(user=request.user, is_private=is_private)
-
-        return Response(
-            {
-                "username": request.user.username,
-                "is_private": profile.is_private,
-            },
-            status=status.HTTP_200_OK,
-        )
-
-
 class UserDataExportView(APIView):
     """
     GET /api/users/export-data/
@@ -420,3 +397,84 @@ class UserDataExportView(APIView):
             "muted_users": muted_by_me,
         }
         return Response(data, status=status.HTTP_200_OK)
+
+
+class CurrentUserView(APIView):
+    """
+    GET /api/auth/me/
+    Retorna os dados completos do usuário autenticado e preferências (Onda 5).
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        serializer = CurrentUserSerializer(request.user)
+        return Response(serializer.data)
+
+
+class ChangePasswordView(APIView):
+    """
+    POST /api/auth/change-password/
+    Altera a senha do usuário autenticado e renova cookies JWT (Onda 5).
+    """
+
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [UserRateThrottle]
+
+    def post(self, request):
+        serializer = ChangePasswordSerializer(
+            data=request.data, context={"request": request}
+        )
+        serializer.is_valid(raise_exception=True)
+
+        user = request.user
+        user.set_password(serializer.validated_data["new_password"])
+        user.save()
+
+        response = Response(
+            {"detail": _("Senha alterada com sucesso.")},
+            status=status.HTTP_200_OK,
+        )
+        refresh = RefreshToken.for_user(user)
+        issue_auth_cookies(response, refresh)
+        return response
+
+
+class UserSettingsView(APIView):
+    """
+    GET  /api/users/settings/ → Consulta configurações completas do usuário (Onda 5).
+    PATCH /api/users/settings/ → Atualiza configurações de perfil, avatar, privacidade,
+    notificações, tema e idioma.
+    """
+
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [UserRateThrottle]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
+
+    def get(self, request):
+        profile, _ = UserProfile.objects.get_or_create(user=request.user)
+        serializer = UserSettingsSerializer(instance=profile)
+        return Response(serializer.data)
+
+    def patch(self, request):
+        profile, _ = UserProfile.objects.get_or_create(user=request.user)
+        serializer = UserSettingsUpdateSerializer(
+            instance=profile,
+            data=request.data,
+            partial=True,
+            context={"request": request},
+        )
+        serializer.is_valid(raise_exception=True)
+        updated_profile = serializer.save()
+        if request.path.rstrip("/").endswith("/profile"):
+            return Response(
+                {
+                    "username": request.user.username,
+                    "is_private": updated_profile.is_private,
+                },
+                status=status.HTTP_200_OK,
+            )
+        return Response(
+            UserSettingsSerializer(instance=updated_profile).data,
+            status=status.HTTP_200_OK,
+        )

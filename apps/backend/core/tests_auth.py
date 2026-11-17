@@ -14,6 +14,7 @@ from rest_framework import status
 from rest_framework.test import APIClient, APIRequestFactory
 from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 
+from conftest import get_csrf_token, make_client
 from core.authentication import CookieJWTAuthentication
 from core.factories import UserFactory
 from core.models import AccessLog
@@ -22,28 +23,17 @@ from core.throttles import LoginRateThrottle, RegisterRateThrottle
 User = get_user_model()
 
 
-def _make_client(enforce_csrf=False):
-    return APIClient(enforce_csrf_checks=enforce_csrf)
-
-
-def _get_csrf(client):
-    r = client.get("/api/auth/csrf/")
-    assert r.status_code == 200
-    cookie = client.cookies.get("csrftoken")
-    return cookie.value if cookie else ""
-
-
 @pytest.mark.django_db
 class TestCSRFEndpoint:
     def test_csrf_endpoint_retorna_200_e_seta_cookie(self):
-        client = _make_client()
+        client = make_client()
         response = client.get("/api/auth/csrf/")
         assert response.status_code == status.HTTP_200_OK
         assert "csrftoken" in response.cookies or "csrftoken" in client.cookies
 
     def test_csrf_endpoint_nao_requer_autenticacao(self):
         """GET /csrf/ deve funcionar sem token."""
-        client = _make_client()
+        client = make_client()
         response = client.get("/api/auth/csrf/")
         assert response.status_code == status.HTTP_200_OK
 
@@ -51,8 +41,8 @@ class TestCSRFEndpoint:
 @pytest.mark.django_db
 class TestRegister:
     def test_register_cria_usuario_e_retorna_cookies(self):
-        client = _make_client(enforce_csrf=True)
-        csrf = _get_csrf(client)
+        client = make_client(enforce_csrf=True)
+        csrf = get_csrf_token(client)
         data = {
             "email": "novo@example.com",
             "username": "novousuario",
@@ -76,8 +66,8 @@ class TestRegister:
         assert "refresh_token" in response.cookies
 
     def test_register_sem_terms_accepted_retorna_400(self):
-        client = _make_client(enforce_csrf=True)
-        csrf = _get_csrf(client)
+        client = make_client(enforce_csrf=True)
+        csrf = get_csrf_token(client)
         data = {
             "email": "semtermos@example.com",
             "username": "semtermos",
@@ -96,8 +86,8 @@ class TestRegister:
         assert "terms_accepted" in response.data
 
     def test_register_senha_diferente_retorna_400(self):
-        client = _make_client(enforce_csrf=True)
-        csrf = _get_csrf(client)
+        client = make_client(enforce_csrf=True)
+        csrf = get_csrf_token(client)
         data = {
             "email": "x@example.com",
             "username": "xuser",
@@ -115,8 +105,8 @@ class TestRegister:
 
     def test_register_username_duplicado_retorna_400(self):
         UserFactory(username="existente")
-        client = _make_client(enforce_csrf=True)
-        csrf = _get_csrf(client)
+        client = make_client(enforce_csrf=True)
+        csrf = get_csrf_token(client)
         data = {
             "email": "outro@example.com",
             "username": "existente",
@@ -134,8 +124,8 @@ class TestRegister:
 
     def test_register_email_duplicado_retorna_400(self):
         UserFactory(email="duplicado@example.com")
-        client = _make_client(enforce_csrf=True)
-        csrf = _get_csrf(client)
+        client = make_client(enforce_csrf=True)
+        csrf = get_csrf_token(client)
         data = {
             "email": "duplicado@example.com",
             "username": "novouser1",
@@ -152,8 +142,8 @@ class TestRegister:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     def test_register_senha_curta_retorna_400(self):
-        client = _make_client(enforce_csrf=True)
-        csrf = _get_csrf(client)
+        client = make_client(enforce_csrf=True)
+        csrf = get_csrf_token(client)
         data = {
             "email": "curta@example.com",
             "username": "novouser2",
@@ -170,8 +160,8 @@ class TestRegister:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     def test_register_username_invalido_retorna_400(self):
-        client = _make_client(enforce_csrf=True)
-        csrf = _get_csrf(client)
+        client = make_client(enforce_csrf=True)
+        csrf = get_csrf_token(client)
         data = {
             "email": "invalido@example.com",
             "username": "user com espaco",
@@ -188,8 +178,8 @@ class TestRegister:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     def test_register_menor_de_18_anos_retorna_400(self):
-        client = _make_client(enforce_csrf=True)
-        csrf = _get_csrf(client)
+        client = make_client(enforce_csrf=True)
+        csrf = get_csrf_token(client)
         today = date.today()
         underage = date(today.year - 17, today.month, today.day).isoformat()
         data = {
@@ -209,8 +199,8 @@ class TestRegister:
         assert "18 anos" in str(response.data)
 
     def test_register_sem_birth_date_retorna_400(self):
-        client = _make_client(enforce_csrf=True)
-        csrf = _get_csrf(client)
+        client = make_client(enforce_csrf=True)
+        csrf = get_csrf_token(client)
         data = {
             "email": "sembirth@example.com",
             "username": "sembirth",
@@ -233,8 +223,8 @@ class TestLogin:
         user = UserFactory(email="auth@example.com")
         user.set_password("senhaforte123")
         user.save()
-        client = _make_client(enforce_csrf=True)
-        csrf = _get_csrf(client)
+        client = make_client(enforce_csrf=True)
+        csrf = get_csrf_token(client)
         response = client.post(
             "/api/auth/login/",
             {"email": "auth@example.com", "password": "senhaforte123"},
@@ -249,8 +239,8 @@ class TestLogin:
         user = UserFactory(email="wrong@example.com")
         user.set_password("senhaforte123")
         user.save()
-        client = _make_client(enforce_csrf=True)
-        csrf = _get_csrf(client)
+        client = make_client(enforce_csrf=True)
+        csrf = get_csrf_token(client)
         response = client.post(
             "/api/auth/login/",
             {"email": "wrong@example.com", "password": "errada"},
@@ -260,8 +250,8 @@ class TestLogin:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     def test_login_usuario_inexistente_retorna_400(self):
-        client = _make_client(enforce_csrf=True)
-        csrf = _get_csrf(client)
+        client = make_client(enforce_csrf=True)
+        csrf = get_csrf_token(client)
         response = client.post(
             "/api/auth/login/",
             {"email": "inexistente@example.com", "password": "qualquersenha"},
@@ -274,8 +264,8 @@ class TestLogin:
         user = UserFactory(email="inativo@example.com", is_active=False)
         user.set_password("senhaforte123")
         user.save()
-        client = _make_client(enforce_csrf=True)
-        csrf = _get_csrf(client)
+        client = make_client(enforce_csrf=True)
+        csrf = get_csrf_token(client)
         response = client.post(
             "/api/auth/login/",
             {"email": "inativo@example.com", "password": "senhaforte123"},
@@ -288,8 +278,8 @@ class TestLogin:
         user = UserFactory(email="suspenso@example.com", status=User.Status.SUSPENDED)
         user.set_password("senhaforte123")
         user.save()
-        client = _make_client(enforce_csrf=True)
-        csrf = _get_csrf(client)
+        client = make_client(enforce_csrf=True)
+        csrf = get_csrf_token(client)
         response = client.post(
             "/api/auth/login/",
             {"email": "suspenso@example.com", "password": "senhaforte123"},
@@ -303,8 +293,8 @@ class TestLogin:
         user = UserFactory(email="log@example.com")
         user.set_password("senhaforte123")
         user.save()
-        client = _make_client(enforce_csrf=True)
-        csrf = _get_csrf(client)
+        client = make_client(enforce_csrf=True)
+        csrf = get_csrf_token(client)
         initial_count = AccessLog.objects.filter(user=user).count()
         client.post(
             "/api/auth/login/",
@@ -319,8 +309,8 @@ class TestLogin:
         user = UserFactory(email="hashtest@example.com")
         user.set_password("senhaforte123")
         user.save()
-        client = _make_client(enforce_csrf=True)
-        csrf = _get_csrf(client)
+        client = make_client(enforce_csrf=True)
+        csrf = get_csrf_token(client)
         client.post(
             "/api/auth/login/",
             {"email": "hashtest@example.com", "password": "senhaforte123"},
@@ -338,8 +328,8 @@ class TestLogin:
         user = UserFactory(email="portatest@example.com")
         user.set_password("senhaforte123")
         user.save()
-        client = _make_client(enforce_csrf=True)
-        csrf = _get_csrf(client)
+        client = make_client(enforce_csrf=True)
+        csrf = get_csrf_token(client)
         client.post(
             "/api/auth/login/",
             {"email": "portatest@example.com", "password": "senhaforte123"},
@@ -414,8 +404,8 @@ class TestThrottles:
         cache.clear()
         try:
             with patch.dict(LoginRateThrottle.THROTTLE_RATES, {"login": "5/min"}):
-                client = _make_client(enforce_csrf=True)
-                csrf = _get_csrf(client)
+                client = make_client(enforce_csrf=True)
+                csrf = get_csrf_token(client)
                 login_payload = {"email": "tentativa@example.com", "password": "wrongpassword"}
 
                 for _ in range(5):
@@ -441,8 +431,8 @@ class TestThrottles:
         cache.clear()
         try:
             with patch.dict(RegisterRateThrottle.THROTTLE_RATES, {"register": "3/min"}):
-                client = _make_client(enforce_csrf=True)
-                csrf = _get_csrf(client)
+                client = make_client(enforce_csrf=True)
+                csrf = get_csrf_token(client)
                 register_payload = {
                     "email": "invalid_register",
                     "password": "short",

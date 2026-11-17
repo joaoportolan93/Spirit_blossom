@@ -117,5 +117,113 @@ describe("Profile Page & Mute Interactions", () => {
       expect(muteBtn).toHaveTextContent("Silenciar");
     });
   });
-});
 
+  it("4. Dono da conta vê aba de curtidas com selo privada quando show_likes_tab = false", async () => {
+    vi.spyOn(api, "get").mockImplementation((url) => {
+      if (url.includes("/api/social/profile/me/")) {
+        return Promise.resolve({
+          data: {
+            username: "me",
+            show_likes_tab: false,
+            followers_count: 0,
+            following_count: 0,
+          },
+        });
+      }
+      return Promise.resolve({ data: [] });
+    });
+
+    renderProfileWithAuth({ username: "me" }, "/profile/me");
+
+    await waitFor(() => {
+      expect(screen.getByTestId("tab-posts")).toBeInTheDocument();
+      expect(screen.getByTestId("tab-likes")).toBeInTheDocument();
+      expect(screen.getByTestId("likes-tab-private-badge")).toBeInTheDocument();
+    });
+  });
+
+  it("5. Visitante NÃO vê aba de curtidas quando show_likes_tab = false", async () => {
+    vi.spyOn(api, "get").mockImplementation((url) => {
+      if (url.includes("/api/social/profile/target/")) {
+        return Promise.resolve({
+          data: {
+            username: "target",
+            show_likes_tab: false,
+            followers_count: 1,
+            following_count: 1,
+          },
+        });
+      }
+      return Promise.resolve({ data: [] });
+    });
+
+    renderProfileWithAuth({ username: "me" }, "/profile/target");
+
+    await waitFor(() => {
+      expect(screen.getByTestId("tab-posts")).toBeInTheDocument();
+      expect(screen.queryByTestId("tab-likes")).not.toBeInTheDocument();
+    });
+  });
+
+  it("6. Clicar na aba de curtidas requisita likes da API", async () => {
+    vi.spyOn(api, "get").mockImplementation((url) => {
+      if (url.includes("/api/social/profile/me/likes/")) {
+        return Promise.resolve({
+          data: [{ id: 101, content: "Post curtido", author: { username: "other" } }],
+        });
+      }
+      if (url.includes("/api/social/profile/me/")) {
+        return Promise.resolve({
+          data: {
+            username: "me",
+            show_likes_tab: true,
+            followers_count: 0,
+            following_count: 0,
+          },
+        });
+      }
+      return Promise.resolve({ data: [] });
+    });
+
+    renderProfileWithAuth({ username: "me" }, "/profile/me");
+
+    await waitFor(() => {
+      expect(screen.getByTestId("tab-likes")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByTestId("tab-likes"));
+
+    await waitFor(() => {
+      expect(api.get).toHaveBeenCalledWith("/api/social/profile/me/likes/");
+    });
+  });
+
+  it("7. FollowButton aciona handleFollowToggle e atualiza contagem de seguidores", async () => {
+    vi.spyOn(api, "get").mockImplementation((url) => {
+      if (url.includes("/api/social/profile/other/")) {
+        return Promise.resolve({
+          data: {
+            username: "other",
+            followers_count: 5,
+            following_count: 2,
+            is_following: false,
+          },
+        });
+      }
+      return Promise.resolve({ data: [] });
+    });
+    vi.spyOn(api, "post").mockResolvedValue({ data: { status: "active" } });
+
+    renderProfileWithAuth({ username: "me" }, "/profile/other");
+
+    await waitFor(() => {
+      expect(screen.getByTestId("follow-button")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByTestId("follow-button"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("profile-stat-followers")).toHaveTextContent("6");
+    });
+  });
+});
