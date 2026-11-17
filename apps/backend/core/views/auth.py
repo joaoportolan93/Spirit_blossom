@@ -422,9 +422,7 @@ class ChangePasswordView(APIView):
     throttle_classes = [UserRateThrottle]
 
     def post(self, request):
-        serializer = ChangePasswordSerializer(
-            data=request.data, context={"request": request}
-        )
+        serializer = ChangePasswordSerializer(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
 
         user = request.user

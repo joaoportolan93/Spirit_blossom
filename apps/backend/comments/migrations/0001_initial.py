@@ -7,101 +7,215 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
-        ('core', '0001_initial'),
+        ("core", "0001_initial"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Comment',
+            name="Comment",
             fields=[
-                ('id', models.UUIDField(default=uuid6.uuid7, editable=False, primary_key=True, serialize=False)),
-                ('depth', models.PositiveIntegerField(default=0, verbose_name='profundidade')),
-                ('content_text', models.TextField(max_length=1000, verbose_name='conteúdo')),
-                ('is_deleted', models.BooleanField(default=False, verbose_name='excluído')),
-                ('is_edited', models.BooleanField(default=False, verbose_name='editado')),
-                ('edited_at', models.DateTimeField(blank=True, null=True, verbose_name='data de edição')),
-                ('is_hidden', models.BooleanField(default=False, verbose_name='oculto')),
-                ('hidden_at', models.DateTimeField(blank=True, null=True, verbose_name='data de ocultação')),
-                ('hidden_reason', models.CharField(choices=[('owner', 'Proprietário'), ('block', 'Bloqueio')], default='owner', max_length=20, verbose_name='motivo de ocultação')),
-                ('likes_count', models.PositiveIntegerField(default=0, verbose_name='contagem de curtidas')),
-                ('replies_count', models.PositiveIntegerField(default=0, verbose_name='contagem de respostas')),
-                ('created_at', models.DateTimeField(auto_now_add=True, verbose_name='criado em')),
-                ('updated_at', models.DateTimeField(auto_now=True, verbose_name='atualizado em')),
-                ('author', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='comments', to=settings.AUTH_USER_MODEL, verbose_name='autor')),
-                ('hidden_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='hidden_comments', to=settings.AUTH_USER_MODEL, verbose_name='ocultado por')),
-                ('parent', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='replies', to='comments.comment', verbose_name='comentário pai')),
-                ('post', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='comments', to='core.post', verbose_name='publicação')),
+                (
+                    "id",
+                    models.UUIDField(
+                        default=uuid6.uuid7, editable=False, primary_key=True, serialize=False
+                    ),
+                ),
+                ("depth", models.PositiveIntegerField(default=0, verbose_name="profundidade")),
+                ("content_text", models.TextField(max_length=1000, verbose_name="conteúdo")),
+                ("is_deleted", models.BooleanField(default=False, verbose_name="excluído")),
+                ("is_edited", models.BooleanField(default=False, verbose_name="editado")),
+                (
+                    "edited_at",
+                    models.DateTimeField(blank=True, null=True, verbose_name="data de edição"),
+                ),
+                ("is_hidden", models.BooleanField(default=False, verbose_name="oculto")),
+                (
+                    "hidden_at",
+                    models.DateTimeField(blank=True, null=True, verbose_name="data de ocultação"),
+                ),
+                (
+                    "hidden_reason",
+                    models.CharField(
+                        choices=[("owner", "Proprietário"), ("block", "Bloqueio")],
+                        default="owner",
+                        max_length=20,
+                        verbose_name="motivo de ocultação",
+                    ),
+                ),
+                (
+                    "likes_count",
+                    models.PositiveIntegerField(default=0, verbose_name="contagem de curtidas"),
+                ),
+                (
+                    "replies_count",
+                    models.PositiveIntegerField(default=0, verbose_name="contagem de respostas"),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True, verbose_name="criado em")),
+                ("updated_at", models.DateTimeField(auto_now=True, verbose_name="atualizado em")),
+                (
+                    "author",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="comments",
+                        to=settings.AUTH_USER_MODEL,
+                        verbose_name="autor",
+                    ),
+                ),
+                (
+                    "hidden_by",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="hidden_comments",
+                        to=settings.AUTH_USER_MODEL,
+                        verbose_name="ocultado por",
+                    ),
+                ),
+                (
+                    "parent",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="replies",
+                        to="comments.comment",
+                        verbose_name="comentário pai",
+                    ),
+                ),
+                (
+                    "post",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="comments",
+                        to="core.post",
+                        verbose_name="publicação",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'comentário',
-                'verbose_name_plural': 'comentários',
-                'db_table': 'comments_comment',
-                'ordering': ['-created_at'],
+                "verbose_name": "comentário",
+                "verbose_name_plural": "comentários",
+                "db_table": "comments_comment",
+                "ordering": ["-created_at"],
             },
         ),
         migrations.CreateModel(
-            name='CommentBookmark',
+            name="CommentBookmark",
             fields=[
-                ('id', models.UUIDField(default=uuid6.uuid7, editable=False, primary_key=True, serialize=False)),
-                ('created_at', models.DateTimeField(auto_now_add=True, verbose_name='criado em')),
-                ('comment', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='bookmarks', to='comments.comment', verbose_name='comentário')),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='comment_bookmarks', to=settings.AUTH_USER_MODEL, verbose_name='usuário')),
+                (
+                    "id",
+                    models.UUIDField(
+                        default=uuid6.uuid7, editable=False, primary_key=True, serialize=False
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True, verbose_name="criado em")),
+                (
+                    "comment",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="bookmarks",
+                        to="comments.comment",
+                        verbose_name="comentário",
+                    ),
+                ),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="comment_bookmarks",
+                        to=settings.AUTH_USER_MODEL,
+                        verbose_name="usuário",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'comentário salvo',
-                'verbose_name_plural': 'comentários salvos',
-                'db_table': 'comments_commentbookmark',
+                "verbose_name": "comentário salvo",
+                "verbose_name_plural": "comentários salvos",
+                "db_table": "comments_commentbookmark",
             },
         ),
         migrations.CreateModel(
-            name='CommentLike',
+            name="CommentLike",
             fields=[
-                ('id', models.UUIDField(default=uuid6.uuid7, editable=False, primary_key=True, serialize=False)),
-                ('created_at', models.DateTimeField(auto_now_add=True, verbose_name='criado em')),
-                ('comment', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='likes', to='comments.comment', verbose_name='comentário')),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='comment_likes', to=settings.AUTH_USER_MODEL, verbose_name='usuário')),
+                (
+                    "id",
+                    models.UUIDField(
+                        default=uuid6.uuid7, editable=False, primary_key=True, serialize=False
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True, verbose_name="criado em")),
+                (
+                    "comment",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="likes",
+                        to="comments.comment",
+                        verbose_name="comentário",
+                    ),
+                ),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="comment_likes",
+                        to=settings.AUTH_USER_MODEL,
+                        verbose_name="usuário",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'curtida de comentário',
-                'verbose_name_plural': 'curtidas de comentários',
-                'db_table': 'comments_commentlike',
+                "verbose_name": "curtida de comentário",
+                "verbose_name_plural": "curtidas de comentários",
+                "db_table": "comments_commentlike",
             },
         ),
         migrations.AddIndex(
-            model_name='comment',
-            index=models.Index(fields=['post', 'parent', '-created_at'], name='com_post_parent_created_idx'),
+            model_name="comment",
+            index=models.Index(
+                fields=["post", "parent", "-created_at"], name="com_post_parent_created_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='comment',
-            index=models.Index(fields=['parent', '-created_at'], name='com_parent_created_idx'),
+            model_name="comment",
+            index=models.Index(fields=["parent", "-created_at"], name="com_parent_created_idx"),
         ),
         migrations.AddIndex(
-            model_name='comment',
-            index=models.Index(fields=['post', '-likes_count', '-created_at'], name='com_post_likes_created_idx'),
+            model_name="comment",
+            index=models.Index(
+                fields=["post", "-likes_count", "-created_at"], name="com_post_likes_created_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='comment',
-            index=models.Index(fields=['post', 'is_hidden', '-created_at'], name='com_post_hidden_created_idx'),
+            model_name="comment",
+            index=models.Index(
+                fields=["post", "is_hidden", "-created_at"], name="com_post_hidden_created_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='commentbookmark',
-            index=models.Index(fields=['user', '-created_at'], name='com_bkmk_user_created_idx'),
+            model_name="commentbookmark",
+            index=models.Index(fields=["user", "-created_at"], name="com_bkmk_user_created_idx"),
         ),
         migrations.AddConstraint(
-            model_name='commentbookmark',
-            constraint=models.UniqueConstraint(fields=('comment', 'user'), name='unique_comment_bookmark'),
+            model_name="commentbookmark",
+            constraint=models.UniqueConstraint(
+                fields=("comment", "user"), name="unique_comment_bookmark"
+            ),
         ),
         migrations.AddIndex(
-            model_name='commentlike',
-            index=models.Index(fields=['user', '-created_at'], name='com_like_user_created_idx'),
+            model_name="commentlike",
+            index=models.Index(fields=["user", "-created_at"], name="com_like_user_created_idx"),
         ),
         migrations.AddConstraint(
-            model_name='commentlike',
-            constraint=models.UniqueConstraint(fields=('comment', 'user'), name='unique_comment_like'),
+            model_name="commentlike",
+            constraint=models.UniqueConstraint(
+                fields=("comment", "user"), name="unique_comment_like"
+            ),
         ),
     ]

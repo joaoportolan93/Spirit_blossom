@@ -285,9 +285,7 @@ class TestUserSettings:
         assert "já está em uso" in str(res_conflict.data)
 
         # Username com caracteres inválidos
-        res_invalid = client1.patch(
-            "/api/users/settings/", {"username": "alice!@#"}, format="json"
-        )
+        res_invalid = client1.patch("/api/users/settings/", {"username": "alice!@#"}, format="json")
         assert res_invalid.status_code == status.HTTP_400_BAD_REQUEST
 
     def test_patch_settings_avatar_upload_and_removal(self):
@@ -334,9 +332,7 @@ class TestUserSettings:
         UserProfile.objects.update_or_create(user=author, defaults={"is_private": True})
 
         requester = UserFactory()
-        Follow.objects.create(
-            follower=requester, followed=author, status=Follow.Status.PENDING
-        )
+        Follow.objects.create(follower=requester, followed=author, status=Follow.Status.PENDING)
         assert Follow.objects.filter(
             follower=requester, followed=author, status=Follow.Status.PENDING
         ).exists()

@@ -76,9 +76,7 @@ def sanitize_avatar_image(uploaded_file) -> ContentFile:
     # 4. Validação da assinatura real do formato
     real_format = img.format
     if real_format not in ALLOWED_FORMATS:
-        raise ValidationError(
-            _("Formato de imagem não suportado. Use JPEG, PNG ou WEBP.")
-        )
+        raise ValidationError(_("Formato de imagem não suportado. Use JPEG, PNG ou WEBP."))
 
     # 5. Validação de dimensões totais (proteção contra decompression bomb)
     width, height = img.size
