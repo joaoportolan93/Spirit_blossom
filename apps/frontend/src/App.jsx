@@ -44,8 +44,9 @@ export function App() {
   return (
     <Router>
       <AuthProvider>
-        <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col font-sans">
+        <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans">
           <Navbar />
+          <div className="pl-60 min-h-screen flex flex-col">
           <main className="flex-1">
             <Routes>
               <Route
@@ -153,6 +154,7 @@ export function App() {
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </main>
+          </div>
         </div>
       </AuthProvider>
     </Router>

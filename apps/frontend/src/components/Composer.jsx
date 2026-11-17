@@ -98,7 +98,7 @@ export function Composer({ onPostCreated }) {
   };
 
   return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 shadow-sm mb-6">
+    <div className="bg-zinc-900 border border-zinc-800/80 rounded-2xl p-4 shadow-sm mb-5">
       <form onSubmit={handleSubmit}>
         <div className="mb-2">
           <label htmlFor="composer-textarea" className="sr-only">
@@ -111,7 +111,7 @@ export function Composer({ onPostCreated }) {
             onChange={(e) => setContent(e.target.value)}
             placeholder={t("post.placeholder")}
             rows={3}
-            className="w-full bg-zinc-950/60 border border-zinc-800 rounded-lg p-3 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-600 resize-none"
+            className="w-full bg-zinc-950/70 border border-zinc-800/80 rounded-xl p-3 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-violet-500/60 focus:border-violet-500/50 resize-none transition"
           />
         </div>
 
@@ -177,7 +177,7 @@ export function Composer({ onPostCreated }) {
               type="submit"
               data-testid="publish-button"
               disabled={!canSubmit}
-              className="bg-white text-zinc-950 font-medium px-4 py-1.5 rounded-lg text-sm disabled:opacity-40 disabled:cursor-not-allowed hover:bg-zinc-200 transition"
+              className="bg-violet-600 hover:bg-violet-500 text-white font-semibold px-5 py-1.5 rounded-xl text-sm disabled:opacity-40 disabled:cursor-not-allowed transition shadow-lg shadow-violet-900/30"
             >
               {isSubmitting ? t("post.publishing") : t("post.publish")}
             </button>

@@ -237,13 +237,13 @@ export function PostCard({
     <article
       data-testid="post-card"
       onClick={handleCardClick}
-      className={`bg-zinc-900 border border-zinc-800 rounded-xl p-4 mb-4 hover:border-zinc-700 transition relative ${
+      className={`bg-zinc-900 border border-zinc-800/80 rounded-2xl p-4 hover:border-zinc-700 hover:bg-zinc-900/90 transition-all relative shadow-sm ${
         isDetail ? "" : "cursor-pointer"
       }`}
     >
-      <header className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full overflow-hidden bg-zinc-800 border border-zinc-700 flex items-center justify-center font-bold text-xs text-zinc-300 shrink-0">
+      <header className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full overflow-hidden bg-zinc-800 border-2 border-zinc-700/60 flex items-center justify-center font-bold text-sm text-zinc-300 shrink-0 ring-2 ring-zinc-900">
             {post.author?.avatar ? (
               <img
                 src={post.author.avatar}
@@ -263,7 +263,7 @@ export function PostCard({
             <Link
               to={`/profile/${authorName}`}
               onClick={(e) => e.stopPropagation()}
-              className="text-xs text-zinc-400 hover:text-zinc-200 hover:underline transition"
+              className="text-xs text-zinc-400 hover:text-violet-400 hover:underline transition"
             >
               @{authorName}
             </Link>
