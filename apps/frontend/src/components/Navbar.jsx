@@ -14,7 +14,6 @@ import {
   Settings,
   User,
   LogOut,
-  PenSquare,
 } from "lucide-react";
 
 /** useAuth seguro — não lança erro quando fora de AuthProvider. */
@@ -72,27 +71,15 @@ function NavItem({ to, icon: Icon, label, exact = false, badge = 0 }) {
   );
 }
 
-export function Navbar({ onOpenComposer }) {
+export function Navbar() {
   const { t } = useTranslation();
   const { user, logout } = useSafeAuth();
   const navigate = useNavigate();
-  const location = useLocation();
   const notifBadge = useNotificationBadge();
 
   const handleLogout = async () => {
     await logout();
     navigate("/login");
-  };
-
-  const handleOpenComposer = () => {
-    if (onOpenComposer) {
-      onOpenComposer();
-    } else {
-      window.dispatchEvent(new CustomEvent("spirit-open-composer"));
-      if (location.pathname !== "/") {
-        navigate("/", { state: { openComposer: true } });
-      }
-    }
   };
 
   if (!user) {

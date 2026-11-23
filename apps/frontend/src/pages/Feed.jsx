@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useContext } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { FeedTabs } from "../components/FeedTabs";
@@ -6,17 +6,10 @@ import { PostComposer } from "../components/PostComposer";
 import { PostCard } from "../components/PostCard";
 import { UserMiniCard } from "../components/UserMiniCard";
 import { APP_NAME } from "../config/brand";
-import { AuthContext } from "../hooks/useAuth";
 import { api } from "../services/api";
 import {
   PenSquare,
 } from "lucide-react";
-
-/** useAuth seguro — não quebra se montado fora de AuthProvider */
-function useSafeAuth() {
-  const ctx = useContext(AuthContext);
-  return ctx ?? { user: null };
-}
 
 /** Sidebar direita minimalista: card do usuário autenticado + footer */
 function RightSidebar() {
@@ -90,7 +83,6 @@ async function fetchForYouFeed(cursor = null) {
 
 export function Feed() {
   const { t } = useTranslation();
-  const { user } = useSafeAuth();
   const location = useLocation();
 
   const [activeTab, setActiveTab] = useState("following");
@@ -109,8 +101,6 @@ export function Feed() {
   const [forYouLoadingMore, setForYouLoadingMore] = useState(false);
   const [forYouLoaded, setForYouLoaded] = useState(false);
 
-  const displayName = user?.display_name || user?.username || "Você";
-  const avatarLetter = (displayName[0] || "U").toUpperCase();
 
   // Escuta evento customizado disparado pela Sidebar
   useEffect(() => {
