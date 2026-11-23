@@ -215,6 +215,8 @@ REST_FRAMEWORK = {
         "register": "3/minute",
         "password_reset": "5/minute",
         "block": "10/minute",
+        "export_data": "3/hour",
+        "delete_account": "3/hour",
     },
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.CursorPagination",
     "PAGE_SIZE": int(os.environ.get("FEED_DEFAULT_LIMIT", "20")),
