@@ -109,6 +109,8 @@ REST_FRAMEWORK = {
         "register": "1000/minute",
         "password_reset": "1000/minute",
         "block": "1000/minute",
+        "export_data": "1000/hour",
+        "delete_account": "1000/hour",
     },
 }
 

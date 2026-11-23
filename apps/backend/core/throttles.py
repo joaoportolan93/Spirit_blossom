@@ -27,3 +27,16 @@ class BlockRateThrottle(UserRateThrottle):
     """10 operações de bloqueio/desbloqueio por minuto por usuário (ADR-N24)."""
 
     scope = "block"
+
+
+class ExportDataRateThrottle(UserRateThrottle):
+    """3 exportações de dados por hora por usuário (LGPD — evita abuso)."""
+
+    scope = "export_data"
+
+
+class DeleteAccountRateThrottle(UserRateThrottle):
+    """3 tentativas de exclusão de conta por hora por usuário."""
+
+    scope = "delete_account"
+

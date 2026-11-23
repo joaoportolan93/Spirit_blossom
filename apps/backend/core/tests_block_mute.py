@@ -563,7 +563,7 @@ class TestLGPDAndSettingsLists:
         data = res.json()
 
         # Inclui dados de perfil de A
-        assert data["user"]["username"] == user_a.username
+        assert data["profile"]["username"] == user_a.username
 
         # Inclui B nas contas bloqueadas por A
         blocked_usernames = [item["username"] for item in data["blocked_users"]]

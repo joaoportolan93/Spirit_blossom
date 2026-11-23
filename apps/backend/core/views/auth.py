@@ -22,6 +22,7 @@ from core.models import Follow, UserProfile
 from core.serializers.auth import (
     ChangePasswordSerializer,
     CurrentUserSerializer,
+    DeleteAccountSerializer,
     GoogleAuthSerializer,
     GoogleCompleteSignupSerializer,
     LoginSerializer,
@@ -37,6 +38,8 @@ from core.services.auth import (
     clear_auth_cookies,
     complete_google_signup,
     confirm_password_reset,
+    delete_account,
+    export_user_data,
     issue_auth_cookies,
     logout_user,
     refresh_user_tokens,
@@ -45,11 +48,9 @@ from core.services.auth import (
     set_access_cookie,
     set_refresh_cookie,
 )
-from core.services.social import (
-    list_blocked_users,
-    list_muted_users,
-)
 from core.throttles import (
+    DeleteAccountRateThrottle,
+    ExportDataRateThrottle,
     LoginRateThrottle,
     PasswordResetRateThrottle,
     RegisterRateThrottle,
@@ -351,52 +352,59 @@ class UserSearchView(APIView):
 class UserDataExportView(APIView):
     """
     GET /api/users/export-data/
-    Exportação LGPD dos dados do usuário autenticado (ADR-N24).
-    Inclui contas que o usuário bloqueou/silenciou.
+    Exportação LGPD completa dos dados do usuário autenticado (Onda 6 — ADR-N24 §7).
+    Inclui perfil, posts, rascunhos, curtidas, bookmarks, comentários, follows,
+    contas que o usuário bloqueou/silenciou.
     NUNCA inclui quem bloqueou ou silenciou o usuário.
+    NUNCA expõe hash de senha, tokens, ip_hash.
     """
 
     permission_classes = [IsAuthenticated]
-    throttle_classes = [UserRateThrottle]
+    throttle_classes = [ExportDataRateThrottle]
 
     def get(self, request):
-        user = request.user
-        profile = getattr(user, "profile", None)
-        blocked_qs = list_blocked_users(user=user)
-        muted_qs = list_muted_users(user=user)
-
-        blocked_by_me = [
-            {
-                "id": str(b.blocked.id),
-                "username": b.blocked.username,
-                "blocked_at": b.created_at.isoformat(),
-            }
-            for b in blocked_qs
-        ]
-
-        muted_by_me = [
-            {
-                "id": str(m.muted.id),
-                "username": m.muted.username,
-                "muted_at": m.created_at.isoformat(),
-            }
-            for m in muted_qs
-        ]
-
-        data = {
-            "user": {
-                "id": str(user.id),
-                "username": user.username,
-                "email": user.email,
-                "bio": getattr(profile, "bio", "") if profile else "",
-                "is_private": getattr(profile, "is_private", False) if profile else False,
-                "avatar": profile.avatar.url if profile and profile.avatar else None,
-                "date_joined": user.date_joined.isoformat(),
-            },
-            "blocked_users": blocked_by_me,
-            "muted_users": muted_by_me,
-        }
+        data = export_user_data(user=request.user)
         return Response(data, status=status.HTTP_200_OK)
+
+
+class DeleteAccountView(APIView):
+    """
+    DELETE /api/users/account/
+    Exclusão permanente da conta do usuário autenticado (LGPD Art. 18, VI — Onda 6).
+
+    Estratégia: Hard-delete atômico (vencedor ToT).
+    - Conta com senha: exige `current_password`.
+    - Conta Google OAuth: exige `confirm_username` (@username do titular).
+    - Revoga todos os tokens JWT, invalida PasswordResetTokens.
+    - AccessLog preservado anonimizado (Marco Civil Art. 15).
+    - Comment.author: SET_NULL via tombstone (Onda 4).
+    """
+
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [DeleteAccountRateThrottle]
+
+    def delete(self, request):
+        serializer = DeleteAccountSerializer(
+            data=request.data, context={"request": request}
+        )
+        serializer.is_valid(raise_exception=True)
+
+        cfg = getattr(settings, "SIMPLE_JWT", {})
+        refresh_cookie = cfg.get("AUTH_COOKIE_REFRESH", "refresh_token")
+        raw_refresh_token = request.COOKIES.get(refresh_cookie)
+
+        try:
+            delete_account(user=request.user, raw_refresh_token=raw_refresh_token)
+        except Exception as exc:
+            logger.error("Falha ao excluir conta: %s", exc, exc_info=True)
+            return Response(
+                {"detail": _("Erro ao excluir conta. Tente novamente.")},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+        response = Response(status=status.HTTP_204_NO_CONTENT)
+        clear_auth_cookies(response)
+        return response
 
 
 class CurrentUserView(APIView):

@@ -261,3 +261,22 @@ msgstr "Conteúdo não pode ser vazio."
 
 msgid "Only the post author can view hidden comments."
 msgstr "Apenas o autor da publicação pode ver comentários ocultos."
+
+msgid "A senha atual é obrigatória para excluir a conta."
+msgstr "A senha atual é obrigatória para excluir a conta."
+
+msgid "Senha incorreta."
+msgstr "Senha incorreta."
+
+msgid "Digite seu @username para confirmar a exclusão da conta."
+msgstr "Digite seu @username para confirmar a exclusão da conta."
+
+msgid "O username informado não corresponde ao da sua conta."
+msgstr "O username informado não corresponde ao da sua conta."
+
+msgid "Account deleted successfully."
+msgstr "Conta excluída com sucesso."
+
+msgid "Erro ao excluir conta. Tente novamente."
+msgstr "Erro ao excluir conta. Tente novamente."
+

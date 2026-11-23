@@ -9,6 +9,7 @@ from core.views.auth import (
     ChangePasswordView,
     CSRFView,
     CurrentUserView,
+    DeleteAccountView,
     GoogleAuthView,
     GoogleCompleteSignupView,
     LoginView,
@@ -76,6 +77,7 @@ users_patterns = [
     path("settings/", UserSettingsView.as_view(), name="user_settings"),
     path("search/", UserSearchView.as_view(), name="search"),
     path("export-data/", UserDataExportView.as_view(), name="export_data"),
+    path("account/", DeleteAccountView.as_view(), name="delete_account"),
 ]
 
 posts_patterns = [

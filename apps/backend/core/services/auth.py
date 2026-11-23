@@ -17,7 +17,19 @@ from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 
-from core.models import AccessLog, Block, OAuthAccount, PasswordResetToken, UserProfile
+from core.models import (
+    AccessLog,
+    Block,
+    Draft,
+    Follow,
+    Mute,
+    OAuthAccount,
+    PasswordResetToken,
+    PostBookmark,
+    PostLike,
+    UserProfile,
+)
+from core.services.posts import list_posts_for_export
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
@@ -415,6 +427,224 @@ def authenticate_with_google(*, id_token_str: str, request=None) -> Tuple[str, d
 
     onboarding_token = generate_google_onboarding_token(google_sub=google_sub, email=email)
     return "needs_signup", {"onboarding_token": onboarding_token, "email": email}
+
+
+# -----------------------------------------------------------------------------
+# Exportação LGPD (ADR-N24 §7) e Exclusão de Conta (LGPD Art. 18, VI)
+# -----------------------------------------------------------------------------
+
+
+def export_user_data(*, user) -> dict:
+    """
+    Exporta todos os dados do titular conforme LGPD Art. 18, V.
+
+    NUNCA expõe:
+    - Quem bloqueou/silenciou o usuário (ADR-N24 §7)
+    - Hashes de senha, tokens, ip_hash ou chaves internas
+    """
+    from comments.models import Comment, CommentBookmark, CommentLike
+
+    profile = getattr(user, "profile", None)
+
+    # Perfil
+    profile_data = {
+        "id": str(user.id),
+        "username": user.username,
+        "email": user.email,
+        "display_name": getattr(profile, "display_name", "") or "",
+        "bio": getattr(profile, "bio", "") or "",
+        "is_private": getattr(profile, "is_private", False),
+        "birth_date": str(profile.birth_date) if profile and profile.birth_date else None,
+        "theme": getattr(profile, "theme", UserProfile.Theme.LIGHT),
+        "language": getattr(profile, "language", UserProfile.Language.PT_BR),
+        "terms_accepted_at": (
+            profile.terms_accepted_at.isoformat()
+            if profile and profile.terms_accepted_at
+            else None
+        ),
+        "date_joined": user.date_joined.isoformat(),
+    }
+
+    # Posts
+    posts_data = [
+        {
+            "id": str(p.id),
+            "content_text": p.content_text,
+            "visibility": p.visibility,
+            "likes_count": p.likes_count,
+            "comments_count": p.comments_count,
+            "created_at": p.created_at.isoformat(),
+        }
+        for p in list_posts_for_export(author=user)
+    ]
+
+    # Rascunhos
+    drafts_data = [
+        {
+            "id": str(d.id),
+            "content_text": d.content_text,
+            "updated_at": d.updated_at.isoformat(),
+        }
+        for d in Draft.objects.filter(author=user).order_by("-updated_at")
+    ]
+
+    # Curtidas de post
+    post_likes_data = [
+        {
+            "post_id": str(pl.post_id),
+            "created_at": pl.created_at.isoformat(),
+        }
+        for pl in PostLike.objects.filter(user=user).order_by("-created_at")
+    ]
+
+    # Bookmarks de post
+    post_bookmarks_data = [
+        {
+            "post_id": str(pb.post_id),
+            "created_at": pb.created_at.isoformat(),
+        }
+        for pb in PostBookmark.objects.filter(user=user).order_by("-created_at")
+    ]
+
+    # Comentários do usuário
+    comments_data = [
+        {
+            "id": str(c.id),
+            "post_id": str(c.post_id),
+            "parent_id": str(c.parent_id) if c.parent_id else None,
+            "content_text": c.content_text,
+            "created_at": c.created_at.isoformat(),
+        }
+        for c in Comment.objects.filter(author=user, is_deleted=False).order_by("-created_at")
+    ]
+
+    # Curtidas de comentário
+    comment_likes_data = [
+        {
+            "comment_id": str(cl.comment_id),
+            "created_at": cl.created_at.isoformat(),
+        }
+        for cl in CommentLike.objects.filter(user=user).order_by("-created_at")
+    ]
+
+    # Bookmarks de comentário
+    comment_bookmarks_data = [
+        {
+            "comment_id": str(cb.comment_id),
+            "created_at": cb.created_at.isoformat(),
+        }
+        for cb in CommentBookmark.objects.filter(user=user).order_by("-created_at")
+    ]
+
+    # Seguindo
+    following_data = [
+        {
+            "username": f.followed.username,
+            "is_close_friend": f.is_close_friend,
+            "since": f.created_at.isoformat(),
+        }
+        for f in Follow.objects.filter(
+            follower=user, status=Follow.Status.ACTIVE
+        ).select_related("followed")
+    ]
+
+    # Seguidores
+    followers_data = [
+        {
+            "username": f.follower.username,
+            "since": f.created_at.isoformat(),
+        }
+        for f in Follow.objects.filter(
+            followed=user, status=Follow.Status.ACTIVE
+        ).select_related("follower")
+    ]
+
+    # Contas que o usuário bloqueou (NUNCA o contrário — ADR-N24 §7)
+    blocked_by_me = [
+        {
+            "id": str(b.blocked.id),
+            "username": b.blocked.username,
+            "blocked_at": b.created_at.isoformat(),
+        }
+        for b in Block.objects.filter(blocker=user).select_related("blocked")
+    ]
+
+    # Contas que o usuário silenciou (NUNCA o contrário — ADR-N24 §7)
+    muted_by_me = [
+        {
+            "id": str(m.muted.id),
+            "username": m.muted.username,
+            "muted_at": m.created_at.isoformat(),
+        }
+        for m in Mute.objects.filter(muter=user).select_related("muted")
+    ]
+
+    return {
+        "exported_at": timezone.now().isoformat(),
+        "profile": profile_data,
+        "posts": posts_data,
+        "drafts": drafts_data,
+        "post_likes": post_likes_data,
+        "post_bookmarks": post_bookmarks_data,
+        "comments": comments_data,
+        "comment_likes": comment_likes_data,
+        "comment_bookmarks": comment_bookmarks_data,
+        "following": following_data,
+        "followers": followers_data,
+        "blocked_users": blocked_by_me,
+        "muted_users": muted_by_me,
+    }
+
+
+@transaction.atomic
+def delete_account(*, user, raw_refresh_token: Optional[str] = None) -> None:
+    """
+    Exclui permanentemente a conta do usuário (LGPD Art. 18, VI).
+
+    Estratégia: Caminho A — Hard-delete atômico (vencedor ToT).
+    - AccessLog: preservado anonimizado via ON DELETE SET NULL (Marco Civil Art. 15).
+    - Comment.author: SET_NULL já garante tombstone (Onda 4).
+    - Revoga todos os outstanding tokens antes da exclusão.
+    - Invalida PasswordResetTokens pendentes.
+    - Exclui avatar físico do storage.
+    """
+    # 1. Blacklista o refresh token atual
+    if raw_refresh_token:
+        try:
+            token = RefreshToken(raw_refresh_token)
+            token.blacklist()
+        except TokenError:
+            pass
+
+    # 2. Revoga todos os outstanding tokens do usuário via blacklist
+    try:
+        from rest_framework_simplejwt.token_blacklist.models import (
+            BlacklistedToken,
+            OutstandingToken,
+        )
+
+        for ot in OutstandingToken.objects.filter(user=user):
+            BlacklistedToken.objects.get_or_create(token=ot)
+    except Exception:
+        logger.warning("Falha ao revogar outstanding tokens.", exc_info=True)
+
+    # 3. Invalida PasswordResetTokens pendentes
+    PasswordResetToken.objects.filter(user=user, used_at__isnull=True).update(
+        used_at=timezone.now()
+    )
+
+    # 4. Remove avatar físico do storage
+    profile = getattr(user, "profile", None)
+    if profile:
+        try:
+            from core.utils.image_security import delete_old_avatar
+
+            delete_old_avatar(profile)
+        except Exception:
+            logger.warning("Falha ao excluir avatar do storage.", exc_info=True)
+
+    # 5. Hard-delete do usuário (AccessLog e Comments ficam via SET_NULL)
+    user.delete()
 
 
 @transaction.atomic

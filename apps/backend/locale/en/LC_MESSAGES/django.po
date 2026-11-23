@@ -261,3 +261,22 @@ msgstr "Content cannot be empty."
 
 msgid "Only the post author can view hidden comments."
 msgstr "Only the post author can view hidden comments."
+
+msgid "A senha atual é obrigatória para excluir a conta."
+msgstr "Current password is required to delete the account."
+
+msgid "Senha incorreta."
+msgstr "Incorrect password."
+
+msgid "Digite seu @username para confirmar a exclusão da conta."
+msgstr "Enter your @username to confirm account deletion."
+
+msgid "O username informado não corresponde ao da sua conta."
+msgstr "The username provided does not match your account."
+
+msgid "Account deleted successfully."
+msgstr "Account deleted successfully."
+
+msgid "Erro ao excluir conta. Tente novamente."
+msgstr "Error deleting account. Please try again."
+

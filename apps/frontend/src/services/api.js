@@ -229,6 +229,13 @@ export async function exportUserData() {
   return res.data;
 }
 
+export async function deleteAccount(payload) {
+  // payload: { current_password } para contas com senha
+  //          { confirm_username } para contas Google OAuth
+  const res = await api.delete("/api/users/account/", { data: payload });
+  return res.data;
+}
+
 export async function getUserSettings() {
   const res = await api.get("/api/users/settings/");
   return res.data;

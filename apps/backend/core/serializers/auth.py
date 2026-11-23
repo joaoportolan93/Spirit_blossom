@@ -151,6 +151,59 @@ class GoogleCompleteSignupSerializer(serializers.Serializer):
         return attrs
 
 
+class DeleteAccountSerializer(serializers.Serializer):
+    """
+    Serializer para DELETE /api/users/account/ (Onda 6 — LGPD).
+
+    - Conta com senha: exige `current_password`.
+    - Conta Google OAuth (`has_usable_password() == False`): exige `confirm_username`
+      (o próprio @username) como confirmação explícita.
+    """
+
+    current_password = serializers.CharField(
+        write_only=True,
+        required=False,
+        allow_blank=True,
+        style={"input_type": "password"},
+    )
+    confirm_username = serializers.CharField(
+        write_only=True,
+        required=False,
+        allow_blank=True,
+    )
+
+    def validate(self, attrs):
+        user = self.context["request"].user
+
+        if user.has_usable_password():
+            # Conta com senha: exige current_password
+            pwd = attrs.get("current_password", "")
+            if not pwd:
+                raise serializers.ValidationError(
+                    {"current_password": _("A senha atual é obrigatória para excluir a conta.")}
+                )
+            if not user.check_password(pwd):
+                raise serializers.ValidationError(
+                    {"current_password": _("Senha incorreta.")}
+                )
+        else:
+            # Conta Google OAuth: exige confirm_username
+            confirm = (attrs.get("confirm_username") or "").strip()
+            if not confirm:
+                raise serializers.ValidationError(
+                    {
+                        "confirm_username": _(
+                            "Digite seu @username para confirmar a exclusão da conta."
+                        )
+                    }
+                )
+            if confirm.lstrip("@") != user.username:
+                raise serializers.ValidationError(
+                    {"confirm_username": _("O username informado não corresponde ao da sua conta.")}
+                )
+        return attrs
+
+
 class ChangePasswordSerializer(serializers.Serializer):
     """Serializer para POST /api/auth/change-password/ (Onda 5)."""
 

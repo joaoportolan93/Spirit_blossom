@@ -82,6 +82,11 @@ def list_drafts(*, author) -> QuerySet:
     return Draft.objects.filter(author=author).order_by("-updated_at")
 
 
+def list_posts_for_export(*, author) -> QuerySet:
+    """Retorna todos os posts do autor para exportação LGPD (sem filtro de visibilidade)."""
+    return Post.objects.filter(author=author).order_by("-created_at")
+
+
 def increment_post_comments_count(post_id, amount: int = 1) -> None:
     """Incrementa atômica e seguramente o contador de comentários do post."""
     if amount <= 0:
