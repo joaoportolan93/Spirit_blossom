@@ -213,9 +213,7 @@ class TestDeleteAccount:
     def test_09_delete_com_senha_incorreta_retorna_400(self, user):
         """Teste 9 (6): Senha incorreta — 400."""
         client, _ = auth_client(user)
-        resp = client.delete(
-            self.url, data={"current_password": "senha_errada_xyz"}, format="json"
-        )
+        resp = client.delete(self.url, data={"current_password": "senha_errada_xyz"}, format="json")
         assert resp.status_code == 400
         assert "current_password" in resp.json()
 

@@ -39,4 +39,3 @@ class DeleteAccountRateThrottle(UserRateThrottle):
     """3 tentativas de exclusão de conta por hora por usuário."""
 
     scope = "delete_account"
-

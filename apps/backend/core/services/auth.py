@@ -458,9 +458,7 @@ def export_user_data(*, user) -> dict:
         "theme": getattr(profile, "theme", UserProfile.Theme.LIGHT),
         "language": getattr(profile, "language", UserProfile.Language.PT_BR),
         "terms_accepted_at": (
-            profile.terms_accepted_at.isoformat()
-            if profile and profile.terms_accepted_at
-            else None
+            profile.terms_accepted_at.isoformat() if profile and profile.terms_accepted_at else None
         ),
         "date_joined": user.date_joined.isoformat(),
     }
@@ -543,9 +541,9 @@ def export_user_data(*, user) -> dict:
             "is_close_friend": f.is_close_friend,
             "since": f.created_at.isoformat(),
         }
-        for f in Follow.objects.filter(
-            follower=user, status=Follow.Status.ACTIVE
-        ).select_related("followed")
+        for f in Follow.objects.filter(follower=user, status=Follow.Status.ACTIVE).select_related(
+            "followed"
+        )
     ]
 
     # Seguidores
@@ -554,9 +552,9 @@ def export_user_data(*, user) -> dict:
             "username": f.follower.username,
             "since": f.created_at.isoformat(),
         }
-        for f in Follow.objects.filter(
-            followed=user, status=Follow.Status.ACTIVE
-        ).select_related("follower")
+        for f in Follow.objects.filter(followed=user, status=Follow.Status.ACTIVE).select_related(
+            "follower"
+        )
     ]
 
     # Contas que o usuário bloqueou (NUNCA o contrário — ADR-N24 §7)

@@ -183,9 +183,7 @@ class DeleteAccountSerializer(serializers.Serializer):
                     {"current_password": _("A senha atual é obrigatória para excluir a conta.")}
                 )
             if not user.check_password(pwd):
-                raise serializers.ValidationError(
-                    {"current_password": _("Senha incorreta.")}
-                )
+                raise serializers.ValidationError({"current_password": _("Senha incorreta.")})
         else:
             # Conta Google OAuth: exige confirm_username
             confirm = (attrs.get("confirm_username") or "").strip()

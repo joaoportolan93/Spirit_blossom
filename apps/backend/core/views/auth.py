@@ -384,9 +384,7 @@ class DeleteAccountView(APIView):
     throttle_classes = [DeleteAccountRateThrottle]
 
     def delete(self, request):
-        serializer = DeleteAccountSerializer(
-            data=request.data, context={"request": request}
-        )
+        serializer = DeleteAccountSerializer(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
 
         cfg = getattr(settings, "SIMPLE_JWT", {})
