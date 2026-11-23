@@ -93,4 +93,97 @@ describe("Timeline Component (3 testes)", () => {
       expect(screen.getByText("Post da página 2")).toBeInTheDocument();
     });
   });
+
+  it("4. Alterna para a aba 'Para você' e carrega feed de exploração", async () => {
+    vi.spyOn(api, "get")
+      .mockResolvedValueOnce({ data: [] }) // following
+      .mockResolvedValueOnce({
+        data: [
+          {
+            id: "foryou-1",
+            content_text: "Post recomendado",
+            created_at: new Date().toISOString(),
+            author: { username: "diana" },
+          },
+        ],
+      }); // for_you
+
+    renderWithRouter(<Feed />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("feed-empty")).toBeInTheDocument();
+    });
+
+    const forYouTab = screen.getByRole("tab", { name: "Para você" });
+    fireEvent.click(forYouTab);
+
+    await waitFor(() => {
+      expect(api.get).toHaveBeenCalledWith("/api/feed/explore/");
+      expect(screen.getByText("Post recomendado")).toBeInTheDocument();
+      expect(screen.getByText("@diana")).toBeInTheDocument();
+    });
+  });
+
+  it("5. Abre modal do compositor ao clicar no botão '+ Novo Post'", async () => {
+    vi.spyOn(api, "get").mockResolvedValueOnce({ data: [] });
+
+    renderWithRouter(<Feed />);
+
+    const newPostBtn = screen.getByTestId("feed-new-post-btn");
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+
+    fireEvent.click(newPostBtn);
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
+
+  it("6. Cria post pelo modal do Feed e insere no topo da timeline", async () => {
+    vi.spyOn(api, "get").mockResolvedValueOnce({ data: [] });
+    vi.spyOn(api, "post").mockResolvedValueOnce({
+      data: {
+        id: "post-created-1",
+        content_text: "Post novinho criado via modal!",
+        created_at: new Date().toISOString(),
+        author: { username: "me" },
+      },
+    });
+
+    renderWithRouter(<Feed />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("feed-empty")).toBeInTheDocument();
+    });
+
+    // Abre modal
+    fireEvent.click(screen.getByTestId("feed-new-post-btn"));
+    const textarea = screen.getByTestId("composer-textarea");
+    fireEvent.change(textarea, { target: { value: "Post novinho criado via modal!" } });
+
+    // Publica
+    fireEvent.click(screen.getByTestId("publish-button"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Post novinho criado via modal!")).toBeInTheDocument();
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    });
+  });
+
+  it("7. Exibe estado vazio na aba 'Para você' quando não há recomendações", async () => {
+    vi.spyOn(api, "get")
+      .mockResolvedValueOnce({ data: [] }) // following
+      .mockResolvedValueOnce({ data: [] }); // for_you
+
+    renderWithRouter(<Feed />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("feed-empty")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole("tab", { name: "Para você" }));
+
+    await waitFor(() => {
+      expect(
+        screen.getByText("Nenhuma recomendação para você no momento.")
+      ).toBeInTheDocument();
+    });
+  });
 });

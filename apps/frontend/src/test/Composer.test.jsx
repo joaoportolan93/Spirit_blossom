@@ -165,4 +165,100 @@ describe("Composer Component (3 testes)", () => {
     expect(textarea).toHaveValue("Rascunho anterior recuperado");
     expect(screen.queryByTestId("drafts-drawer")).not.toBeInTheDocument();
   });
+
+  it("7. Opera em modo modal: fecha com botão X, backdrop e tecla Escape", () => {
+    const onClose = vi.fn();
+    const { rerender } = render(<Composer isOpen={true} onClose={onClose} />);
+
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+
+    // Fecha ao clicar no botão X
+    const closeBtn = screen.getByLabelText("Fechar");
+    fireEvent.click(closeBtn);
+    expect(onClose).toHaveBeenCalledTimes(1);
+
+    // Fecha ao pressionar Escape
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(onClose).toHaveBeenCalledTimes(2);
+
+    // Fecha ao clicar no backdrop do modal
+    const dialog = screen.getByRole("dialog");
+    fireEvent.click(dialog);
+    expect(onClose).toHaveBeenCalledTimes(3);
+
+    // Quando isOpen é falso, não renderiza nada
+    rerender(<Composer isOpen={false} onClose={onClose} />);
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("8. Abre e seleciona opção pelo dropdown customizado de visibilidade", () => {
+    render(<Composer />);
+
+    const triggerBtn = screen.getByRole("button", { name: /público/i });
+    expect(triggerBtn).toBeInTheDocument();
+
+    // Abre dropdown
+    fireEvent.click(triggerBtn);
+    const options = screen.getAllByRole("option", { name: /círculo de amigos/i });
+    // options[0] é o <option> nativo do select oculto, options[1] é o <li> do dropdown customizado
+    const customOption = options[1] || options[0];
+    expect(customOption).toBeInTheDocument();
+
+    // Seleciona Círculo
+    fireEvent.click(customOption);
+    expect(screen.getByTestId("visibility-select")).toHaveValue("circle");
+
+    // Reabre e fecha clicando fora
+    fireEvent.click(triggerBtn);
+    expect(screen.getByRole("listbox")).toBeInTheDocument();
+    fireEvent.mouseDown(document.body);
+    expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
+  });
+
+  it("9. Exibe warning em amarelo quando restam menos de 50 caracteres", () => {
+    render(<Composer />);
+
+    const textarea = screen.getByTestId("composer-textarea");
+    const charCount = screen.getByTestId("char-count");
+
+    // 2960 caracteres -> restam 40 (< 50)
+    fireEvent.change(textarea, { target: { value: "a".repeat(2960) } });
+    expect(charCount).toHaveClass("text-amber-400");
+    expect(charCount).toHaveTextContent("40 caracteres restantes");
+
+    // 2800 caracteres -> restam 200 (<= 300)
+    fireEvent.change(textarea, { target: { value: "a".repeat(2800) } });
+    expect(charCount).toHaveClass("text-zinc-500");
+  });
+
+  it("10. Exibe mensagem de estado vazio quando não há rascunhos", async () => {
+    vi.spyOn(api, "get").mockResolvedValueOnce({ data: [] });
+
+    render(<Composer />);
+
+    const toggleBtn = screen.getByTestId("toggle-drafts-button");
+    fireEvent.click(toggleBtn);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("empty-drafts-msg")).toBeInTheDocument();
+    });
+  });
+
+  it("11. Exibe mensagem de erro quando API de publicação falha", async () => {
+    vi.spyOn(api, "post").mockRejectedValueOnce({
+      response: { data: { detail: "Erro de validação do servidor" } },
+    });
+
+    render(<Composer />);
+
+    const textarea = screen.getByTestId("composer-textarea");
+    const publishBtn = screen.getByTestId("publish-button");
+
+    fireEvent.change(textarea, { target: { value: "Texto com erro" } });
+    fireEvent.click(publishBtn);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("composer-error")).toHaveTextContent("Erro de validação do servidor");
+    });
+  });
 });
