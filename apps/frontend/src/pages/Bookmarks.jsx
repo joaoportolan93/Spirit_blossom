@@ -48,7 +48,7 @@ return (
               type="button"
               onClick={() => setActiveTab("posts")}
               className={`pb-2.5 font-medium border-b-2 transition-colors ${activeTab === "posts"
-                  ? "border-violet-500 text-violet-400"
+                  ? "border-pink-500 text-pink-400"
                   : "border-transparent text-zinc-400 hover:text-zinc-200"
                 }`}
               data-testid="tab-posts"
@@ -59,7 +59,7 @@ return (
               type="button"
               onClick={() => setActiveTab("comments")}
               className={`pb-2.5 font-medium border-b-2 transition-colors ${activeTab === "comments"
-                  ? "border-violet-500 text-violet-400"
+                  ? "border-pink-500 text-pink-400"
                   : "border-transparent text-zinc-400 hover:text-zinc-200"
                 }`}
               data-testid="tab-comments"

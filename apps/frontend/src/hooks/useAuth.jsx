@@ -67,7 +67,7 @@ export function AuthProvider({ children }) {
         if (meRes.data.language) {
           i18n.changeLanguage(meRes.data.language);
           try {
-            localStorage.setItem("lumem_language", meRes.data.language);
+            localStorage.setItem("spirit_language", meRes.data.language);
           } catch {
             // ignore
           }

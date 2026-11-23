@@ -57,7 +57,7 @@ function SafeCommentText({ text, hero = false }) {
               key={i}
               to={`/profile/${username}`}
               onClick={stopEventPropagation}
-              className="text-violet-400 hover:underline font-medium"
+              className="text-pink-400 hover:underline font-medium"
             >
               {part}
             </Link>
@@ -484,7 +484,7 @@ export const CommentItem = React.memo(function CommentItem({
           type="button"
           onClick={handleBookmark}
           className={`flex items-center gap-1.5 transition-colors ${
-            isBookmarked ? "text-violet-400" : "hover:text-violet-400"
+            isBookmarked ? "text-pink-400" : "hover:text-pink-400"
           }`}
           data-testid={`bookmark-btn-${comment.id}`}
           title={isBookmarked ? t("bookmarks.saved", "Salvo") : t("bookmarks.save", "Salvar")}
@@ -497,7 +497,7 @@ export const CommentItem = React.memo(function CommentItem({
           <button
             type="button"
             onClick={handleFocusClick}
-            className="ml-auto text-violet-400 hover:underline flex items-center gap-1 text-xs"
+            className="ml-auto text-pink-400 hover:underline flex items-center gap-1 text-xs"
             data-testid={`focus-btn-${comment.id}`}
           >
             <span>{t("comments.viewThread", "Ver conversa")}</span>
@@ -564,7 +564,7 @@ export const CommentItem = React.memo(function CommentItem({
                 <textarea
                   value={editText}
                   onChange={(e) => setEditText(e.target.value)}
-                  className="w-full bg-zinc-900 border border-zinc-700 rounded-lg p-2.5 text-zinc-100 text-sm focus:outline-none focus:border-violet-500 resize-none break-words"
+                  className="w-full bg-zinc-900 border border-zinc-700 rounded-lg p-2.5 text-zinc-100 text-sm focus:outline-none focus:border-pink-500 resize-none break-words"
                   rows={2}
                   maxLength={1000}
                   autoFocus
@@ -582,7 +582,7 @@ export const CommentItem = React.memo(function CommentItem({
                     type="button"
                     onClick={handleSaveEdit}
                     disabled={submitting || !editText.trim()}
-                    className="px-3 py-1 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white text-xs font-medium rounded-full"
+                    className="px-3 py-1 bg-pink-600 hover:bg-pink-500 disabled:opacity-50 text-white text-xs font-medium rounded-full"
                     data-testid="save-edit-btn"
                   >
                     <Check size={12} className="inline mr-1" />
@@ -652,7 +652,7 @@ export const CommentItem = React.memo(function CommentItem({
                   value={replyText}
                   onChange={(e) => setReplyText(e.target.value)}
                   placeholder={t("comments.replyPlaceholder", "Postar sua resposta...")}
-                  className="flex-1 bg-zinc-900 border border-zinc-700 rounded-full px-3.5 py-1.5 text-zinc-100 text-xs focus:outline-none focus:border-violet-500"
+                  className="flex-1 bg-zinc-900 border border-zinc-700 rounded-full px-3.5 py-1.5 text-zinc-100 text-xs focus:outline-none focus:border-pink-500"
                   maxLength={1000}
                   autoFocus
                   data-testid={`reply-input-${comment.id}`}
@@ -660,7 +660,7 @@ export const CommentItem = React.memo(function CommentItem({
                 <button
                   type="submit"
                   disabled={submitting || !replyText.trim()}
-                  className="px-3.5 py-1.5 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white text-xs font-medium rounded-full"
+                  className="px-3.5 py-1.5 bg-pink-600 hover:bg-pink-500 disabled:opacity-50 text-white text-xs font-medium rounded-full"
                   data-testid={`reply-submit-btn-${comment.id}`}
                 >
                   {t("comments.post", "Responder")}
@@ -776,7 +776,7 @@ export const CommentItem = React.memo(function CommentItem({
                 <textarea
                   value={editText}
                   onChange={(e) => setEditText(e.target.value)}
-                  className="w-full bg-zinc-900 border border-zinc-700 rounded-lg p-2.5 text-zinc-100 text-sm focus:outline-none focus:border-violet-500 resize-none break-words"
+                  className="w-full bg-zinc-900 border border-zinc-700 rounded-lg p-2.5 text-zinc-100 text-sm focus:outline-none focus:border-pink-500 resize-none break-words"
                   rows={2}
                   maxLength={1000}
                   autoFocus
@@ -794,7 +794,7 @@ export const CommentItem = React.memo(function CommentItem({
                     type="button"
                     onClick={handleSaveEdit}
                     disabled={submitting || !editText.trim()}
-                    className="px-3 py-1 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white text-xs font-medium rounded-full"
+                    className="px-3 py-1 bg-pink-600 hover:bg-pink-500 disabled:opacity-50 text-white text-xs font-medium rounded-full"
                     data-testid="save-edit-btn"
                   >
                     <Check size={12} className="inline mr-1" />
@@ -856,7 +856,7 @@ export const CommentItem = React.memo(function CommentItem({
                     value={replyText}
                     onChange={(e) => setReplyText(e.target.value)}
                     placeholder={t("comments.replyPlaceholder", "Postar sua resposta...")}
-                    className="flex-1 bg-zinc-900 border border-zinc-700 rounded-full px-3 py-1.5 text-zinc-100 text-xs focus:outline-none focus:border-violet-500"
+                    className="flex-1 bg-zinc-900 border border-zinc-700 rounded-full px-3 py-1.5 text-zinc-100 text-xs focus:outline-none focus:border-pink-500"
                     maxLength={1000}
                     autoFocus
                     data-testid={`reply-input-${comment.id}`}
@@ -864,7 +864,7 @@ export const CommentItem = React.memo(function CommentItem({
                   <button
                     type="submit"
                     disabled={submitting || !replyText.trim()}
-                    className="px-3 py-1.5 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white text-xs font-medium rounded-full"
+                    className="px-3 py-1.5 bg-pink-600 hover:bg-pink-500 disabled:opacity-50 text-white text-xs font-medium rounded-full"
                     data-testid={`reply-submit-btn-${comment.id}`}
                   >
                     {t("comments.post", "Responder")}

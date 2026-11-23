@@ -115,7 +115,7 @@ describe("PostCard Component — Curtidas, Salvos e Comentários", () => {
     // Salvar
     fireEvent.click(bookmarkBtn);
     expect(bookmarksCount).toHaveTextContent("3");
-    expect(bookmarkBtn).toHaveClass("text-violet-400");
+    expect(bookmarkBtn).toHaveClass("text-pink-400");
 
     await waitFor(() => {
       expect(api.post).toHaveBeenCalledWith("/api/posts/post-123/bookmark/");

@@ -263,7 +263,7 @@ export function PostCard({
             <Link
               to={`/profile/${authorName}`}
               onClick={(e) => e.stopPropagation()}
-              className="text-xs text-zinc-400 hover:text-violet-400 hover:underline transition"
+              className="text-xs text-zinc-400 hover:text-pink-400 hover:underline transition"
             >
               @{authorName}
             </Link>
@@ -396,7 +396,7 @@ export function PostCard({
             data-testid="post-edit-textarea"
             value={editText}
             onChange={(e) => setEditText(e.target.value)}
-            className="w-full bg-zinc-950 border border-zinc-700 rounded-lg p-2.5 text-zinc-100 text-sm focus:outline-none focus:border-violet-500 resize-none break-words"
+            className="w-full bg-zinc-950 border border-zinc-700 rounded-lg p-2.5 text-zinc-100 text-sm focus:outline-none focus:border-pink-500 resize-none break-words"
             rows={3}
             maxLength={3000}
             autoFocus
@@ -418,7 +418,7 @@ export function PostCard({
                 data-testid="save-post-edit-btn"
                 onClick={handleSaveEdit}
                 disabled={submittingEdit || !editText.trim()}
-                className="px-3 py-1 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white rounded-full text-xs font-medium"
+                className="px-3 py-1 bg-pink-600 hover:bg-pink-500 disabled:opacity-50 text-white rounded-full text-xs font-medium"
               >
                 <Check size={12} className="inline mr-1" />
                 {t("comments.save", "Salvar")}
@@ -443,7 +443,7 @@ export function PostCard({
                 e.stopPropagation();
                 setIsExpanded(!isExpanded);
               }}
-              className="text-xs text-violet-400 hover:underline mt-1 font-medium"
+              className="text-xs text-pink-400 hover:underline mt-1 font-medium"
             >
               {isExpanded ? t("post.showLess", "Mostrar menos") : t("post.showMore", "Mostrar mais")}
             </button>
@@ -487,7 +487,7 @@ export function PostCard({
           onClick={handleToggleBookmark}
           disabled={actionLoading}
           className={`group flex items-center gap-1.5 transition-colors ${
-            isBookmarked ? "text-violet-400" : "text-zinc-400 hover:text-violet-400"
+            isBookmarked ? "text-pink-400" : "text-zinc-400 hover:text-pink-400"
           }`}
           title={isBookmarked ? t("bookmarks.saved", "Salvo") : t("bookmarks.save", "Salvar")}
         >

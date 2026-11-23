@@ -4,5 +4,5 @@
  * Em todo o restante do código: importe desta constante.
  * Nunca escreva o nome literal do produto diretamente em componentes.
  */
-export const APP_NAME = import.meta.env.VITE_APP_NAME || "App";
+export const APP_NAME = import.meta.env.VITE_APP_NAME || "Spirit Blossom";
 

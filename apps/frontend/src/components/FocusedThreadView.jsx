@@ -97,7 +97,7 @@ export function FocusedThreadView({
           <button
             type="button"
             onClick={onBackToParent}
-            className="text-xs text-violet-400 hover:underline flex items-center gap-1 font-medium"
+            className="text-xs text-pink-400 hover:underline flex items-center gap-1 font-medium"
             data-testid="back-to-parent-btn"
           >
             <ChevronLeft size={14} />
@@ -215,7 +215,7 @@ export function FocusedThreadView({
             type="button"
             onClick={handleLoadMoreReplies}
             disabled={loadingMore}
-            className="text-xs text-violet-400 hover:text-violet-300 font-medium py-1.5 px-4 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 rounded-full transition-colors disabled:opacity-50"
+            className="text-xs text-pink-400 hover:text-pink-300 font-medium py-1.5 px-4 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 rounded-full transition-colors disabled:opacity-50"
             data-testid="load-more-replies-btn"
           >
             {loadingMore

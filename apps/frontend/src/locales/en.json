@@ -7,6 +7,7 @@
     "feed": "Feed",
     "explore": "Explore",
     "search": "Search",
+    "notifications": "Notifications",
     "close_friends": "Close Friends",
     "bookmarks": "Saved",
     "follow_requests": "Requests",
@@ -38,6 +39,11 @@
     "placeholder": "What's on your mind?",
     "publish": "Post",
     "publishing": "Posting...",
+    "new_post": "New Post",
+    "add_image": "Add image",
+    "add_media": "Add media",
+    "add_gif": "Add GIF",
+    "add_video": "Add video",
     "chars_remaining": "{{count}} characters remaining",
     "too_long": "Character limit exceeded",
     "visibility": "Visibility",
@@ -102,10 +108,13 @@
   "feed": {
     "title": "Following Timeline",
     "following": "Following",
+    "explore": "Explore",
     "for_you": "For you",
+    "for_you_empty": "No recommendations for you right now.",
     "load_more": "Load more",
     "loading": "Loading posts...",
-    "empty": "No posts yet. Follow someone to see their updates!"
+    "empty": "No posts yet. Follow someone to see their updates!",
+    "empty_poetic": "Still quiet here. Follow someone to see what's blossoming. 🌸"
   },
   "profile": {
     "title": "Profile",

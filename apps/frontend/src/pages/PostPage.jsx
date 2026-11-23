@@ -262,7 +262,7 @@ export function PostPage() {
         <button
           type="button"
           onClick={handleBack}
-          className="text-violet-400 hover:underline text-sm font-medium inline-flex items-center gap-1"
+          className="text-pink-400 hover:underline text-sm font-medium inline-flex items-center gap-1"
         >
           <ArrowLeft size={14} />
           {t("common.back", "Voltar")}
@@ -425,7 +425,7 @@ export function PostPage() {
               <select
                 value={sort}
                 onChange={(e) => setSort(e.target.value)}
-                className="bg-zinc-800 border border-zinc-700 text-zinc-200 rounded-lg px-2 py-1 text-xs focus:outline-none focus:border-violet-500"
+                className="bg-zinc-800 border border-zinc-700 text-zinc-200 rounded-lg px-2 py-1 text-xs focus:outline-none focus:border-pink-500"
                 data-testid="sort-select"
               >
                 <option value="recent">{t("comments.sortRecent", "Mais recentes")}</option>
@@ -443,14 +443,14 @@ export function PostPage() {
                 value={rootText}
                 onChange={(e) => setRootText(e.target.value)}
                 placeholder={t("comments.inputPlaceholder", "Escreva um comentário...")}
-                className="flex-1 bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2 text-zinc-100 text-sm focus:outline-none focus:border-violet-500"
+                className="flex-1 bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2 text-zinc-100 text-sm focus:outline-none focus:border-pink-500"
                 maxLength={1000}
                 data-testid="root-comment-input"
               />
               <button
                 type="submit"
                 disabled={submittingRoot || !rootText.trim()}
-                className="px-4 py-2 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white text-xs font-medium rounded-xl flex items-center gap-1.5 transition-colors"
+                className="px-4 py-2 bg-pink-600 hover:bg-pink-500 disabled:opacity-50 text-white text-xs font-medium rounded-xl flex items-center gap-1.5 transition-colors"
                 data-testid="root-comment-submit"
               >
                 <Send size={13} />

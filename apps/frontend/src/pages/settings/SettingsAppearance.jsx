@@ -20,10 +20,10 @@ export function SettingsAppearance() {
   const { user } = useAuth();
 
   const [theme, setTheme] = useState(
-    () => localStorage.getItem("lumem_theme") || user?.theme || "dark"
+    () => localStorage.getItem("spirit_theme") || user?.theme || "dark"
   );
   const [language, setLanguage] = useState(
-    () => localStorage.getItem("lumem_language") || user?.language || "pt-BR"
+    () => localStorage.getItem("spirit_language") || user?.language || "pt-BR"
   );
   const [success, setSuccess] = useState("");
   const [saving, setSaving] = useState(false);
@@ -36,7 +36,7 @@ export function SettingsAppearance() {
   const handleTheme = async (newTheme) => {
     setTheme(newTheme);
     applyTheme(newTheme);
-    localStorage.setItem("lumem_theme", newTheme);
+    localStorage.setItem("spirit_theme", newTheme);
     setSaving(true);
     setSuccess("");
     try {
@@ -53,7 +53,7 @@ export function SettingsAppearance() {
   const handleLanguage = async (newLang) => {
     setLanguage(newLang);
     i18n.changeLanguage(newLang);
-    localStorage.setItem("lumem_language", newLang);
+    localStorage.setItem("spirit_language", newLang);
     setSaving(true);
     setSuccess("");
     try {

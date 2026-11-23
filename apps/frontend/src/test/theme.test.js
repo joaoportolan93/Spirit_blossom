@@ -14,7 +14,7 @@ describe("Theme Utils (Onda 5)", () => {
   it("2. applyTheme define data-theme no documentElement e persiste no localStorage", () => {
     expect(applyTheme("oled")).toBe("oled");
     expect(document.documentElement.getAttribute("data-theme")).toBe("oled");
-    expect(localStorage.getItem("lumem_theme")).toBe("oled");
+    expect(localStorage.getItem("spirit_theme")).toBe("oled");
 
     expect(applyTheme("dark")).toBe("dark");
     expect(document.documentElement.getAttribute("data-theme")).toBe("dark");
@@ -27,7 +27,7 @@ describe("Theme Utils (Onda 5)", () => {
   it("3. getInitialTheme prioriza preferência do usuário, depois localStorage, depois default light", () => {
     expect(getInitialTheme("dark")).toBe("dark");
 
-    localStorage.setItem("lumem_theme", "oled");
+    localStorage.setItem("spirit_theme", "oled");
     expect(getInitialTheme(null)).toBe("oled");
 
     localStorage.clear();

@@ -79,13 +79,13 @@ export function SettingsBlocked() {
       </div>
 
       {toast && (
-        <div className="mb-4 p-3 bg-violet-950/60 border border-violet-800/60 rounded-lg flex items-center justify-between text-sm text-violet-200">
+        <div className="mb-4 p-3 bg-pink-950/60 border border-pink-800/60 rounded-lg flex items-center justify-between text-sm text-pink-200">
           <span>{toast.message}</span>
           {toast.user && (
             <button
               type="button"
               onClick={handleUndo}
-              className="text-xs font-semibold text-violet-300 hover:text-white underline ml-3"
+              className="text-xs font-semibold text-pink-300 hover:text-white underline ml-3"
               data-testid="undo-unblock-btn"
             >
               {t("settings.undo", "Desfazer")}

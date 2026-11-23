@@ -53,7 +53,7 @@ export function BookmarkIcon({ size = 16, filled = false, className = "" }) {
     return (
       <FaBookmark
         size={size}
-        className={`text-violet-400 ${className}`}
+        className={`text-pink-400 ${className}`}
         data-testid="bookmark-icon"
       />
     );
@@ -61,7 +61,7 @@ export function BookmarkIcon({ size = 16, filled = false, className = "" }) {
   return (
     <FaRegBookmark
       size={size}
-      className={`text-zinc-400 group-hover:text-violet-400 ${className}`}
+      className={`text-zinc-400 group-hover:text-pink-400 ${className}`}
       data-testid="bookmark-icon"
     />
   );

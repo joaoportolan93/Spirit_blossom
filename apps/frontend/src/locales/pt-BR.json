@@ -7,6 +7,7 @@
     "feed": "Feed",
     "explore": "Explorar",
     "search": "Buscar",
+    "notifications": "Notificações",
     "close_friends": "Círculo",
     "bookmarks": "Salvos",
     "follow_requests": "Pedidos",
@@ -38,6 +39,11 @@
     "placeholder": "No que você está pensando?",
     "publish": "Publicar",
     "publishing": "Publicando...",
+    "new_post": "Novo Post",
+    "add_image": "Adicionar imagem",
+    "add_media": "Adicionar mídia",
+    "add_gif": "Adicionar GIF",
+    "add_video": "Adicionar vídeo",
     "chars_remaining": "{{count}} caracteres restantes",
     "too_long": "Limite de caracteres excedido",
     "visibility": "Visibilidade",
@@ -102,10 +108,13 @@
   "feed": {
     "title": "Timeline Seguindo",
     "following": "Seguindo",
+    "explore": "Explorar",
     "for_you": "Para você",
+    "for_you_empty": "Nenhuma recomendação para você no momento.",
     "load_more": "Carregar mais",
     "loading": "Carregando publicações...",
-    "empty": "Nenhuma publicação ainda. Siga alguém para ver atualizações!"
+    "empty": "Nenhuma publicação ainda. Siga alguém para ver atualizações!",
+    "empty_poetic": "Ainda quieto por aqui. Siga alguém para ver o que está florescendo. 🌸"
   },
   "profile": {
     "title": "Perfil",

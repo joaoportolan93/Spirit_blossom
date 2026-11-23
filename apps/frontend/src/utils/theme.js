@@ -1,5 +1,5 @@
 /**
- * Gerenciamento centralizado de temas da aplicação (Onda 5).
+ * Gerenciamento centralizado de temas da aplicação.
  * Suporta 3 opções: light (Branco), dark (Preto) e oled (Preto OLED #000000).
  */
 
@@ -11,7 +11,7 @@ export function applyTheme(theme) {
     document.documentElement.setAttribute("data-theme", chosen);
   }
   try {
-    localStorage.setItem("lumem_theme", chosen);
+    localStorage.setItem("spirit_theme", chosen);
   } catch {
     // LocalStorage indisponível
   }
@@ -23,7 +23,7 @@ export function getInitialTheme(userTheme = null) {
     return userTheme;
   }
   try {
-    const saved = localStorage.getItem("lumem_theme");
+    const saved = localStorage.getItem("spirit_theme");
     if (saved && VALID_THEMES.includes(saved)) {
       return saved;
     }

@@ -48,7 +48,7 @@ export function resolveInitialLanguage(userLanguage = null) {
     return userLanguage;
   }
   try {
-    const saved = localStorage.getItem("lumem_language");
+    const saved = localStorage.getItem("spirit_language");
     if (saved && (saved === "pt-BR" || saved === "en")) {
       return saved;
     }

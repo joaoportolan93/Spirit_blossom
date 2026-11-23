@@ -81,7 +81,7 @@ describe("i18n Localization & Accept-Language (ADR-N23)", () => {
   });
 
   it("6. resolveInitialLanguage respeita ordem de prioridade (user > localStorage > auto)", () => {
-    localStorage.setItem("lumem_language", "en");
+    localStorage.setItem("spirit_language", "en");
     expect(resolveInitialLanguage("pt-BR")).toBe("pt-BR");
     expect(resolveInitialLanguage(null)).toBe("en");
   });

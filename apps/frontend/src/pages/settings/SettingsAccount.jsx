@@ -205,7 +205,7 @@ export function SettingsAccount() {
               {t("settings.avatar", "Foto de perfil")}
             </label>
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-full overflow-hidden bg-zinc-800 border border-zinc-700 flex items-center justify-center text-xl font-bold text-zinc-300">
+              <div className="w-16 h-16 rounded-full overflow-hidden bg-zinc-800 border border-zinc-700 flex items-center justify-center text-xl font-bold text-zinc-300 shrink-0">
                 {currentDisplayAvatar ? (
                   <img
                     src={currentDisplayAvatar}
