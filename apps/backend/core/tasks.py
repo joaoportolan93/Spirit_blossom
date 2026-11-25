@@ -43,9 +43,7 @@ def send_push_notification_task(
         from core.services.push import send_push_notification
 
         try:
-            notification = Notification.objects.select_related("recipient").get(
-                pk=notification_id
-            )
+            notification = Notification.objects.select_related("recipient").get(pk=notification_id)
         except Notification.DoesNotExist:
             logger.warning("Notificação %s não encontrada para push.", notification_id)
             return

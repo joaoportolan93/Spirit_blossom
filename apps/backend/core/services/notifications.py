@@ -331,4 +331,3 @@ def mark_all_notifications_as_read(*, user) -> int:
         recipient=user,
         read=False,
     ).update(read=True)
-

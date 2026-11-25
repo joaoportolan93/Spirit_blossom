@@ -130,4 +130,25 @@ describe("Notifications — Central de Notificações", () => {
       expect(api.post).toHaveBeenCalledWith("/api/social/follow-requests/charlie/accept/")
     );
   });
+
+  it("permite rejeitar pedido de seguir e trocar entre abas de filtro", async () => {
+    const { getNotifications, api } = await import("../services/api");
+    renderNotifications("/notifications?tab=requests");
+    await waitFor(() => screen.getByTestId("reject-btn-charlie"));
+
+    fireEvent.click(screen.getByTestId("reject-btn-charlie"));
+    await waitFor(() =>
+      expect(api.post).toHaveBeenCalledWith("/api/social/follow-requests/charlie/reject/")
+    );
+
+    fireEvent.click(screen.getByTestId("tab-likes"));
+    await waitFor(() =>
+      expect(getNotifications).toHaveBeenCalledWith({ category: "likes", unreadOnly: false })
+    );
+
+    fireEvent.click(screen.getByTestId("tab-unread"));
+    await waitFor(() =>
+      expect(getNotifications).toHaveBeenCalledWith({ category: "all", unreadOnly: true })
+    );
+  });
 });

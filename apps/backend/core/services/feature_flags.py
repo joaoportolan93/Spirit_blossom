@@ -22,9 +22,7 @@ def is_feature_enabled(key: str, user=None) -> bool:
         from core.models import FeatureFlag
 
         flag: Optional[FeatureFlag] = (
-            FeatureFlag.objects.filter(key=key)
-            .prefetch_related("allowed_users")
-            .first()
+            FeatureFlag.objects.filter(key=key).prefetch_related("allowed_users").first()
         )
     except Exception:
         return False

@@ -105,4 +105,3 @@ class PushDeviceAdmin(admin.ModelAdmin):
     search_fields = ("user__username", "device_name")
     raw_id_fields = ("user",)
     readonly_fields = ("id", "created_at", "last_used_at")
-

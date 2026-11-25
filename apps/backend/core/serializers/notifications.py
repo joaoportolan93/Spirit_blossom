@@ -62,4 +62,3 @@ class NotificationSerializer(serializers.ModelSerializer):
             if obj.ref_id:
                 return f"/posts/{obj.ref_id}"
         return None
-

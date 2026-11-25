@@ -147,4 +147,3 @@ urlpatterns = [
     path("notifications/", include((notifications_patterns, "notifications"))),
     path("feature-flags/", FeatureFlagsView.as_view(), name="feature_flags"),
 ]
-

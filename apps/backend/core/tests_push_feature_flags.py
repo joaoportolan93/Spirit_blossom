@@ -80,8 +80,12 @@ class TestFeatureFlagEvaluation:
         assert is_feature_enabled("ff_anon50", user=None) is False
 
     def test_get_flags_for_user_retorna_dict(self):
-        FeatureFlag.objects.create(key="push_notifications", is_enabled=True, rollout_percentage=100)
-        FeatureFlag.objects.create(key="notification_center_filters", is_enabled=False, rollout_percentage=0)
+        FeatureFlag.objects.create(
+            key="push_notifications", is_enabled=True, rollout_percentage=100
+        )
+        FeatureFlag.objects.create(
+            key="notification_center_filters", is_enabled=False, rollout_percentage=0
+        )
         user = UserFactory()
         flags = get_flags_for_user(user)
         assert "push_notifications" in flags
@@ -98,7 +102,9 @@ class TestFeatureFlagEvaluation:
 @pytest.mark.django_db
 class TestFeatureFlagsEndpoint:
     def test_get_flags_autenticado(self):
-        FeatureFlag.objects.create(key="push_notifications", is_enabled=True, rollout_percentage=100)
+        FeatureFlag.objects.create(
+            key="push_notifications", is_enabled=True, rollout_percentage=100
+        )
         user = UserFactory()
         client = _client_for(user)
         res = client.get("/api/feature-flags/")
@@ -107,7 +113,9 @@ class TestFeatureFlagsEndpoint:
         assert res.data["flags"]["push_notifications"] is True
 
     def test_get_flags_anonimo_permitido(self):
-        FeatureFlag.objects.create(key="push_notifications", is_enabled=True, rollout_percentage=100)
+        FeatureFlag.objects.create(
+            key="push_notifications", is_enabled=True, rollout_percentage=100
+        )
         client = APIClient()
         res = client.get("/api/feature-flags/")
         assert res.status_code == status.HTTP_200_OK
@@ -300,6 +308,7 @@ class TestNotificationCenterFilters:
         user = UserFactory()
         other = UserFactory()
         from core.models import Post
+
         post = Post.objects.create(
             author=other, content_text="Teste", visibility=Post.Visibility.PUBLIC
         )
@@ -424,6 +433,7 @@ class TestPushWithMockFCM:
             return {"sent": 1, "removed_tokens": []}
 
         import core.services.push as push_mod
+
         monkeypatch.setattr(push_mod, "send_push_notification", mock_send_push)
 
         # Executa task síncrona
@@ -436,7 +446,9 @@ class TestPushWithMockFCM:
         from core.services.auth import export_user_data
 
         user = UserFactory()
-        register_device(user=user, token="secret-token-123", platform="web", device_name="Chrome/Win")
+        register_device(
+            user=user, token="secret-token-123", platform="web", device_name="Chrome/Win"
+        )
 
         data = export_user_data(user=user)
         assert "push_devices" in data

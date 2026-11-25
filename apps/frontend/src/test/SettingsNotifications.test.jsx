@@ -180,4 +180,31 @@ describe("SettingsNotifications — Preferências e Push", () => {
       expect(screen.getByTestId("notifications-error")).toBeInTheDocument();
     });
   });
+
+  it("exibe badge de navegador não suportado quando isSupported é false e flag ativa", async () => {
+    const { useFeatureFlags } = await import("../hooks/useFeatureFlags");
+    const { usePushNotifications } = await import("../hooks/usePushNotifications");
+    const { getUserSettings } = await import("../services/api");
+
+    getUserSettings.mockRejectedValueOnce(new Error("network"));
+    useFeatureFlags.mockReturnValue({
+      flags: { push_notifications: true },
+      isEnabled: (k) => k === "push_notifications",
+      loading: false,
+    });
+    usePushNotifications.mockReturnValue({
+      permission: "unsupported",
+      isSupported: false,
+      isRegistered: false,
+      loading: false,
+      error: null,
+      requestAndRegister: vi.fn(),
+      unregister: vi.fn(),
+    });
+
+    renderSettings();
+    await waitFor(() => {
+      expect(screen.getByText(/Não suportado/i)).toBeInTheDocument();
+    });
+  });
 });

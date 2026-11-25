@@ -45,4 +45,3 @@ class DeviceRegistrationRateThrottle(UserRateThrottle):
     """20 registros de dispositivo push por hora por usuário (Onda 7a)."""
 
     scope = "device_registration"
-

@@ -138,4 +138,33 @@ describe("usePushNotifications", () => {
 
     expect(typeof result.current.listenForeground).toBe("function");
   });
+
+  it("trata getFirebaseMessaging retornando null e falha em requestAndRegister", async () => {
+    const { getFirebaseMessaging } = await import("../services/firebase");
+    getFirebaseMessaging.mockResolvedValueOnce(null);
+    global.Notification = {
+      permission: "default",
+      requestPermission: vi.fn().mockResolvedValue("granted"),
+    };
+
+    const { result } = renderHook(() => usePushNotifications({ enabled: true }));
+    await act(async () => {
+      await result.current.requestAndRegister();
+    });
+    expect(result.current.isRegistered).toBe(false);
+
+    getFirebaseMessaging.mockRejectedValueOnce(new Error("fcm-down"));
+    await act(async () => {
+      await result.current.requestAndRegister();
+    });
+    expect(result.current.error).toBe("fcm-down");
+  });
+
+  it("listenForeground retorna cleanup no-op quando não está granted", () => {
+    global.Notification = { permission: "default" };
+    const { result } = renderHook(() => usePushNotifications({ enabled: true }));
+    const cleanup = result.current.listenForeground(vi.fn());
+    expect(typeof cleanup).toBe("function");
+    cleanup();
+  });
 });

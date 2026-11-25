@@ -30,6 +30,7 @@ REST_FRAMEWORK = {
         "block": "10000/minute",
         "export_data": "10000/minute",
         "delete_account": "10000/minute",
+        "device_registration": "10000/minute",
     },
 }
 
