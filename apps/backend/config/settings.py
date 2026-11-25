@@ -217,6 +217,7 @@ REST_FRAMEWORK = {
         "block": "10/minute",
         "export_data": "3/hour",
         "delete_account": "3/hour",
+        "device_registration": "20/hour",
     },
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.CursorPagination",
     "PAGE_SIZE": int(os.environ.get("FEED_DEFAULT_LIMIT", "20")),
@@ -277,6 +278,11 @@ MEDIA_ROOT = Path(os.environ.get("MEDIA_ROOT", BASE_DIR / "media"))
 MEDIA_URL = os.environ.get("MEDIA_URL", "/media/")  # /media/ em dev / local
 MAX_UPLOAD_MB = int(os.environ.get("MAX_UPLOAD_MB", "10"))
 DATA_UPLOAD_MAX_MEMORY_SIZE = MAX_UPLOAD_MB * 1024 * 1024
+
+# ---------------------------------------------------------------------------
+# Firebase Cloud Messaging (FCM) — Push Notifications (Onda 7a)
+# ---------------------------------------------------------------------------
+FIREBASE_CREDENTIALS_PATH = os.environ.get("FIREBASE_CREDENTIALS_PATH", None)
 
 # ---------------------------------------------------------------------------
 # Internacionalização

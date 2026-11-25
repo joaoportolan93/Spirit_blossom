@@ -1,5 +1,5 @@
 """
-Operações de leitura e escrita para notificações (ADR-N2 / Onda 3b).
+Operações de leitura e escrita para notificações (ADR-N2 / Onda 3b / Onda 7a).
 """
 
 from typing import Optional
@@ -10,13 +10,27 @@ from django.db.models import Exists, OuterRef, Q, QuerySet
 from core.models import Block, Mute, Notification, UserProfile
 from core.utils.visibility import can_view_post
 
+# Mapeamento de tipo → categoria para filtros da Central de Notificações
+CATEGORY_MAP = {
+    "likes": [Notification.Type.LIKE],
+    "comments": [Notification.Type.REPLY],
+    "follows": [Notification.Type.FOLLOW],
+    "mentions": [Notification.Type.MENTION],
+}
+
 # -----------------------------------------------------------------------------
 # Consultas de Notificações
 # -----------------------------------------------------------------------------
 
 
-def get_user_notifications(*, user, limit: int = 50) -> QuerySet:
-    """Retorna as notificações mais recentes de um usuário.
+def get_user_notifications(
+    *,
+    user,
+    limit: int = 50,
+    category: str = "all",
+    unread_only: bool = False,
+) -> QuerySet:
+    """Retorna notificações do usuário com filtros de categoria e leitura.
 
     Exclui remetentes bloqueados ou silenciados (ADR-N24).
     """
@@ -24,14 +38,26 @@ def get_user_notifications(*, user, limit: int = 50) -> QuerySet:
     blocker_of_user = Block.objects.filter(blocker=OuterRef("sender"), blocked=user)
     muted_by_user = Mute.objects.filter(muter=user, muted=OuterRef("sender"))
 
-    return (
+    qs = (
         Notification.objects.filter(recipient=user)
         .exclude(Exists(blocked_by_user))
         .exclude(Exists(blocker_of_user))
         .exclude(Exists(muted_by_user))
-        .select_related("sender")
-        .order_by("-created_at")[:limit]
+        .select_related("sender", "sender__profile")
+        .order_by("-created_at")
     )
+
+    if unread_only:
+        qs = qs.filter(read=False)
+
+    if category and category != "all":
+        types = CATEGORY_MAP.get(category, [])
+        if types:
+            qs = qs.filter(notification_type__in=types)
+        else:
+            qs = qs.none()
+
+    return qs[:limit]
 
 
 def get_unread_notifications_count(*, user) -> int:
@@ -68,6 +94,8 @@ def create_notification(
 
     Regra Onda 5: Quando o interruptor de notificação estiver desativado (False)
     no perfil do destinatário, nenhum registro Notification é criado no banco de dados.
+
+    Onda 7a: Após criação, dispara push via transaction.on_commit se flag ativa.
     """
     try:
         profile = UserProfile.objects.filter(user=recipient).first()
@@ -88,18 +116,78 @@ def create_notification(
             return None
 
     if ref_id is not None:
-        notif, _ = Notification.objects.get_or_create(
+        notif, created = Notification.objects.get_or_create(
             recipient=recipient,
             notification_type=notification_type,
             ref_id=ref_id,
             defaults={"sender": sender},
         )
+        if created:
+            _schedule_push(notif)
         return notif
-    return Notification.objects.create(
+
+    notif = Notification.objects.create(
         recipient=recipient,
         sender=sender,
         notification_type=notification_type,
         ref_id=None,
+    )
+    _schedule_push(notif)
+    return notif
+
+
+def _schedule_push(notification: Notification) -> None:
+    """Agenda push via on_commit se flag push_notifications ativa."""
+    try:
+        from core.services.feature_flags import is_feature_enabled
+        from core.tasks import send_push_notification_task
+
+        if not is_feature_enabled("push_notifications", notification.recipient):
+            return
+
+        title, body = _build_push_payload(notification)
+
+        def dispatch():
+            send_push_notification_task.delay(
+                notification.id,
+                title=title,
+                body=body,
+                data={
+                    "type": notification.notification_type,
+                    "notification_id": str(notification.id),
+                },
+            )
+
+        transaction.on_commit(dispatch)
+    except Exception:
+        pass  # Push nunca derruba fluxo principal
+
+
+def _build_push_payload(notification: Notification) -> tuple[str, str]:
+    """Constrói título/corpo genérico localizado — sem expor conteúdo privado."""
+    from django.utils.translation import gettext as _
+
+    type_map = {
+        Notification.Type.LIKE: (
+            _("Nova curtida"),
+            _("Alguém curtiu sua publicação."),
+        ),
+        Notification.Type.REPLY: (
+            _("Novo comentário"),
+            _("Você recebeu um novo comentário."),
+        ),
+        Notification.Type.FOLLOW: (
+            _("Novo seguidor"),
+            _("Alguém começou a seguir você."),
+        ),
+        Notification.Type.MENTION: (
+            _("Você foi mencionado"),
+            _("Alguém mencionou você em uma publicação."),
+        ),
+    }
+    return type_map.get(
+        notification.notification_type,
+        (_("Nova notificação"), _("Você tem uma nova notificação.")),
     )
 
 
@@ -243,3 +331,4 @@ def mark_all_notifications_as_read(*, user) -> int:
         recipient=user,
         read=False,
     ).update(read=True)
+

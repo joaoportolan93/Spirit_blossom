@@ -280,3 +280,54 @@ msgstr "Account deleted successfully."
 msgid "Erro ao excluir conta. Tente novamente."
 msgstr "Error deleting account. Please try again."
 
+msgid "feature flag"
+msgstr "feature flag"
+
+msgid "feature flags"
+msgstr "feature flags"
+
+msgid "dispositivo push"
+msgstr "push device"
+
+msgid "dispositivos push"
+msgstr "push devices"
+
+msgid "Nova curtida"
+msgstr "New like"
+
+msgid "Alguém curtiu sua publicação."
+msgstr "Someone liked your post."
+
+msgid "Novo comentário"
+msgstr "New comment"
+
+msgid "Você recebeu um novo comentário."
+msgstr "You received a new comment."
+
+msgid "Novo seguidor"
+msgstr "New follower"
+
+msgid "Alguém começou a seguir você."
+msgstr "Someone started following you."
+
+msgid "Você foi mencionado"
+msgstr "You were mentioned"
+
+msgid "Alguém mencionou você em uma publicação."
+msgstr "Someone mentioned you in a post."
+
+msgid "Nova notificação"
+msgstr "New notification"
+
+msgid "Você tem uma nova notificação."
+msgstr "You have a new notification."
+
+msgid "Notificação não encontrada."
+msgstr "Notification not found."
+
+msgid "Notificação marcada como lida."
+msgstr "Notification marked as read."
+
+msgid "token é obrigatório."
+msgstr "token is required."
+

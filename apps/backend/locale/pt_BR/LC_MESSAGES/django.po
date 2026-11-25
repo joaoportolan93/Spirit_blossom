@@ -280,3 +280,54 @@ msgstr "Conta excluída com sucesso."
 msgid "Erro ao excluir conta. Tente novamente."
 msgstr "Erro ao excluir conta. Tente novamente."
 
+msgid "feature flag"
+msgstr "feature flag"
+
+msgid "feature flags"
+msgstr "feature flags"
+
+msgid "dispositivo push"
+msgstr "dispositivo push"
+
+msgid "dispositivos push"
+msgstr "dispositivos push"
+
+msgid "Nova curtida"
+msgstr "Nova curtida"
+
+msgid "Alguém curtiu sua publicação."
+msgstr "Alguém curtiu sua publicação."
+
+msgid "Novo comentário"
+msgstr "Novo comentário"
+
+msgid "Você recebeu um novo comentário."
+msgstr "Você recebeu um novo comentário."
+
+msgid "Novo seguidor"
+msgstr "Novo seguidor"
+
+msgid "Alguém começou a seguir você."
+msgstr "Alguém começou a seguir você."
+
+msgid "Você foi mencionado"
+msgstr "Você foi mencionado"
+
+msgid "Alguém mencionou você em uma publicação."
+msgstr "Alguém mencionou você em uma publicação."
+
+msgid "Nova notificação"
+msgstr "Nova notificação"
+
+msgid "Você tem uma nova notificação."
+msgstr "Você tem uma nova notificação."
+
+msgid "Notificação não encontrada."
+msgstr "Notificação não encontrada."
+
+msgid "Notificação marcada como lida."
+msgstr "Notificação marcada como lida."
+
+msgid "token é obrigatório."
+msgstr "token é obrigatório."
+

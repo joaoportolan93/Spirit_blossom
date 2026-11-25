@@ -4,10 +4,12 @@ from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from .models import (
     AccessLog,
     Block,
+    FeatureFlag,
     Follow,
     Mute,
     Notification,
     Post,
+    PushDevice,
     User,
     UserProfile,
 )
@@ -80,3 +82,27 @@ class NotificationAdmin(admin.ModelAdmin):
     list_filter = ("notification_type", "read")
     raw_id_fields = ("recipient", "sender")
     readonly_fields = ("created_at",)
+
+
+@admin.register(FeatureFlag)
+class FeatureFlagAdmin(admin.ModelAdmin):
+    list_display = ("key", "is_enabled", "rollout_percentage", "created_at", "updated_at")
+    list_filter = ("is_enabled",)
+    search_fields = ("key", "description")
+    filter_horizontal = ("allowed_users",)
+    readonly_fields = ("created_at", "updated_at")
+    fieldsets = (
+        (None, {"fields": ("key", "description", "is_enabled")}),
+        ("Rollout", {"fields": ("rollout_percentage", "allowed_users")}),
+        ("Timestamps", {"fields": ("created_at", "updated_at"), "classes": ("collapse",)}),
+    )
+
+
+@admin.register(PushDevice)
+class PushDeviceAdmin(admin.ModelAdmin):
+    list_display = ("user", "platform", "device_name", "is_active", "created_at", "last_used_at")
+    list_filter = ("platform", "is_active")
+    search_fields = ("user__username", "device_name")
+    raw_id_fields = ("user",)
+    readonly_fields = ("id", "created_at", "last_used_at")
+

@@ -476,6 +476,7 @@ class TestAllRoutesRequireAuthenticationForAnonymous:
         "/api/auth/google/",
         "/api/auth/google/complete/",
         "/api/health/",
+        "/api/feature-flags/",
     }
 
     def _extract_routes(self, patterns, prefix=""):

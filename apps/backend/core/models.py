@@ -473,6 +473,111 @@ class Mute(models.Model):
 
 
 # ==============================================================================
+# Feature Flags
+# ==============================================================================
+
+
+class FeatureFlag(models.Model):
+    """
+    Feature flag gerenciável via admin — rollout gradual e listas de usuários
+    permitidos. Avaliação determinística por SHA-256 do user_id.
+    """
+
+    key = models.CharField(
+        max_length=100,
+        unique=True,
+        db_index=True,
+        help_text=_("Identificador único da flag, ex: push_notifications"),
+    )
+    description = models.TextField(
+        blank=True,
+        default="",
+        help_text=_("Descrição interna da funcionalidade controlada."),
+    )
+    is_enabled = models.BooleanField(
+        default=False,
+        help_text=_("Liga/desliga globalmente."),
+    )
+    rollout_percentage = models.PositiveSmallIntegerField(
+        default=0,
+        help_text=_("Porcentagem 0-100 de usuários que recebem a flag (rollout gradual)."),
+    )
+    allowed_users = models.ManyToManyField(
+        settings.AUTH_USER_MODEL,
+        blank=True,
+        related_name="allowed_feature_flags",
+        help_text=_("Usuários sempre habilitados, independente do rollout_percentage."),
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "feature_flags_featureflag"
+        verbose_name = _("feature flag")
+        verbose_name_plural = _("feature flags")
+        ordering = ["key"]
+
+    def __str__(self) -> str:
+        status = "ON" if self.is_enabled else "OFF"
+        return f"{self.key} [{status} {self.rollout_percentage}%]"
+
+
+# ==============================================================================
+# Push Devices
+# ==============================================================================
+
+
+class PushDevice(models.Model):
+    """
+    Dispositivo registrado para receber notificações push via FCM.
+    Token é único globalmente — ao fazer login em dispositivo de outra conta,
+    o token é reatribuído ao usuário corrente (ADR-N21/N24 — zero vazamento).
+    """
+
+    class Platform(models.TextChoices):
+        WEB = "web", _("Web")
+        ANDROID = "android", _("Android")
+        IOS = "ios", _("iOS")
+
+    id = models.UUIDField(primary_key=True, default=uuid6.uuid7, editable=False)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="push_devices",
+    )
+    token = models.TextField(
+        unique=True,
+        db_index=True,
+        help_text=_("FCM registration token — único globalmente."),
+    )
+    platform = models.CharField(
+        max_length=10,
+        choices=Platform.choices,
+        default=Platform.WEB,
+    )
+    device_name = models.CharField(
+        max_length=200,
+        blank=True,
+        default="",
+        help_text=_("User-agent ou nome amigável do dispositivo."),
+    )
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    last_used_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "push_device"
+        verbose_name = _("dispositivo push")
+        verbose_name_plural = _("dispositivos push")
+        indexes = [
+            models.Index(fields=["user", "is_active"], name="push_device_user_active_idx"),
+        ]
+
+    def __str__(self) -> str:
+        return f"PushDevice({self.user_id}, {self.platform}, active={self.is_active})"
+
+
+# ==============================================================================
 # Notificações (Notifications)
 # ==============================================================================
 

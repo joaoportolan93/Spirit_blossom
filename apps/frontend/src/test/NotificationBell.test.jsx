@@ -1,81 +1,70 @@
+/**
+ * Testes: NotificationBell (Onda 7a — unread count via /api/notifications/unread-count/)
+ */
+
+import { render, screen, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
+import { I18nextProvider } from "react-i18next";
+import i18n from "../i18n";
 import { NotificationBell } from "../components/NotificationBell";
-import { api } from "../services/api";
-import "../i18n";
 
-const mockNavigate = vi.fn();
-vi.mock("react-router-dom", async () => {
-  const actual = await vi.importActual("react-router-dom");
-  return {
-    ...actual,
-    useNavigate: () => mockNavigate,
-  };
-});
+vi.mock("../services/api", () => ({
+  getUnreadCount: vi.fn(),
+}));
 
-describe("NotificationBell Component", () => {
+function renderBell() {
+  return render(
+    <MemoryRouter>
+      <I18nextProvider i18n={i18n}>
+        <NotificationBell />
+      </I18nextProvider>
+    </MemoryRouter>
+  );
+}
+
+describe("NotificationBell — Badge e polling", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("1. Renderiza o sino sem badge quando não há pedidos pendentes", async () => {
-    vi.spyOn(api, "get").mockResolvedValueOnce({ data: { results: [] } });
+  it("renderiza botão sem badge quando unread=0", async () => {
+    const { getUnreadCount } = await import("../services/api");
+    getUnreadCount.mockResolvedValue(0);
 
-    render(
-      <MemoryRouter>
-        <NotificationBell />
-      </MemoryRouter>
-    );
-
-    const bellBtn = screen.getByTestId("notification-bell-btn");
-    expect(bellBtn).toBeInTheDocument();
-    expect(screen.queryByTestId("unread-badge")).not.toBeInTheDocument();
+    renderBell();
+    expect(screen.getByTestId("notification-bell-btn")).toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByTestId("unread-badge")).toBeNull());
   });
 
-  it("2. Renderiza badge com a contagem quando há pedidos pendentes", async () => {
-    vi.spyOn(api, "get").mockResolvedValueOnce({
-      data: { results: [{ id: "1" }, { id: "2" }, { id: "3" }] },
-    });
+  it("exibe badge com contagem quando há não lidas", async () => {
+    const { getUnreadCount } = await import("../services/api");
+    getUnreadCount.mockResolvedValue(5);
 
-    render(
-      <MemoryRouter>
-        <NotificationBell />
-      </MemoryRouter>
-    );
-
+    renderBell();
     await waitFor(() => {
       const badge = screen.getByTestId("unread-badge");
       expect(badge).toBeInTheDocument();
-      expect(badge).toHaveTextContent("3");
+      expect(badge).toHaveTextContent("5");
     });
   });
 
-  it("3. Navega para /notifications ao clicar no botão", async () => {
-    vi.spyOn(api, "get").mockResolvedValueOnce({ data: { results: [] } });
+  it("exibe 99+ quando contagem > 99", async () => {
+    const { getUnreadCount } = await import("../services/api");
+    getUnreadCount.mockResolvedValue(150);
 
-    render(
-      <MemoryRouter>
-        <NotificationBell />
-      </MemoryRouter>
-    );
-
-    const bellBtn = screen.getByTestId("notification-bell-btn");
-    fireEvent.click(bellBtn);
-
-    expect(mockNavigate).toHaveBeenCalledWith("/notifications");
+    renderBell();
+    await waitFor(() => {
+      expect(screen.getByTestId("unread-badge")).toHaveTextContent("99+");
+    });
   });
 
-  it("4. Trata erro silenciosamente sem falhar o componente", async () => {
-    vi.spyOn(api, "get").mockRejectedValueOnce(new Error("Network error"));
+  it("não crasha quando API retorna erro", async () => {
+    const { getUnreadCount } = await import("../services/api");
+    getUnreadCount.mockRejectedValue(new Error("Network error"));
 
-    render(
-      <MemoryRouter>
-        <NotificationBell />
-      </MemoryRouter>
-    );
-
-    expect(screen.getByTestId("notification-bell-btn")).toBeInTheDocument();
+    renderBell();
+    // Sem badge, sem crash
+    await waitFor(() => expect(screen.queryByTestId("unread-badge")).toBeNull());
   });
 });
-

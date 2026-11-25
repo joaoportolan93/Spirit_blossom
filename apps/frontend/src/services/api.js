@@ -265,3 +265,47 @@ export async function getProfileLikes(username) {
   const res = await api.get(`/api/social/profile/${username}/likes/`);
   return res.data;
 }
+
+// ----------------------------------------------------------------------------
+// API de Notificações — Onda 7a
+// ----------------------------------------------------------------------------
+
+export async function getNotifications({ category = "all", unreadOnly = false } = {}) {
+  const params = new URLSearchParams();
+  if (category && category !== "all") params.append("category", category);
+  if (unreadOnly) params.append("unread_only", "true");
+  const qs = params.toString() ? `?${params.toString()}` : "";
+  const res = await api.get(`/api/notifications/${qs}`);
+  return res.data;
+}
+
+export async function getUnreadCount() {
+  const res = await api.get("/api/notifications/unread-count/");
+  return res.data?.unread_count ?? 0;
+}
+
+export async function markNotificationRead(id) {
+  const res = await api.post(`/api/notifications/${id}/read/`);
+  return res.data;
+}
+
+export async function markAllNotificationsRead() {
+  const res = await api.post("/api/notifications/mark-all-read/");
+  return res.data;
+}
+
+export async function registerPushDevice({ token, platform = "web", device_name = "" }) {
+  const res = await api.post("/api/notifications/devices/", { token, platform, device_name });
+  return res.data;
+}
+
+export async function removePushDevice(token) {
+  const res = await api.delete("/api/notifications/devices/", { data: { token } });
+  return res.data;
+}
+
+export async function getFeatureFlags() {
+  const res = await api.get("/api/feature-flags/");
+  return res.data?.flags ?? {};
+}
+

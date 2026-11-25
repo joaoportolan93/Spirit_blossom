@@ -2,34 +2,37 @@ import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { Bell } from "lucide-react";
-import { api } from "../services/api";
+import { getUnreadCount } from "../services/api";
 
 /**
- * NotificationBell — ícone de sino com badge de pedidos pendentes.
+ * NotificationBell — ícone de sino com badge de notificações não lidas (Onda 7a).
  *
- * Renderiza um botão que navega para /notifications ao ser clicado.
- * No Navbar, é embutido dentro de um <Link> (que trata a navegação),
- * então o onClick interno é redundante mas inofensivo (event bubbles para o Link).
+ * Polling leve via /api/notifications/unread-count/ a cada 60 segundos.
+ * aria-live="polite" para atualizações acessíveis do badge.
  */
 export function NotificationBell({ className = "" }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const [pendingCount, setPendingCount] = useState(0);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
     let isMounted = true;
-    async function loadPendingCount() {
+
+    async function loadCount() {
       try {
-        const res = await api.get("/api/social/follow-requests/");
-        if (isMounted) {
-          setPendingCount(res.data?.results?.length || 0);
-        }
+        const count = await getUnreadCount();
+        if (isMounted) setUnreadCount(count);
       } catch {
         // ignora se não autenticado
       }
     }
-    loadPendingCount();
-    return () => { isMounted = false; };
+
+    loadCount();
+    const interval = setInterval(loadCount, 60_000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
   }, []);
 
   return (
@@ -41,12 +44,14 @@ export function NotificationBell({ className = "" }) {
       aria-label={t("notifications.title")}
     >
       <Bell className="w-5 h-5 shrink-0" />
-      {pendingCount > 0 && (
+      {unreadCount > 0 && (
         <span
           data-testid="unread-badge"
+          aria-live="polite"
+          aria-atomic="true"
           className="absolute -top-1.5 -right-1.5 bg-rose-600 text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 flex items-center justify-center px-0.5"
         >
-          {pendingCount > 99 ? "99+" : pendingCount}
+          {unreadCount > 99 ? "99+" : unreadCount}
         </span>
       )}
     </button>
@@ -54,3 +59,4 @@ export function NotificationBell({ className = "" }) {
 }
 
 export default NotificationBell;
+

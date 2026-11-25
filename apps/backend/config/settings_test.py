@@ -111,6 +111,7 @@ REST_FRAMEWORK = {
         "block": "1000/minute",
         "export_data": "1000/hour",
         "delete_account": "1000/hour",
+        "device_registration": "1000/hour",
     },
 }
 

@@ -1,5 +1,5 @@
 """
-Throttles específicos para endpoints de autenticação.
+Throttles específicos para endpoints de autenticação e dispositivos push.
 """
 
 from rest_framework.throttling import AnonRateThrottle, UserRateThrottle
@@ -39,3 +39,10 @@ class DeleteAccountRateThrottle(UserRateThrottle):
     """3 tentativas de exclusão de conta por hora por usuário."""
 
     scope = "delete_account"
+
+
+class DeviceRegistrationRateThrottle(UserRateThrottle):
+    """20 registros de dispositivo push por hora por usuário (Onda 7a)."""
+
+    scope = "device_registration"
+

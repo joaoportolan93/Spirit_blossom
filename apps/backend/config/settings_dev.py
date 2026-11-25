@@ -3,6 +3,7 @@ Settings para desenvolvimento local (localhost) sem Docker / sem Postgres / sem 
 Usa SQLite local (db.sqlite3) com compatibilidade via patch.
 """
 
+import os
 from pathlib import Path
 
 from config.sqlite_compat import patch_sqlite
@@ -15,6 +16,25 @@ MEDIA_URL = "/media/"
 APP_NAME = "Spirit Blossom (Dev)"
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+REPO_ROOT = BASE_DIR.parent.parent
+
+# Carrega variáveis do .env raiz em desenvolvimento local (sem exigir python-dotenv)
+_root_env = REPO_ROOT / ".env"
+if _root_env.exists():
+    for _line in _root_env.read_text(encoding="utf-8").splitlines():
+        _line = _line.strip()
+        if _line and not _line.startswith("#") and "=" in _line:
+            _key, _val = _line.split("=", 1)
+            os.environ.setdefault(_key.strip(), _val.strip().strip('"').strip("'"))
+
+_firebase_cred_raw = os.environ.get("FIREBASE_CREDENTIALS_PATH", "").strip()
+if _firebase_cred_raw:
+    _cred_candidate = Path(_firebase_cred_raw)
+    if not _cred_candidate.is_absolute() and (REPO_ROOT / _cred_candidate).exists():
+        _cred_candidate = REPO_ROOT / _cred_candidate
+    FIREBASE_CREDENTIALS_PATH = str(_cred_candidate)
+else:
+    FIREBASE_CREDENTIALS_PATH = None
 
 DATABASES = {
     "default": {

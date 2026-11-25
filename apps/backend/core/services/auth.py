@@ -577,6 +577,21 @@ def export_user_data(*, user) -> dict:
         for m in Mute.objects.filter(muter=user).select_related("muted")
     ]
 
+    # Dispositivos registrados para push (metadados seguros sem tokens/segredos — Onda 7a)
+    from core.models import PushDevice
+
+    push_devices_data = [
+        {
+            "id": str(d.id),
+            "platform": d.platform,
+            "device_name": d.device_name,
+            "is_active": d.is_active,
+            "created_at": d.created_at.isoformat(),
+            "last_used_at": d.last_used_at.isoformat(),
+        }
+        for d in PushDevice.objects.filter(user=user).order_by("-created_at")
+    ]
+
     return {
         "exported_at": timezone.now().isoformat(),
         "profile": profile_data,
@@ -591,6 +606,7 @@ def export_user_data(*, user) -> dict:
         "followers": followers_data,
         "blocked_users": blocked_by_me,
         "muted_users": muted_by_me,
+        "push_devices": push_devices_data,
     }
 
 

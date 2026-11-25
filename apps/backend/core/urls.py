@@ -22,8 +22,14 @@ from core.views.auth import (
     UserSearchView,
     UserSettingsView,
 )
+from core.views.feature_flags import FeatureFlagsView
 from core.views.feed import ExploreFeedView, FollowingFeedView
-from core.views.notifications import NotificationListView, NotificationMarkReadView
+from core.views.notifications import (
+    NotificationListView,
+    NotificationMarkReadView,
+    NotificationUnreadCountView,
+    PushDeviceView,
+)
 from core.views.posts import (
     BookmarkedPostListView,
     DraftDetailView,
@@ -128,6 +134,8 @@ notifications_patterns = [
     path("", NotificationListView.as_view(), name="notification_list"),
     path("mark-all-read/", NotificationListView.as_view(), name="notification_mark_all_read"),
     path("<int:pk>/read/", NotificationMarkReadView.as_view(), name="notification_read"),
+    path("unread-count/", NotificationUnreadCountView.as_view(), name="notification_unread_count"),
+    path("devices/", PushDeviceView.as_view(), name="push_devices"),
 ]
 
 urlpatterns = [
@@ -137,4 +145,6 @@ urlpatterns = [
     path("social/", include((social_patterns, "social"))),
     path("feed/", include((feed_patterns, "feed"))),
     path("notifications/", include((notifications_patterns, "notifications"))),
+    path("feature-flags/", FeatureFlagsView.as_view(), name="feature_flags"),
 ]
+
