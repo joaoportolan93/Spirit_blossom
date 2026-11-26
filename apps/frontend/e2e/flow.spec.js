@@ -26,12 +26,14 @@ test.describe("Fluxo E2E: cadastro → post → seguir → ver", () => {
     await page.fill('[data-testid="register-birth-date"]', user1.birthDate);
     await page.fill('[data-testid="register-password"]', user1.password);
     await page.fill('[data-testid="register-password-confirm"]', user1.password);
+    await page.check('[data-testid="register-terms"]');
     await page.click('[data-testid="register-submit"]');
 
     // Aguarda redirecionamento para o feed
     await expect(page).toHaveURL("/");
 
-    // 2. Criar uma publicação no feed
+    // 2. Criar uma publicação no feed (abre modal + Novo Post)
+    await page.click('[data-testid="feed-new-post-btn"]');
     await page.fill('[data-testid="composer-textarea"]', postContent);
     await page.click('[data-testid="publish-button"]');
 
@@ -49,6 +51,7 @@ test.describe("Fluxo E2E: cadastro → post → seguir → ver", () => {
     await page.fill('[data-testid="register-birth-date"]', user2.birthDate);
     await page.fill('[data-testid="register-password"]', user2.password);
     await page.fill('[data-testid="register-password-confirm"]', user2.password);
+    await page.check('[data-testid="register-terms"]');
     await page.click('[data-testid="register-submit"]');
 
     await expect(page).toHaveURL("/");

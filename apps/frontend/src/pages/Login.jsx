@@ -178,6 +178,16 @@ export function Login() {
           {t("auth.dont_have_account")}
         </Link>
       </div>
+
+      <div className="mt-4 pt-3 border-t border-zinc-800/60 flex items-center justify-center gap-3 text-[11px] text-zinc-500">
+        <Link to="/terms" className="hover:text-zinc-300 hover:underline transition">
+          {t("legal.terms_link")}
+        </Link>
+        <span aria-hidden="true">·</span>
+        <Link to="/privacy" className="hover:text-zinc-300 hover:underline transition">
+          {t("legal.privacy_link")}
+        </Link>
+      </div>
     </div>
   );
 }

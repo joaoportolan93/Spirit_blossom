@@ -6,6 +6,7 @@ from .models import (
     Block,
     FeatureFlag,
     Follow,
+    Hashtag,
     Mute,
     Notification,
     Post,
@@ -105,3 +106,10 @@ class PushDeviceAdmin(admin.ModelAdmin):
     search_fields = ("user__username", "device_name")
     raw_id_fields = ("user",)
     readonly_fields = ("id", "created_at", "last_used_at")
+
+
+@admin.register(Hashtag)
+class HashtagAdmin(admin.ModelAdmin):
+    list_display = ("name", "created_at")
+    search_fields = ("name",)
+    readonly_fields = ("id", "created_at")

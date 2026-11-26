@@ -4,8 +4,9 @@ Operações de escrita e consultas para interações sociais (ADR-N2).
 
 from typing import Optional, Tuple
 
+from django.contrib.auth import get_user_model
 from django.db import transaction
-from django.db.models import Exists, OuterRef, Q, QuerySet
+from django.db.models import Count, Exists, F, OrderBy, OuterRef, Q, QuerySet
 from django.http import Http404
 from django.utils import timezone
 from django.utils.translation import gettext as _
@@ -37,6 +38,7 @@ __all__ = [
     "list_follow_requests",
     "accept_follow_request",
     "reject_follow_request",
+    "suggest_users_to_follow",
 ]
 
 
@@ -330,7 +332,7 @@ def accept_follow_request(*, user, follower_username: str) -> Follow:
         Follow.objects.select_for_update()
         .filter(
             followed=user,
-            follower__username=follower_username,
+            follower__username__iexact=follower_username,
             status=Follow.Status.PENDING,
         )
         .first()
@@ -360,7 +362,7 @@ def reject_follow_request(*, user, follower_username: str) -> bool:
     """
     follow = Follow.objects.filter(
         followed=user,
-        follower__username=follower_username,
+        follower__username__iexact=follower_username,
         status=Follow.Status.PENDING,
     ).first()
     if not follow:
@@ -368,3 +370,131 @@ def reject_follow_request(*, user, follower_username: str) -> bool:
 
     deleted, _ = follow.delete()
     return bool(deleted)
+
+
+def suggest_users_to_follow(viewer, limit: int = 5) -> list[dict]:
+    """
+    Sugere contas para o viewer seguir de forma transparente e não-predatória (Onda 7b).
+
+    Prioridade:
+    1. Conexões reais de 2º grau (pessoas seguidas por quem o viewer segue ativamente).
+    2. Contas públicas ativas recentes da comunidade.
+
+    Exclusões obrigatórias (ADR-N21 / ADR-N24):
+    - O próprio viewer;
+    - Contas já seguidas ou com pedido PENDING;
+    - Bloqueios e silenciamentos em ambas as direções;
+    - Contas inativas/suspensas.
+    """
+    if viewer is None or getattr(viewer, "is_anonymous", True):
+        return []
+
+    clamped_limit = max(1, min(limit, 20))
+    User = get_user_model()
+
+    already_following_ids = Follow.objects.filter(follower=viewer).values("followed_id")
+    blocked_out_ids = Block.objects.filter(blocker=viewer).values("blocked_id")
+    blocked_in_ids = Block.objects.filter(blocked=viewer).values("blocker_id")
+    muted_out_ids = Mute.objects.filter(muter=viewer).values("muted_id")
+    muted_in_ids = Mute.objects.filter(muted=viewer).values("muter_id")
+
+    candidates_base = (
+        User.objects.filter(is_active=True, status=User.Status.ACTIVE)
+        .exclude(pk=viewer.pk)
+        .exclude(pk__in=already_following_ids)
+        .exclude(pk__in=blocked_out_ids)
+        .exclude(pk__in=blocked_in_ids)
+        .exclude(pk__in=muted_out_ids)
+        .exclude(pk__in=muted_in_ids)
+        .select_related("profile")
+    )
+
+    results: list[dict] = []
+    selected_ids = []
+
+    # 1. Rede de 2º grau (seguidores em comum via conexões ativas)
+    active_connector_ids = list(
+        Follow.objects.filter(
+            follower=viewer,
+            status=Follow.Status.ACTIVE,
+            followed__is_active=True,
+            followed__status=User.Status.ACTIVE,
+        )
+        .exclude(followed_id__in=blocked_out_ids)
+        .exclude(followed_id__in=blocked_in_ids)
+        .exclude(followed_id__in=muted_out_ids)
+        .exclude(followed_id__in=muted_in_ids)
+        .values_list("followed_id", flat=True)
+    )
+
+    if active_connector_ids:
+        mutual_users = list(
+            candidates_base.filter(
+                followers__follower_id__in=active_connector_ids,
+                followers__status=Follow.Status.ACTIVE,
+            )
+            .annotate(mutual_count=Count("followers__follower_id", distinct=True))
+            .order_by("-mutual_count", "-date_joined")[:clamped_limit]
+        )
+
+        if mutual_users:
+            mutual_user_ids = [u.id for u in mutual_users]
+            sample_follows = (
+                Follow.objects.filter(
+                    follower_id__in=active_connector_ids,
+                    followed_id__in=mutual_user_ids,
+                    status=Follow.Status.ACTIVE,
+                )
+                .select_related("follower")
+                .order_by("follower__username")
+            )
+            sample_map = {}
+            for f in sample_follows:
+                sample_map.setdefault(f.followed_id, f.follower.username)
+
+            for u in mutual_users:
+                profile = getattr(u, "profile", None)
+                is_private = getattr(profile, "is_private", False) if profile else False
+                bio = "" if is_private else (getattr(profile, "bio", "") if profile else "")
+                results.append(
+                    {
+                        "id": str(u.id),
+                        "username": u.username,
+                        "display_name": (getattr(profile, "display_name", "") if profile else ""),
+                        "bio": bio,
+                        "avatar": (profile.avatar.url if profile and profile.avatar else None),
+                        "is_private": is_private,
+                        "mutual_count": int(getattr(u, "mutual_count", 0) or 0),
+                        "mutual_sample_username": sample_map.get(u.id),
+                        "reason": "mutual",
+                    }
+                )
+                selected_ids.append(u.id)
+
+    # 2. Complementa até `limit` com contas públicas ativas recentes
+    remaining = clamped_limit - len(results)
+    if remaining > 0:
+        public_qs = (
+            candidates_base.exclude(pk__in=selected_ids)
+            .exclude(profile__is_private=True)
+            .order_by(OrderBy(F("last_login"), descending=True, nulls_last=True), "-date_joined")[
+                :remaining
+            ]
+        )
+        for u in public_qs:
+            profile = getattr(u, "profile", None)
+            results.append(
+                {
+                    "id": str(u.id),
+                    "username": u.username,
+                    "display_name": (getattr(profile, "display_name", "") if profile else ""),
+                    "bio": (getattr(profile, "bio", "") if profile else ""),
+                    "avatar": (profile.avatar.url if profile and profile.avatar else None),
+                    "is_private": False,
+                    "mutual_count": 0,
+                    "mutual_sample_username": None,
+                    "reason": "active_community",
+                }
+            )
+
+    return results

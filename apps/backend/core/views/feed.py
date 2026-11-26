@@ -69,9 +69,15 @@ class ExploreFeedView(APIView):
 
     def get(self, request):
         cursor = request.query_params.get("cursor")
+        hashtag = request.query_params.get("hashtag")
         limit = 20
         try:
-            posts = get_explore_feed(user=request.user, cursor=cursor, limit=limit)
+            posts = get_explore_feed(
+                user=request.user,
+                cursor=cursor,
+                limit=limit,
+                hashtag=hashtag,
+            )
         except ValueError:
             return Response(
                 {"detail": "Cursor de Explorar inválido."},

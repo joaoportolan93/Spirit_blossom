@@ -1,10 +1,12 @@
 import { useState, useRef, useEffect, useContext } from "react";
 import { useTranslation } from "react-i18next";
 import { AuthContext } from "../hooks/useAuth";
-import { api } from "../services/api";
+import { api, searchUsers } from "../services/api";
+import { MediaPreview, useMediaSelection } from "./MediaAttachment";
 import {
   X,
   Image as ImageIcon,
+  Video as VideoIcon,
   Globe,
   Users,
   ChevronDown,
@@ -139,14 +141,33 @@ export function PostComposer({ onPostCreated, isOpen, onClose }) {
   const [drafts, setDrafts] = useState([]);
   const [loadingDrafts, setLoadingDrafts] = useState(false);
   const [error, setError] = useState("");
+  const [mentionQuery, setMentionQuery] = useState(null);
+  const [mentionResults, setMentionResults] = useState([]);
+  const [mentionIndex, setMentionIndex] = useState(0);
   const textareaRef = useRef(null);
   const modalRef = useRef(null);
+  const mentionRangeRef = useRef(null);
+  const {
+    selectedImage,
+    selectedVideo,
+    mediaPreview,
+    mediaType,
+    mediaError,
+    setMediaError,
+    imageInputRef,
+    gifInputRef,
+    videoInputRef,
+    handleImageSelect,
+    handleVideoSelect,
+    clearMedia,
+  } = useMediaSelection(t);
 
   const trimmed = content.trim();
   const charsRemaining = MAX_CHARS - content.length;
   const isOverLimit = charsRemaining < 0;
   const showCharCount = charsRemaining <= CHARS_THRESHOLD;
-  const canSubmit = trimmed.length > 0 && !isOverLimit && !isSubmitting;
+  const hasMedia = Boolean(selectedImage || selectedVideo);
+  const canSubmit = (trimmed.length > 0 || hasMedia) && !isOverLimit && !isSubmitting;
   const canSaveDraft = trimmed.length > 0 && !isOverLimit && !isSavingDraft;
 
   // Auto-resize do textarea
@@ -168,28 +189,140 @@ export function PostComposer({ onPostCreated, isOpen, onClose }) {
   useEffect(() => {
     if (!isOpen) return;
     const handler = (e) => {
-      if (e.key === "Escape") onClose?.();
+      if (e.key === "Escape") {
+        if (mentionResults.length > 0 || mentionQuery) {
+          setMentionQuery(null);
+          setMentionResults([]);
+          return;
+        }
+        onClose?.();
+      }
     };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, mentionResults.length, mentionQuery]);
+
+  // Debounce de busca de menções (@username)
+  useEffect(() => {
+    if (!mentionQuery || mentionQuery.length < 2) {
+      setMentionResults([]);
+      return;
+    }
+
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      try {
+        const users = await searchUsers(mentionQuery, 5);
+        if (!cancelled) {
+          setMentionResults(Array.isArray(users) ? users : []);
+          setMentionIndex(0);
+        }
+      } catch {
+        if (!cancelled) setMentionResults([]);
+      }
+    }, 250);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [mentionQuery]);
+
+  const detectMentionTrigger = (text, cursorPos) => {
+    const beforeCursor = text.slice(0, cursorPos ?? text.length);
+    const match = beforeCursor.match(/(?:^|[\s(["',;])@([a-zA-Z0-9]{2,30})$/);
+    if (match) {
+      const tokenStart = beforeCursor.length - match[1].length - 1;
+      mentionRangeRef.current = { start: tokenStart, end: beforeCursor.length };
+      setMentionQuery(match[1]);
+    } else {
+      mentionRangeRef.current = null;
+      setMentionQuery(null);
+      setMentionResults([]);
+    }
+  };
+
+  const handleContentChange = (e) => {
+    const nextValue = e.target.value;
+    setContent(nextValue);
+    detectMentionTrigger(nextValue, e.target.selectionStart);
+  };
+
+  const handleSelectMention = (username) => {
+    const range = mentionRangeRef.current;
+    if (!range) return;
+    const inserted = `@${username} `;
+    const nextValue =
+      content.slice(0, range.start) + inserted + content.slice(range.end);
+    setContent(nextValue);
+    setMentionQuery(null);
+    setMentionResults([]);
+    mentionRangeRef.current = null;
+
+    const nextCursor = range.start + inserted.length;
+    setTimeout(() => {
+      if (textareaRef.current) {
+        textareaRef.current.focus();
+        textareaRef.current.setSelectionRange?.(nextCursor, nextCursor);
+      }
+    }, 0);
+  };
+
+  const handleTextareaKeyDown = (e) => {
+    if (mentionResults.length === 0) return;
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setMentionIndex((prev) => (prev + 1) % mentionResults.length);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setMentionIndex((prev) => (prev - 1 + mentionResults.length) % mentionResults.length);
+    } else if (e.key === "Enter" || e.key === "Tab") {
+      e.preventDefault();
+      const selected = mentionResults[mentionIndex] || mentionResults[0];
+      if (selected) {
+        handleSelectMention(selected.username);
+      }
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      e.stopPropagation();
+      setMentionQuery(null);
+      setMentionResults([]);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!canSubmit) return;
     setIsSubmitting(true);
     setError("");
+    setMediaError("");
     try {
-      const response = await api.post("/api/posts/", {
-        content_text: content,
-        visibility,
-      });
+      let response;
+      if (selectedImage || selectedVideo) {
+        const formData = new FormData();
+        formData.append("content_text", content);
+        formData.append("visibility", visibility);
+        if (selectedImage) formData.append("image", selectedImage);
+        if (selectedVideo) formData.append("video", selectedVideo);
+        response = await api.post("/api/posts/", formData);
+      } else {
+        response = await api.post("/api/posts/", {
+          content_text: content,
+          visibility,
+        });
+      }
       setContent("");
+      clearMedia();
+      setMentionQuery(null);
+      setMentionResults([]);
+      mentionRangeRef.current = null;
       if (onPostCreated) onPostCreated(response.data);
       onClose?.();
     } catch (err) {
       const msg =
         err.response?.data?.detail ||
+        err.response?.data?.non_field_errors?.[0] ||
         err.response?.data?.content_text?.[0] ||
         t("errors.generic");
       setError(msg);
@@ -236,6 +369,9 @@ export function PostComposer({ onPostCreated, isOpen, onClose }) {
 
   const handleSelectDraft = (draft) => {
     setContent(draft.content_text);
+    setMentionQuery(null);
+    setMentionResults([]);
+    mentionRangeRef.current = null;
     setShowDrafts(false);
   };
 
@@ -278,8 +414,8 @@ export function PostComposer({ onPostCreated, isOpen, onClose }) {
         />
       </div>
 
-      {/* Área de texto */}
-      <div className="flex-1 min-h-0 mb-2">
+      {/* Área de texto + autocomplete de @menções */}
+      <div className="relative flex-1 min-h-0 mb-2">
         <label htmlFor="composer-textarea" className="sr-only">
           {t("post.title")}
         </label>
@@ -288,21 +424,88 @@ export function PostComposer({ onPostCreated, isOpen, onClose }) {
           data-testid="composer-textarea"
           ref={textareaRef}
           value={content}
-          onChange={(e) => setContent(e.target.value)}
+          onChange={handleContentChange}
+          onKeyDown={handleTextareaKeyDown}
+          onClick={(e) => detectMentionTrigger(e.target.value, e.target.selectionStart)}
+          onKeyUp={(e) => {
+            if (["ArrowLeft", "ArrowRight", "Home", "End"].includes(e.key)) {
+              detectMentionTrigger(e.target.value, e.target.selectionStart);
+            }
+          }}
+          onBlur={() => {
+            setMentionQuery(null);
+            setMentionResults([]);
+            mentionRangeRef.current = null;
+          }}
           placeholder={t("post.placeholder", "No que você está pensando?")}
           rows={3}
+          aria-autocomplete="list"
+          aria-expanded={mentionResults.length > 0}
+          aria-controls={mentionResults.length > 0 ? "mention-autocomplete-listbox" : undefined}
+          aria-activedescendant={
+            mentionResults[mentionIndex]
+              ? `mention-option-${mentionResults[mentionIndex].username}`
+              : undefined
+          }
           className="w-full bg-transparent text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none resize-none leading-relaxed min-h-[90px]"
         />
+
+        {mentionResults.length > 0 && (
+          <ul
+            id="mention-autocomplete-listbox"
+            role="listbox"
+            data-testid="mention-autocomplete"
+            aria-label={t("post.mention_suggestions", "Sugestões de menção")}
+            className="absolute left-0 right-0 top-full mt-1 z-50 bg-zinc-900 border border-zinc-700 rounded-xl shadow-xl overflow-hidden py-1 max-h-52 overflow-y-auto"
+          >
+            {mentionResults.map((u, idx) => {
+              const isActive = idx === mentionIndex;
+              return (
+                <li
+                  key={u.username}
+                  id={`mention-option-${u.username}`}
+                  role="option"
+                  aria-selected={isActive}
+                  data-testid={`mention-option-${u.username}`}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => handleSelectMention(u.username)}
+                  className={`flex items-center gap-2.5 px-3 py-2 cursor-pointer text-xs transition ${
+                    isActive
+                      ? "bg-pink-500/15 text-pink-400"
+                      : "text-zinc-200 hover:bg-zinc-800"
+                  }`}
+                >
+                  <div className="w-6 h-6 rounded-full overflow-hidden bg-zinc-800 flex items-center justify-center font-bold text-[10px] text-zinc-300 shrink-0">
+                    {u.avatar ? (
+                      <img src={u.avatar} alt={u.username} className="w-full h-full object-cover" />
+                    ) : (
+                      u.username[0]?.toUpperCase()
+                    )}
+                  </div>
+                  <span className="font-medium truncate">@{u.username}</span>
+                </li>
+              );
+            })}
+          </ul>
+        )}
       </div>
 
+      {/* Preview de mídia selecionada */}
+      <MediaPreview
+        previewUrl={mediaPreview}
+        mediaType={mediaType}
+        onClear={clearMedia}
+        t={t}
+      />
+
       {/* Mensagens de feedback de erro / sucesso */}
-      {error && (
-        <p data-testid="composer-error" className="text-xs text-rose-500 mb-2">
-          {error}
+      {(error || mediaError) && (
+        <p data-testid="composer-error" className="text-xs text-rose-500 mt-2 mb-2">
+          {error || mediaError}
         </p>
       )}
       {draftMessage && (
-        <p data-testid="draft-success" className="text-xs text-emerald-400 mb-2">
+        <p data-testid="draft-success" className="text-xs text-emerald-400 mt-2 mb-2">
           {draftMessage}
         </p>
       )}
@@ -311,9 +514,36 @@ export function PostComposer({ onPostCreated, isOpen, onClose }) {
       <div className="flex items-center justify-between pt-3 border-t border-zinc-800/80">
         {/* Botões de mídia */}
         <div className="flex items-center gap-1">
+          <input
+            ref={imageInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            onChange={handleImageSelect}
+            data-testid="composer-image-input"
+            className="hidden"
+          />
+          <input
+            ref={gifInputRef}
+            type="file"
+            accept="image/gif"
+            onChange={handleImageSelect}
+            data-testid="composer-gif-input"
+            className="hidden"
+          />
+          <input
+            ref={videoInputRef}
+            type="file"
+            accept="video/mp4,video/webm,video/quicktime"
+            onChange={handleVideoSelect}
+            data-testid="composer-video-input"
+            className="hidden"
+          />
           <button
             type="button"
-            className="p-2 rounded-lg text-pink-400 hover:text-pink-300 hover:bg-pink-500/10 transition"
+            data-testid="composer-image-btn"
+            onClick={() => imageInputRef.current?.click()}
+            disabled={isSubmitting}
+            className="p-2 rounded-lg text-pink-400 hover:text-pink-300 hover:bg-pink-500/10 transition disabled:opacity-50"
             title={t("post.add_media", "Adicionar mídia")}
             aria-label={t("post.add_media", "Adicionar mídia")}
           >
@@ -321,11 +551,25 @@ export function PostComposer({ onPostCreated, isOpen, onClose }) {
           </button>
           <button
             type="button"
-            className="px-2 py-1 rounded-lg text-pink-400 hover:text-pink-300 hover:bg-pink-500/10 text-xs font-bold border border-pink-500/30 hover:border-pink-500/60 transition"
+            data-testid="composer-gif-btn"
+            onClick={() => gifInputRef.current?.click()}
+            disabled={isSubmitting}
+            className="px-2 py-1 rounded-lg text-pink-400 hover:text-pink-300 hover:bg-pink-500/10 text-xs font-bold border border-pink-500/30 hover:border-pink-500/60 transition disabled:opacity-50"
             title={t("post.add_gif", "Adicionar GIF")}
             aria-label={t("post.add_gif", "Adicionar GIF")}
           >
             GIF
+          </button>
+          <button
+            type="button"
+            data-testid="composer-video-btn"
+            onClick={() => videoInputRef.current?.click()}
+            disabled={isSubmitting}
+            className="p-2 rounded-lg text-pink-400 hover:text-pink-300 hover:bg-pink-500/10 transition disabled:opacity-50"
+            title={t("post.add_video", "Adicionar vídeo")}
+            aria-label={t("post.add_video", "Adicionar vídeo")}
+          >
+            <VideoIcon size={18} />
           </button>
 
           {/* Botões de rascunho preservados para compatibilidade com testes (ocultos da UI) */}

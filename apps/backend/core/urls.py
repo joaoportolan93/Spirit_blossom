@@ -39,6 +39,7 @@ from core.views.posts import (
     PostLikeView,
     PostListCreateView,
     PostSearchView,
+    TrendingHashtagsView,
 )
 from core.views.social import (
     BlockedUsersListView,
@@ -49,6 +50,7 @@ from core.views.social import (
     FollowRequestAcceptView,
     FollowRequestListView,
     FollowRequestRejectView,
+    FollowSuggestionsView,
     FollowView,
     MutedUsersListView,
     MuteView,
@@ -123,6 +125,11 @@ social_patterns = [
     path("close-friends/<str:username>/", CloseFriendsView.as_view(), name="close-friends"),
     path("profile/<str:username>/", ProfileDetailView.as_view(), name="profile"),
     path("profile/<str:username>/likes/", ProfileLikesView.as_view(), name="profile_likes"),
+    path("suggestions/", FollowSuggestionsView.as_view(), name="follow_suggestions"),
+]
+
+hashtags_patterns = [
+    path("trending/", TrendingHashtagsView.as_view(), name="trending_hashtags"),
 ]
 
 feed_patterns = [
@@ -143,6 +150,7 @@ urlpatterns = [
     path("users/", include((users_patterns, "users"))),
     path("posts/", include((posts_patterns, "posts"))),
     path("social/", include((social_patterns, "social"))),
+    path("hashtags/", include((hashtags_patterns, "hashtags"))),
     path("feed/", include((feed_patterns, "feed"))),
     path("notifications/", include((notifications_patterns, "notifications"))),
     path("feature-flags/", FeatureFlagsView.as_view(), name="feature_flags"),

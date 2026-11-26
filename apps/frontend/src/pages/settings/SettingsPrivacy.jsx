@@ -37,6 +37,7 @@ export function SettingsPrivacy() {
   const { user } = useAuth();
   const [isPrivate, setIsPrivate] = useState(false);
   const [showLikesTab, setShowLikesTab] = useState(true);
+  const [termsAcceptedAt, setTermsAcceptedAt] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -57,6 +58,7 @@ export function SettingsPrivacy() {
           }
           if (settingsRes.status === "fulfilled") {
             setShowLikesTab(settingsRes.value.data.show_likes_tab !== false);
+            setTermsAcceptedAt(settingsRes.value.data.terms_accepted_at || null);
           }
         }
       } finally {
@@ -187,6 +189,29 @@ export function SettingsPrivacy() {
             <span className="text-zinc-600">›</span>
           </Link>
         </nav>
+      </div>
+
+      {/* Documentos Legais e Aceite (Onda 7b) */}
+      <div className="pt-4 border-t border-zinc-800 space-y-2">
+        <h3 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+          {t("legal.settings_title")}
+        </h3>
+        <p className="text-xs text-zinc-400">{t("legal.settings_desc")}</p>
+        <p data-testid="terms-accepted-status" className="text-xs text-zinc-300">
+          {termsAcceptedAt
+            ? t("legal.accepted_at", {
+                date: new Date(termsAcceptedAt).toLocaleDateString(),
+              })
+            : t("legal.accepted_registered")}
+        </p>
+        <div className="flex items-center gap-4 pt-1 text-xs">
+          <Link to="/terms" className="text-pink-400 hover:underline">
+            {t("legal.terms_link")}
+          </Link>
+          <Link to="/privacy" className="text-pink-400 hover:underline">
+            {t("legal.privacy_link")}
+          </Link>
+        </div>
       </div>
     </div>
   );

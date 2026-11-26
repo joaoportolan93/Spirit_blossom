@@ -1,8 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { Navbar } from "../components/Navbar";
 import { AuthContext } from "../hooks/useAuth";
+import * as apiModule from "../services/api";
 import "../i18n";
 
 vi.mock("../components/NotificationBell", () => ({
@@ -64,6 +65,30 @@ describe("Navbar Component", () => {
     expect(screen.getByText("Entrar")).toBeInTheDocument();
     expect(screen.getByText("Criar conta (18+)")).toBeInTheDocument();
     expect(screen.queryByText("Pedidos")).not.toBeInTheDocument();
+  });
+
+  it("4. Exibe bolinha e contador de notificações não lidas e atualiza via evento", async () => {
+    const spy = vi
+      .spyOn(apiModule, "getUnreadCount")
+      .mockResolvedValueOnce(14)
+      .mockResolvedValueOnce(0);
+
+    renderNavbar({ username: "alice" });
+
+    await waitFor(() => {
+      expect(screen.getByTestId("nav-notif-dot")).toBeInTheDocument();
+      expect(screen.getByTestId("nav-notif-badge")).toHaveTextContent("14");
+    });
+
+    await act(async () => {
+      window.dispatchEvent(new Event("spirit-notifications-updated"));
+    });
+
+    await waitFor(() => {
+      expect(spy).toHaveBeenCalledTimes(2);
+      expect(screen.queryByTestId("nav-notif-badge")).not.toBeInTheDocument();
+      expect(screen.queryByTestId("nav-notif-dot")).not.toBeInTheDocument();
+    });
   });
 });
 

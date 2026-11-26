@@ -4,10 +4,12 @@ Operações de leitura e escrita para notificações (ADR-N2 / Onda 3b / Onda 7a
 
 from typing import Optional
 
+from django.contrib.auth import get_user_model
 from django.db import transaction
 from django.db.models import Exists, OuterRef, Q, QuerySet
 
 from core.models import Block, Mute, Notification, UserProfile
+from core.utils.text_entities import extract_mentions
 from core.utils.visibility import can_view_post
 
 # Mapeamento de tipo → categoria para filtros da Central de Notificações
@@ -331,3 +333,98 @@ def mark_all_notifications_as_read(*, user) -> int:
         recipient=user,
         read=False,
     ).update(read=True)
+
+
+def notify_mentions_for_content(
+    *,
+    sender,
+    content_text: str,
+    post,
+    ref_id: str,
+    is_hidden: bool = False,
+) -> None:
+    """
+    Dispara notificações de menção (@username) em posts ou comentários (Onda 7b).
+
+    Regras estritas (ADR-N21 / ADR-N24):
+    1. Usuário mencionado existe e está ativo (`is_valid_for_auth`).
+    2. Não é auto-menção (`recipient != sender`).
+    3. Não existe Block ou Mute em nenhuma direção entre sender e recipient.
+    4. O mencionado tem permissão real para ver o conteúdo (`can_view_post`).
+    5. Não duplica notificação já enviada para `(recipient, MENTION, ref_id)` em edições.
+    6. Respeita `profile.notify_mentions`.
+    """
+    if is_hidden or not sender or not post:
+        return
+
+    usernames = extract_mentions(content_text)
+    if not usernames:
+        return
+
+    # Limita a 20 menções por conteúdo para evitar abuso de fan-out
+    usernames = usernames[:20]
+
+    User = get_user_model()
+    name_query = Q()
+    for uname in usernames:
+        name_query |= Q(username__iexact=uname)
+
+    candidates = list(
+        User.objects.filter(is_active=True, status="active")
+        .filter(name_query)
+        .exclude(pk=sender.pk)
+        .select_related("profile")
+    )
+    if not candidates:
+        return
+
+    candidate_ids = [u.id for u in candidates]
+
+    # Bloqueio em qualquer direção entre sender e mencionados
+    blocked_ids = set()
+    for b in Block.objects.filter(
+        Q(blocker=sender, blocked_id__in=candidate_ids)
+        | Q(blocker_id__in=candidate_ids, blocked=sender)
+    ).values_list("blocker_id", "blocked_id"):
+        blocked_ids.add(b[0])
+        blocked_ids.add(b[1])
+
+    # Silenciamento em qualquer direção entre sender e mencionados (ADR-N24)
+    muted_ids = set()
+    for m in Mute.objects.filter(
+        Q(muter=sender, muted_id__in=candidate_ids) | Q(muter_id__in=candidate_ids, muted=sender)
+    ).values_list("muter_id", "muted_id"):
+        muted_ids.add(m[0])
+        muted_ids.add(m[1])
+
+    already_notified_ids = set(
+        Notification.objects.filter(
+            recipient_id__in=candidate_ids,
+            notification_type=Notification.Type.MENTION,
+            ref_id=ref_id,
+        ).values_list("recipient_id", flat=True)
+    )
+
+    eligible_recipients = []
+    for recipient in candidates:
+        if recipient.id in blocked_ids or recipient.id in muted_ids:
+            continue
+        if recipient.id in already_notified_ids:
+            continue
+        profile = getattr(recipient, "profile", None)
+        if profile is not None and not profile.notify_mentions:
+            continue
+        if not can_view_post(recipient, post):
+            continue
+        eligible_recipients.append(recipient)
+
+    if not eligible_recipients:
+        return
+
+    for recipient in eligible_recipients:
+        create_notification(
+            recipient=recipient,
+            sender=sender,
+            notification_type=Notification.Type.MENTION,
+            ref_id=str(ref_id),
+        )

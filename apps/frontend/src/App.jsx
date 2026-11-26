@@ -7,6 +7,8 @@ import { Register } from "./pages/Register";
 import { ForgotPassword } from "./pages/ForgotPassword";
 import { ResetPassword } from "./pages/ResetPassword";
 import { CompleteSignup } from "./pages/CompleteSignup";
+import { Terms } from "./pages/Terms";
+import { Privacy } from "./pages/Privacy";
 import { Profile } from "./pages/Profile";
 import { Explore } from "./pages/Explore";
 import { Search } from "./pages/Search";
@@ -40,122 +42,132 @@ function ProtectedRoute({ children }) {
   return children;
 }
 
+function AppShell() {
+  const { user } = useAuth();
+
+  return (
+    <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans">
+      <Navbar />
+      <div className={`${user ? "pl-60 " : ""}min-h-screen flex flex-col`}>
+        <main className="flex-1">
+          <Routes>
+            <Route
+              path="/"
+              element={
+                <ProtectedRoute>
+                  <Feed />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/complete-signup" element={<CompleteSignup />} />
+            <Route path="/terms" element={<Terms />} />
+            <Route path="/privacy" element={<Privacy />} />
+            <Route
+              path="/explore"
+              element={
+                <ProtectedRoute>
+                  <Explore />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/search"
+              element={
+                <ProtectedRoute>
+                  <Search />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/settings"
+              element={
+                <ProtectedRoute>
+                  <Settings />
+                </ProtectedRoute>
+              }
+            >
+              <Route index element={<Navigate to="/settings/account" replace />} />
+              <Route path="account" element={<SettingsAccount />} />
+              <Route path="notifications" element={<SettingsNotifications />} />
+              <Route path="privacy" element={<SettingsPrivacy />} />
+              <Route path="appearance" element={<SettingsAppearance />} />
+              <Route path="circle" element={<SettingsCircle />} />
+              <Route path="blocked" element={<SettingsBlocked />} />
+              <Route path="muted" element={<SettingsMuted />} />
+            </Route>
+            <Route
+              path="/notifications"
+              element={
+                <ProtectedRoute>
+                  <Notifications />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/close-friends"
+              element={<Navigate to="/settings/circle" replace />}
+            />
+            <Route
+              path="/follow-requests"
+              element={<Navigate to="/notifications?tab=requests" replace />}
+            />
+            <Route
+              path="/bookmarks"
+              element={
+                <ProtectedRoute>
+                  <Bookmarks />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/posts/:id"
+              element={
+                <ProtectedRoute>
+                  <PostPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/post/:id"
+              element={
+                <ProtectedRoute>
+                  <PostPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/profile/:username"
+              element={
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </main>
+      </div>
+    </div>
+  );
+}
+
 export function App() {
   return (
     <Router>
       <AuthProvider>
-        <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans">
-          <Navbar />
-          <div className="pl-60 min-h-screen flex flex-col">
-          <main className="flex-1">
-            <Routes>
-              <Route
-                path="/"
-                element={
-                  <ProtectedRoute>
-                    <Feed />
-                  </ProtectedRoute>
-                }
-              />
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/forgot-password" element={<ForgotPassword />} />
-              <Route path="/reset-password" element={<ResetPassword />} />
-              <Route path="/complete-signup" element={<CompleteSignup />} />
-              <Route
-                path="/explore"
-                element={
-                  <ProtectedRoute>
-                    <Explore />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/search"
-                element={
-                  <ProtectedRoute>
-                    <Search />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/settings"
-                element={
-                  <ProtectedRoute>
-                    <Settings />
-                  </ProtectedRoute>
-                }
-              >
-                <Route index element={<Navigate to="/settings/account" replace />} />
-                <Route path="account" element={<SettingsAccount />} />
-                <Route path="notifications" element={<SettingsNotifications />} />
-                <Route path="privacy" element={<SettingsPrivacy />} />
-                <Route path="appearance" element={<SettingsAppearance />} />
-                <Route path="circle" element={<SettingsCircle />} />
-                <Route path="blocked" element={<SettingsBlocked />} />
-                <Route path="muted" element={<SettingsMuted />} />
-              </Route>
-              <Route
-                path="/notifications"
-                element={
-                  <ProtectedRoute>
-                    <Notifications />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/close-friends"
-                element={<Navigate to="/settings/circle" replace />}
-              />
-              <Route
-                path="/follow-requests"
-                element={<Navigate to="/notifications?tab=requests" replace />}
-              />
-              <Route
-                path="/bookmarks"
-                element={
-                  <ProtectedRoute>
-                    <Bookmarks />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/posts/:id"
-                element={
-                  <ProtectedRoute>
-                    <PostPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/post/:id"
-                element={
-                  <ProtectedRoute>
-                    <PostPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/profile"
-                element={
-                  <ProtectedRoute>
-                    <Profile />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/profile/:username"
-                element={
-                  <ProtectedRoute>
-                    <Profile />
-                  </ProtectedRoute>
-                }
-              />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </main>
-          </div>
-        </div>
+        <AppShell />
       </AuthProvider>
     </Router>
   );

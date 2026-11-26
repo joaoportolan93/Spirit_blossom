@@ -60,5 +60,20 @@ class NotificationSerializer(serializers.ModelSerializer):
             Notification.Type.MENTION,
         ):
             if obj.ref_id:
+                if obj.notification_type in (Notification.Type.REPLY, Notification.Type.MENTION):
+                    ref_str = str(obj.ref_id)
+                    comment_post_map = self.context.get("comment_post_map")
+                    if comment_post_map is not None:
+                        post_id = comment_post_map.get(ref_str)
+                    else:
+                        from comments.models import Comment
+
+                        post_id = (
+                            Comment.objects.filter(pk=obj.ref_id)
+                            .values_list("post_id", flat=True)
+                            .first()
+                        )
+                    if post_id:
+                        return f"/posts/{post_id}?comment={ref_str}"
                 return f"/posts/{obj.ref_id}"
         return None

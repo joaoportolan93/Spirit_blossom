@@ -44,6 +44,10 @@
     "add_media": "Adicionar mídia",
     "add_gif": "Adicionar GIF",
     "add_video": "Adicionar vídeo",
+    "remove_media": "Remover mídia",
+    "media_alt": "Mídia da publicação",
+    "image_too_large": "Imagem ou GIF deve ter no máximo 5 MB.",
+    "video_too_large": "Vídeo deve ter no máximo 50 MB.",
     "chars_remaining": "{{count}} caracteres restantes",
     "too_long": "Limite de caracteres excedido",
     "visibility": "Visibilidade",
@@ -71,7 +75,8 @@
     "confirmMute": "Deseja silenciar @{{username}}?",
     "blockUser": "Bloquear @{{username}}",
     "confirmBlock": "Tem certeza que deseja bloquear @{{username}}?",
-    "actions": "Mais opções"
+    "actions": "Mais opções",
+    "mention_suggestions": "Sugestões de menção"
   },
   "bookmarks": {
     "title": "Itens salvos",
@@ -103,7 +108,10 @@
   "explore": {
     "title": "Explorar",
     "subtitle": "Descubra publicações recentes da comunidade.",
-    "empty": "Nenhuma publicação para explorar no momento."
+    "empty": "Nenhuma publicação para explorar no momento.",
+    "hashtag_filtering": "Filtrando por #{{tag}}",
+    "clear_filter": "Limpar filtro",
+    "trending_tags": "Tags em destaque"
   },
   "feed": {
     "title": "Timeline Seguindo",
@@ -122,6 +130,7 @@
     "followers": "Seguidores",
     "following": "Seguindo",
     "follow": "Seguir",
+    "follow_pending": "Solicitado",
     "unfollow": "Deixar de seguir",
     "mute": "Silenciar",
     "unmute": "Desilenciar",
@@ -334,5 +343,45 @@
     "not_found": "Página não encontrada.",
     "unauthorized": "Você precisa estar autenticado.",
     "required_field": "Campo obrigatório"
+  },
+  "suggestions": {
+    "title": "Sugestões para seguir",
+    "followed_by": "Seguido por @{{username}}",
+    "followed_by_and_more": "Seguido por @{{username}} e +{{count}}",
+    "active_community": "Ativo na comunidade"
+  },
+  "legal": {
+    "terms_title": "Termos de Uso",
+    "terms_subtitle": "Regras transparentes de convivência e uso da plataforma {{appName}}.",
+    "privacy_title": "Política de Privacidade",
+    "privacy_subtitle": "Como protegemos seus dados pessoais em conformidade com a LGPD e o Marco Civil da Internet.",
+    "last_updated": "Última atualização: Novembro de 2026",
+    "terms_link": "Termos de Uso",
+    "privacy_link": "Política de Privacidade",
+    "consent_prefix": "Declaro ter 18 anos ou mais e aceito os ",
+    "consent_and": " e a ",
+    "terms_required": "Você deve aceitar os Termos de Uso e Política de Privacidade.",
+    "settings_title": "Termos e Privacidade",
+    "settings_desc": "Consulte os documentos legais da plataforma e o registro do seu consentimento.",
+    "accepted_at": "Aceite registrado em {{date}}",
+    "accepted_registered": "Aceite registrado no momento do cadastro.",
+    "terms_age_title": "1. Elegibilidade e Maioridade (18+)",
+    "terms_age_body": "O uso da plataforma {{appName}} é estritamente restrito a pessoas maiores de 18 anos. A verificação da data de nascimento é obrigatória no cadastro convencional e via Google OAuth.",
+    "terms_feed_title": "2. Transparência e Cronologia",
+    "terms_feed_body": "A timeline Seguindo apresenta publicações em ordem cronológica transparente, sem manipulação algorítmica oculta ou rastreamento comportamental invasivo.",
+    "terms_conduct_title": "3. Convivência, Segurança e Moderação Pessoal",
+    "terms_conduct_body": "É proibido publicar conteúdo ilegal, assédio, spam ou violação de direitos de terceiros. Você dispõe de controles ativos de bloqueio bilateral (invisibilidade mútua), silenciamento assimétrico, conta privada e ocultação de comentários em suas publicações.",
+    "terms_ip_title": "4. Propriedade Intelectual",
+    "terms_ip_body": "Você mantém integralmente a titularidade sobre o conteúdo que publica, concedendo à plataforma apenas licença técnica limitada para exibição conforme a visibilidade escolhida (Público ou Círculo de Amigos).",
+    "terms_termination_title": "5. Encerramento de Conta",
+    "terms_termination_body": "Você pode excluir sua conta permanentemente a qualquer momento em Configurações > Conta, encerrando o vínculo com efeito imediato.",
+    "privacy_data_title": "1. Dados Coletados e Finalidade",
+    "privacy_data_body": "Coletamos apenas os dados necessários para autenticação e operação da rede: e-mail, nome de usuário, data de nascimento (verificação 18+), informações de perfil, publicações, rascunhos, comentários e preferências de tema/idioma/notificação. Nunca vendemos seus dados.",
+    "privacy_controls_title": "2. Controles de Privacidade e Visibilidade",
+    "privacy_controls_body": "Você decide quem vê seu perfil e suas postagens por meio de Conta Privada, Círculo de Amigos, ocultação da aba de curtidas, silenciamento e bloqueio bilateral (que oculta perfis, publicações, comentários, busca e menções em ambas as direções).",
+    "privacy_retention_title": "3. Retenção Legal de Registros de Acesso (Marco Civil)",
+    "privacy_retention_body": "Em cumprimento ao Art. 15 da Lei nº 12.965/2014 (Marco Civil da Internet), mantemos registros mínimos de acesso por 6 meses com endereço IP protegido via hash criptográfico irreversível (HMAC-SHA256).",
+    "privacy_lgpd_title": "4. Seus Direitos sob a LGPD (Lei nº 13.709/2018)",
+    "privacy_lgpd_body": "Conforme o Art. 18 da LGPD, você pode exportar integralmente seus dados em formato JSON ou solicitar a exclusão definitiva e irreversível da sua conta (hard-delete atômico com anonimização de comentários em threads) diretamente em Configurações > Conta."
   }
 }

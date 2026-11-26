@@ -23,6 +23,9 @@ api.interceptors.request.use((config) => {
   if (i18n && i18n.language) {
     config.headers["Accept-Language"] = i18n.language;
   }
+  if (typeof FormData !== "undefined" && config.data instanceof FormData && config.headers) {
+    delete config.headers["Content-Type"];
+  }
   const method = (config.method || "").toUpperCase();
   if (["POST", "PUT", "PATCH", "DELETE"].includes(method)) {
     const csrfToken = getCsrfTokenFromCookie();
@@ -164,7 +167,21 @@ export async function getPostComments(postId, sort = "recent", cursor = null) {
   return res.data;
 }
 
-export async function createComment(postId, { content_text, parent_id = null }) {
+export async function createComment(postId, payload) {
+  if (typeof FormData !== "undefined" && payload instanceof FormData) {
+    const res = await api.post(`/api/posts/${postId}/comments/`, payload);
+    return res.data;
+  }
+  const { content_text = "", parent_id = null, image = null, video = null } = payload || {};
+  if (image || video) {
+    const formData = new FormData();
+    if (content_text) formData.append("content_text", content_text);
+    if (parent_id) formData.append("parent_id", parent_id);
+    if (image) formData.append("image", image);
+    if (video) formData.append("video", video);
+    const res = await api.post(`/api/posts/${postId}/comments/`, formData);
+    return res.data;
+  }
   const res = await api.post(`/api/posts/${postId}/comments/`, {
     content_text,
     parent_id,
@@ -307,5 +324,26 @@ export async function removePushDevice(token) {
 export async function getFeatureFlags() {
   const res = await api.get("/api/feature-flags/");
   return res.data?.flags ?? {};
+}
+
+// ----------------------------------------------------------------------------
+// API de Descoberta, Menções e Hashtags — Onda 7b
+// ----------------------------------------------------------------------------
+
+export async function searchUsers(query, limit = 5) {
+  const res = await api.get(
+    `/api/users/search/?q=${encodeURIComponent(query)}&limit=${limit}`
+  );
+  return res.data?.results || [];
+}
+
+export async function getFollowSuggestions(limit = 5) {
+  const res = await api.get(`/api/social/suggestions/?limit=${limit}`);
+  return res.data?.results || [];
+}
+
+export async function getTrendingHashtags(limit = 8) {
+  const res = await api.get(`/api/hashtags/trending/?limit=${limit}`);
+  return res.data?.results || [];
 }
 

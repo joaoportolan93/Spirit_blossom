@@ -468,6 +468,8 @@ def export_user_data(*, user) -> dict:
         {
             "id": str(p.id),
             "content_text": p.content_text,
+            "image": p.image.url if p.image else None,
+            "video": p.video.url if p.video else None,
             "visibility": p.visibility,
             "likes_count": p.likes_count,
             "comments_count": p.comments_count,
@@ -511,6 +513,8 @@ def export_user_data(*, user) -> dict:
             "post_id": str(c.post_id),
             "parent_id": str(c.parent_id) if c.parent_id else None,
             "content_text": c.content_text,
+            "image": c.image.url if c.image else None,
+            "video": c.video.url if c.video else None,
             "created_at": c.created_at.isoformat(),
         }
         for c in Comment.objects.filter(author=user, is_deleted=False).order_by("-created_at")
@@ -647,7 +651,7 @@ def delete_account(*, user, raw_refresh_token: Optional[str] = None) -> None:
         used_at=timezone.now()
     )
 
-    # 4. Remove avatar físico do storage
+    # 4. Remove avatar e mídias físicas de posts e comentários do usuário
     profile = getattr(user, "profile", None)
     if profile:
         try:
@@ -656,6 +660,19 @@ def delete_account(*, user, raw_refresh_token: Optional[str] = None) -> None:
             delete_old_avatar(profile)
         except Exception:
             logger.warning("Falha ao excluir avatar do storage.", exc_info=True)
+
+    try:
+        from comments.models import Comment
+        from core.utils.media_security import delete_media_file
+
+        for p in list_posts_for_export(author=user):
+            delete_media_file(p.image)
+            delete_media_file(p.video)
+        for c in Comment.objects.filter(author=user):
+            delete_media_file(c.image)
+            delete_media_file(c.video)
+    except Exception:
+        logger.warning("Falha ao excluir mídias do usuário no storage.", exc_info=True)
 
     # 5. Hard-delete do usuário (AccessLog e Comments ficam via SET_NULL)
     user.delete()

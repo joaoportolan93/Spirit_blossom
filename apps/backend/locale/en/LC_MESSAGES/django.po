@@ -331,3 +331,12 @@ msgstr "Notification marked as read."
 msgid "token é obrigatório."
 msgstr "token is required."
 
+msgid "nome"
+msgstr "name"
+
+msgid "hashtag"
+msgstr "hashtag"
+
+msgid "hashtags"
+msgstr "hashtags"
+

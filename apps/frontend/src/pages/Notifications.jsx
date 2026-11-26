@@ -160,6 +160,7 @@ export function Notifications() {
     try {
       await markAllNotificationsRead();
       setNotifications((prev) => prev.map((n) => ({ ...n, read: true, is_read: true })));
+      window.dispatchEvent(new Event("spirit-notifications-updated"));
     } catch {
       // ignora
     }
@@ -171,6 +172,7 @@ export function Notifications() {
       setNotifications((prev) =>
         prev.map((n) => (n.id === id ? { ...n, read: true, is_read: true } : n))
       );
+      window.dispatchEvent(new Event("spirit-notifications-updated"));
     } catch {
       // ignora
     }

@@ -1,11 +1,15 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useContext } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { api } from "../services/api";
 import { PostCard } from "../components/PostCard";
+import { FollowSuggestions } from "../components/FollowSuggestions";
+import { AuthContext } from "../hooks/useAuth";
 
 export function Search() {
   const { t } = useTranslation();
+  const auth = useContext(AuthContext);
+  const isAuthenticated = Boolean(auth?.user);
   const [searchParams, setSearchParams] = useSearchParams();
   const initialQuery = searchParams.get("q") || "";
   const initialTab = searchParams.get("tab") || "people";
@@ -175,12 +179,18 @@ export function Search() {
             {t("search.empty_posts")}
           </div>
         ) : (
-          <div data-testid="search-posts-list">
+          <div data-testid="search-posts-list" className="space-y-3">
             {posts.map((post) => (
               <PostCard key={post.id} post={post} />
             ))}
           </div>
         )
+      )}
+
+      {isAuthenticated && (
+        <div className="mt-8">
+          <FollowSuggestions limit={5} />
+        </div>
       )}
     </div>
   );

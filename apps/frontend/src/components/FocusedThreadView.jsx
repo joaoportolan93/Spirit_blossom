@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { ArrowLeft, ChevronLeft } from "lucide-react";
 import CommentItem from "./CommentItem";
+import { RichText } from "./RichText";
+import { MediaViewer } from "./MediaAttachment";
 import { getCommentReplies } from "../services/api";
 
 const LINE_BG = "bg-zinc-700";
@@ -133,9 +135,16 @@ export function FocusedThreadView({
                   @{post.author?.username}
                 </Link>
               </div>
-              <p className="text-sm text-zinc-100 whitespace-pre-wrap break-words">
-                {post.content_text}
-              </p>
+              {post.content_text && (
+                <p className="text-sm text-zinc-100 whitespace-pre-wrap break-words">
+                  <RichText text={post.content_text} />
+                </p>
+              )}
+              <MediaViewer
+                imageUrl={post.image_url}
+                videoUrl={post.video_url}
+                alt={t("post.media_alt", "Mídia da publicação")}
+              />
             </div>
           </div>
         </div>

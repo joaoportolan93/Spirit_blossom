@@ -11,12 +11,16 @@ import {
   Check,
   X,
   CornerDownRight,
+  Image as ImageIcon,
+  Video as VideoIcon,
 } from "lucide-react";
 import {
   HeartIcon,
   SpeechBubbleIcon,
   BookmarkIcon,
 } from "./CommentIcons";
+import { RichText } from "./RichText";
+import { MediaPreview, MediaViewer, useMediaSelection } from "./MediaAttachment";
 import {
   toggleCommentLike,
   toggleCommentBookmark,
@@ -36,11 +40,10 @@ function stopEventPropagation(e) {
 }
 
 /**
- * Renderizador de texto seguro com destaque de @menções sem dangerouslySetInnerHTML.
+ * Renderizador de texto seguro com destaque de @menções e #hashtags sem dangerouslySetInnerHTML.
  */
 function SafeCommentText({ text, hero = false }) {
   if (!text) return null;
-  const parts = text.split(/(@\w+)/g);
 
   return (
     <p
@@ -49,22 +52,7 @@ function SafeCommentText({ text, hero = false }) {
       }`}
       data-testid="comment-text"
     >
-      {parts.map((part, i) => {
-        if (part.startsWith("@")) {
-          const username = part.slice(1);
-          return (
-            <Link
-              key={i}
-              to={`/profile/${username}`}
-              onClick={stopEventPropagation}
-              className="text-pink-400 hover:underline font-medium"
-            >
-              {part}
-            </Link>
-          );
-        }
-        return part;
-      })}
+      <RichText text={text} />
     </p>
   );
 }
@@ -102,6 +90,20 @@ export const CommentItem = React.memo(function CommentItem({
   const [isHidden, setIsHidden] = useState(Boolean(comment.is_hidden));
   const [hidingLoading, setHidingLoading] = useState(false);
   const [showMutedContent, setShowMutedContent] = useState(false);
+  const {
+    selectedImage: replyImage,
+    selectedVideo: replyVideo,
+    mediaPreview: replyPreview,
+    mediaType: replyMediaType,
+    mediaError: replyMediaError,
+    setMediaError: setReplyMediaError,
+    imageInputRef: replyImageInputRef,
+    gifInputRef: replyGifInputRef,
+    videoInputRef: replyVideoInputRef,
+    handleImageSelect: handleReplyImageSelect,
+    handleVideoSelect: handleReplyVideoSelect,
+    clearMedia: clearReplyMedia,
+  } = useMediaSelection(t);
 
   const hasReplies = comment.preview_replies && comment.preview_replies.length > 0;
   const showInlineReplies = hasReplies && !flat && !hero && depth < 2;
@@ -125,7 +127,7 @@ export const CommentItem = React.memo(function CommentItem({
   );
 
   const handleCardClick = (e) => {
-    if (e.target.closest("button, a, input, textarea")) return;
+    if (e.target.closest("button, a, input, textarea, video")) return;
     if (window.getSelection()?.toString()) return;
 
     if (onFocusThread && (depth >= 2 || flat)) {
@@ -282,17 +284,140 @@ export const CommentItem = React.memo(function CommentItem({
   const handleReplySubmit = async (e) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!replyText.trim() || submitting) return;
+    const trimmed = replyText.trim();
+    if ((!trimmed && !replyImage && !replyVideo) || submitting) return;
     setSubmitting(true);
+    setReplyMediaError("");
     try {
-      await onReplySubmit(replyText.trim(), comment.id);
+      const payload =
+        replyImage || replyVideo
+          ? { content_text: trimmed, image: replyImage, video: replyVideo }
+          : trimmed;
+      await onReplySubmit(payload, comment.id);
       setReplyText("");
+      clearReplyMedia();
       if (setActiveReplyId) setActiveReplyId(null);
     } catch (err) {
       console.error("Erro ao responder comentário:", err);
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const renderReplyForm = (isHeroMode = false) => {
+    if (!isReplying) return null;
+    const canSubmitReply = Boolean(replyText.trim() || replyImage || replyVideo);
+    return (
+      <form
+        onSubmit={handleReplySubmit}
+        onClick={stopEventPropagation}
+        className={`mt-3 ${isHeroMode ? "pt-3 border-t border-zinc-800/60" : "pt-2"}`}
+      >
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={replyText}
+            onChange={(e) => setReplyText(e.target.value)}
+            placeholder={t("comments.replyPlaceholder", "Postar sua resposta...")}
+            className={`flex-1 bg-zinc-900 border border-zinc-700 rounded-full text-zinc-100 text-xs focus:outline-none focus:border-pink-500 ${
+              isHeroMode ? "px-3.5 py-1.5" : "px-3 py-1.5"
+            }`}
+            maxLength={1000}
+            autoFocus
+            data-testid={`reply-input-${comment.id}`}
+          />
+          <button
+            type="submit"
+            disabled={submitting || !canSubmitReply}
+            className={`bg-pink-600 hover:bg-pink-500 disabled:opacity-50 text-white text-xs font-medium rounded-full ${
+              isHeroMode ? "px-3.5 py-1.5" : "px-3 py-1.5"
+            }`}
+            data-testid={`reply-submit-btn-${comment.id}`}
+          >
+            {t("comments.post", "Responder")}
+          </button>
+          <button
+            type="button"
+            onClick={(e) => {
+              clearReplyMedia();
+              handleCancelReply(e);
+            }}
+            className="px-2 text-zinc-500 hover:text-zinc-300 text-xs"
+          >
+            {t("comments.cancel", "Cancelar")}
+          </button>
+        </div>
+        <div className="flex items-center gap-1 mt-1.5">
+          <input
+            ref={replyImageInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            onChange={handleReplyImageSelect}
+            data-testid={`reply-image-input-${comment.id}`}
+            className="hidden"
+          />
+          <input
+            ref={replyGifInputRef}
+            type="file"
+            accept="image/gif"
+            onChange={handleReplyImageSelect}
+            data-testid={`reply-gif-input-${comment.id}`}
+            className="hidden"
+          />
+          <input
+            ref={replyVideoInputRef}
+            type="file"
+            accept="video/mp4,video/webm,video/quicktime"
+            onChange={handleReplyVideoSelect}
+            data-testid={`reply-video-input-${comment.id}`}
+            className="hidden"
+          />
+          <button
+            type="button"
+            data-testid={`reply-image-btn-${comment.id}`}
+            onClick={() => replyImageInputRef.current?.click()}
+            disabled={submitting}
+            className="p-1 rounded-lg text-pink-400 hover:text-pink-300 hover:bg-pink-500/10 transition"
+            title={t("post.add_media", "Adicionar mídia")}
+            aria-label={t("post.add_media", "Adicionar mídia")}
+          >
+            <ImageIcon size={14} />
+          </button>
+          <button
+            type="button"
+            data-testid={`reply-gif-btn-${comment.id}`}
+            onClick={() => replyGifInputRef.current?.click()}
+            disabled={submitting}
+            className="px-1.5 py-0.5 rounded-md text-pink-400 hover:text-pink-300 hover:bg-pink-500/10 text-[10px] font-bold border border-pink-500/30 transition"
+            title={t("post.add_gif", "Adicionar GIF")}
+            aria-label={t("post.add_gif", "Adicionar GIF")}
+          >
+            GIF
+          </button>
+          <button
+            type="button"
+            data-testid={`reply-video-btn-${comment.id}`}
+            onClick={() => replyVideoInputRef.current?.click()}
+            disabled={submitting}
+            className="p-1 rounded-lg text-pink-400 hover:text-pink-300 hover:bg-pink-500/10 transition"
+            title={t("post.add_video", "Adicionar vídeo")}
+            aria-label={t("post.add_video", "Adicionar vídeo")}
+          >
+            <VideoIcon size={14} />
+          </button>
+        </div>
+        <MediaPreview
+          previewUrl={replyPreview}
+          mediaType={replyMediaType}
+          onClear={clearReplyMedia}
+          t={t}
+          compact
+        />
+        {replyMediaError && (
+          <p className="text-xs text-rose-500 mt-1">{replyMediaError}</p>
+        )}
+      </form>
+    );
   };
 
   // Linha que chega ao avatar vindo do item de cima na trilha
@@ -618,6 +743,12 @@ export const CommentItem = React.memo(function CommentItem({
             ) : (
               <div>
                 <SafeCommentText text={comment.content_text} hero={true} />
+                <MediaViewer
+                  imageUrl={comment.image_url}
+                  videoUrl={comment.video_url}
+                  alt={t("post.media_alt", "Mídia da publicação")}
+                  compact
+                />
                 {isMuted && (
                   <button
                     type="button"
@@ -644,37 +775,7 @@ export const CommentItem = React.memo(function CommentItem({
           {renderActions()}
 
           {/* Formulário de resposta quando ativo */}
-          {isReplying && (
-            <form onSubmit={handleReplySubmit} className="mt-3 pt-3 border-t border-zinc-800/60">
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={replyText}
-                  onChange={(e) => setReplyText(e.target.value)}
-                  placeholder={t("comments.replyPlaceholder", "Postar sua resposta...")}
-                  className="flex-1 bg-zinc-900 border border-zinc-700 rounded-full px-3.5 py-1.5 text-zinc-100 text-xs focus:outline-none focus:border-pink-500"
-                  maxLength={1000}
-                  autoFocus
-                  data-testid={`reply-input-${comment.id}`}
-                />
-                <button
-                  type="submit"
-                  disabled={submitting || !replyText.trim()}
-                  className="px-3.5 py-1.5 bg-pink-600 hover:bg-pink-500 disabled:opacity-50 text-white text-xs font-medium rounded-full"
-                  data-testid={`reply-submit-btn-${comment.id}`}
-                >
-                  {t("comments.post", "Responder")}
-                </button>
-                <button
-                  type="button"
-                  onClick={handleCancelReply}
-                  className="px-2 text-zinc-500 hover:text-zinc-300 text-xs"
-                >
-                  {t("comments.cancel", "Cancelar")}
-                </button>
-              </div>
-            </form>
-          )}
+          {renderReplyForm(true)}
         </article>
       </div>
     );
@@ -830,6 +931,12 @@ export const CommentItem = React.memo(function CommentItem({
             ) : (
               <div>
                 <SafeCommentText text={comment.content_text} hero={false} />
+                <MediaViewer
+                  imageUrl={comment.image_url}
+                  videoUrl={comment.video_url}
+                  alt={t("post.media_alt", "Mídia da publicação")}
+                  compact
+                />
                 {isMuted && (
                   <button
                     type="button"
@@ -848,37 +955,7 @@ export const CommentItem = React.memo(function CommentItem({
             {renderActions()}
 
             {/* Formulário de resposta quando ativo */}
-            {isReplying && (
-              <form onSubmit={handleReplySubmit} className="mt-3 pt-2">
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={replyText}
-                    onChange={(e) => setReplyText(e.target.value)}
-                    placeholder={t("comments.replyPlaceholder", "Postar sua resposta...")}
-                    className="flex-1 bg-zinc-900 border border-zinc-700 rounded-full px-3 py-1.5 text-zinc-100 text-xs focus:outline-none focus:border-pink-500"
-                    maxLength={1000}
-                    autoFocus
-                    data-testid={`reply-input-${comment.id}`}
-                  />
-                  <button
-                    type="submit"
-                    disabled={submitting || !replyText.trim()}
-                    className="px-3 py-1.5 bg-pink-600 hover:bg-pink-500 disabled:opacity-50 text-white text-xs font-medium rounded-full"
-                    data-testid={`reply-submit-btn-${comment.id}`}
-                  >
-                    {t("comments.post", "Responder")}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleCancelReply}
-                    className="px-2 text-zinc-500 hover:text-zinc-300 text-xs"
-                  >
-                    {t("comments.cancel", "Cancelar")}
-                  </button>
-                </div>
-              </form>
-            )}
+            {renderReplyForm(false)}
           </div>
         </div>
       </article>

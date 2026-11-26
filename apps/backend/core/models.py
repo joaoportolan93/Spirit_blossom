@@ -255,7 +255,9 @@ class Post(models.Model):
         on_delete=models.CASCADE,
         related_name="posts",
     )
-    content_text = models.TextField(max_length=3000)
+    content_text = models.TextField(max_length=3000, blank=True, default="")
+    image = models.ImageField(upload_to="post_images/", null=True, blank=True)
+    video = models.FileField(upload_to="post_videos/", null=True, blank=True)
     visibility = models.CharField(
         max_length=10,
         choices=Visibility.choices,
@@ -360,6 +362,37 @@ class Draft(models.Model):
 
     def __str__(self):
         return f"Draft({self.author_id}, {self.id})"
+
+
+class Hashtag(models.Model):
+    """
+    Hashtag normalizada associada a publicações (Onda 7b).
+    Sempre armazenada em lowercase, sem o prefixo '#'.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid6.uuid7, editable=False)
+    name = models.CharField(
+        max_length=50,
+        unique=True,
+        db_index=True,
+        verbose_name=_("nome"),
+    )
+    posts = models.ManyToManyField(
+        Post,
+        related_name="hashtags",
+        blank=True,
+        verbose_name=_("publicações"),
+    )
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name=_("criado em"))
+
+    class Meta:
+        db_table = "posts_hashtag"
+        verbose_name = _("hashtag")
+        verbose_name_plural = _("hashtags")
+        ordering = ["name"]
+
+    def __str__(self) -> str:
+        return f"#{self.name}"
 
 
 # ==============================================================================

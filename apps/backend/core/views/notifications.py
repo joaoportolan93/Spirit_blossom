@@ -35,7 +35,19 @@ class NotificationListView(APIView):
             category=category,
             unread_only=unread_only,
         )
-        serializer = NotificationSerializer(qs, many=True)
+        notifs = list(qs)
+        ref_ids = [n.ref_id for n in notifs if n.ref_id]
+        comment_post_map = {}
+        if ref_ids:
+            from comments.models import Comment
+
+            comment_post_map = {
+                str(cid): str(pid)
+                for cid, pid in Comment.objects.filter(pk__in=ref_ids).values_list("id", "post_id")
+            }
+        serializer = NotificationSerializer(
+            notifs, many=True, context={"comment_post_map": comment_post_map}
+        )
         return Response(serializer.data)
 
     def post(self, request):

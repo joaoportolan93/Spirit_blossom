@@ -94,8 +94,10 @@ class PostCommentsView(APIView):
             comment = create_comment(
                 author=request.user,
                 post=post,
-                content_text=serializer.validated_data["content_text"],
+                content_text=serializer.validated_data.get("content_text", ""),
                 parent=parent,
+                image=serializer.validated_data.get("image"),
+                video=serializer.validated_data.get("video"),
             )
         except PermissionDenied as e:
             return Response({"detail": str(e)}, status=status.HTTP_403_FORBIDDEN)

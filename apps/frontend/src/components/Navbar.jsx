@@ -1,10 +1,10 @@
-import { useState, useEffect, useContext } from "react";
+import { useState, useEffect, useContext, useCallback } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { APP_NAME } from "../config/brand";
 import { AuthContext } from "../hooks/useAuth";
 import { NotificationBell } from "./NotificationBell";
-import { api } from "../services/api";
+import { getUnreadCount } from "../services/api";
 import {
   Home,
   Compass,
@@ -22,19 +22,47 @@ function useSafeAuth() {
   return ctx ?? { user: null, loading: false, logout: async () => {} };
 }
 
-/** Badge de notificações (contagem de pedidos pendentes). */
-function useNotificationBadge() {
+/**
+ * Badge de notificações não lidas (/api/notifications/unread-count/).
+ * Atualiza ao autenticar, a cada 30s e imediatamente via evento 'spirit-notifications-updated'.
+ */
+function useNotificationBadge(isAuthenticated) {
   const [count, setCount] = useState(0);
+
+  const loadUnreadCount = useCallback(async () => {
+    if (!isAuthenticated) {
+      setCount(0);
+      return;
+    }
+    try {
+      const unread = await getUnreadCount();
+      setCount(Number.isFinite(unread) ? unread : 0);
+    } catch {
+      // ignora erro de rede/auth
+    }
+  }, [isAuthenticated]);
+
   useEffect(() => {
-    let mounted = true;
-    (async () => {
-      try {
-        const res = await api.get("/api/social/follow-requests/");
-        if (mounted) setCount(res.data?.results?.length || 0);
-      } catch { /* */ }
-    })();
-    return () => { mounted = false; };
-  }, []);
+    if (!isAuthenticated) {
+      setCount(0);
+      return undefined;
+    }
+
+    loadUnreadCount();
+    const interval = setInterval(loadUnreadCount, 30_000);
+    const handleRefresh = () => {
+      loadUnreadCount();
+    };
+    window.addEventListener("spirit-notifications-updated", handleRefresh);
+    window.addEventListener("focus", handleRefresh);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("spirit-notifications-updated", handleRefresh);
+      window.removeEventListener("focus", handleRefresh);
+    };
+  }, [isAuthenticated, loadUnreadCount]);
+
   return count;
 }
 
@@ -59,14 +87,22 @@ function NavItem({ to, icon: Icon, label, exact = false, badge = 0 }) {
         />
         {badge > 0 && (
           <span
-            data-testid="nav-notif-badge"
-            className="absolute -top-1 -right-1 bg-rose-600 text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 flex items-center justify-center px-0.5 pointer-events-none"
-          >
-            {badge > 99 ? "99+" : badge}
-          </span>
+            data-testid="nav-notif-dot"
+            aria-hidden="true"
+            className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-rose-500 ring-2 ring-zinc-950 pointer-events-none"
+          />
         )}
       </span>
-      <span className="truncate">{label}</span>
+      <span className="truncate flex-1">{label}</span>
+      {badge > 0 && (
+        <span
+          data-testid="nav-notif-badge"
+          aria-live="polite"
+          className="ml-auto bg-rose-600 text-white text-[11px] font-bold rounded-full min-w-[20px] h-5 px-1.5 flex items-center justify-center shrink-0"
+        >
+          {badge > 99 ? "99+" : badge}
+        </span>
+      )}
     </Link>
   );
 }
@@ -75,7 +111,7 @@ export function Navbar() {
   const { t } = useTranslation();
   const { user, logout } = useSafeAuth();
   const navigate = useNavigate();
-  const notifBadge = useNotificationBadge();
+  const notifBadge = useNotificationBadge(Boolean(user));
 
   const handleLogout = async () => {
     await logout();

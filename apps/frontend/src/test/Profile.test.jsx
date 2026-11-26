@@ -226,4 +226,37 @@ describe("Profile Page & Mute Interactions", () => {
       expect(screen.getByTestId("profile-stat-followers")).toHaveTextContent("6");
     });
   });
+
+  it("8. Exibe posts e contagem retornados por /api/social/profile/ sem depender de /api/posts/", async () => {
+    const getSpy = vi.spyOn(api, "get").mockResolvedValue({
+      data: {
+        username: "me",
+        display_name: "Meu Nome",
+        posts_count: 1,
+        followers_count: 5,
+        following_count: 0,
+        posts: [
+          {
+            id: "post-own-1",
+            content_text: "Meu post visível no perfil",
+            created_at: new Date().toISOString(),
+            author: { username: "me", display_name: "Meu Nome" },
+            likes_count: 5,
+            comments_count: 5,
+            bookmarks_count: 0,
+          },
+        ],
+      },
+    });
+
+    renderProfileWithAuth({ username: "me" }, "/profile");
+
+    await waitFor(() => {
+      expect(screen.getByText("Meu post visível no perfil")).toBeInTheDocument();
+      expect(screen.getByTestId("profile-stat-posts")).toHaveTextContent("1");
+    });
+
+    expect(getSpy).toHaveBeenCalledWith("/api/social/profile/me/");
+    expect(getSpy).not.toHaveBeenCalledWith("/api/posts/");
+  });
 });

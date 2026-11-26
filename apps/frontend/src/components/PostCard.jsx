@@ -12,6 +12,8 @@ import {
   X,
 } from "lucide-react";
 import { HeartIcon, SpeechBubbleIcon, BookmarkIcon } from "./CommentIcons";
+import { RichText } from "./RichText";
+import { MediaViewer } from "./MediaAttachment";
 import { formatDistanceToNow } from "../utils/date";
 import { useAuth } from "../hooks/useAuth";
 import {
@@ -112,7 +114,7 @@ export function PostCard({
 
   const handleCardClick = (e) => {
     if (isDetail) return;
-    if (e.target.closest("a, button, input, textarea")) return;
+    if (e.target.closest("a, button, input, textarea, video")) return;
     navigate(`/posts/${post.id}`);
   };
 
@@ -427,14 +429,16 @@ export function PostCard({
           </div>
         </div>
       ) : (
-        /* RENDERIZADO ESTRITAMENTE COMO TEXTO PURO (SEM RISCO DE XSS) */
+        /* RENDERIZADO ESTRITAMENTE COMO ELEMENTOS REACT SEGUROS (SEM dangerouslySetInnerHTML) */
         <div className="mb-3">
-          <p
-            data-testid="post-content"
-            className="text-sm text-zinc-100 whitespace-pre-wrap break-words overflow-hidden"
-          >
-            {displayedText}
-          </p>
+          {displayedText && (
+            <p
+              data-testid="post-content"
+              className="text-sm text-zinc-100 whitespace-pre-wrap break-words overflow-hidden"
+            >
+              <RichText text={displayedText} />
+            </p>
+          )}
           {shouldTruncate && (
             <button
               type="button"
@@ -448,6 +452,11 @@ export function PostCard({
               {isExpanded ? t("post.showLess", "Mostrar menos") : t("post.showMore", "Mostrar mais")}
             </button>
           )}
+          <MediaViewer
+            imageUrl={post.image_url}
+            videoUrl={post.video_url}
+            alt={t("post.media_alt", "Mídia da publicação")}
+          />
         </div>
       )}
 

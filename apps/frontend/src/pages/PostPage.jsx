@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { ArrowLeft, Send, EyeOff, Eye } from "lucide-react";
+import { ArrowLeft, Send, EyeOff, Eye, Image as ImageIcon, Video as VideoIcon } from "lucide-react";
 import { PostCard } from "../components/PostCard";
+import { RichText } from "../components/RichText";
+import { MediaPreview, MediaViewer, useMediaSelection } from "../components/MediaAttachment";
 import CommentItem from "../components/CommentItem";
 import FocusedThreadView from "../components/FocusedThreadView";
 import { useAuth } from "../hooks/useAuth";
@@ -45,7 +47,22 @@ export function PostPage() {
   // Compositor de comentário raiz
   const [rootText, setRootText] = useState("");
   const [submittingRoot, setSubmittingRoot] = useState(false);
+  const [rootError, setRootError] = useState("");
   const [activeReplyId, setActiveReplyId] = useState(null);
+  const {
+    selectedImage: rootImage,
+    selectedVideo: rootVideo,
+    mediaPreview: rootPreview,
+    mediaType: rootMediaType,
+    mediaError: rootMediaError,
+    setMediaError: setRootMediaError,
+    imageInputRef: rootImageInputRef,
+    gifInputRef: rootGifInputRef,
+    videoInputRef: rootVideoInputRef,
+    handleImageSelect: handleRootImageSelect,
+    handleVideoSelect: handleRootVideoSelect,
+    clearMedia: clearRootMedia,
+  } = useMediaSelection(t);
 
   // Carrega post e comentários raiz
   const loadPostAndComments = useCallback(async () => {
@@ -144,25 +161,40 @@ export function PostPage() {
 
   const handleCreateRootComment = async (e) => {
     e.preventDefault();
-    if (!rootText.trim() || submittingRoot) return;
+    const trimmed = rootText.trim();
+    if ((!trimmed && !rootImage && !rootVideo) || submittingRoot) return;
     setSubmittingRoot(true);
+    setRootError("");
+    setRootMediaError("");
     try {
-      const created = await createComment(postId, { content_text: rootText.trim() });
+      const payload =
+        rootImage || rootVideo
+          ? { content_text: trimmed, image: rootImage, video: rootVideo }
+          : { content_text: trimmed };
+      const created = await createComment(postId, payload);
       setComments((prev) => [created, ...prev]);
       setRootText("");
+      clearRootMedia();
     } catch (err) {
       console.error("Erro ao criar comentário:", err);
+      const msg =
+        err.response?.data?.image ||
+        err.response?.data?.video ||
+        err.response?.data?.detail ||
+        t("errors.generic");
+      setRootError(Array.isArray(msg) ? msg[0] : msg);
     } finally {
       setSubmittingRoot(false);
     }
   };
 
-  const handleReplySubmit = async (text, parentId) => {
+  const handleReplySubmit = async (replyPayload, parentId) => {
     try {
-      const created = await createComment(postId, {
-        content_text: text,
-        parent_id: parentId,
-      });
+      const payload =
+        typeof replyPayload === "string"
+          ? { content_text: replyPayload, parent_id: parentId }
+          : { ...replyPayload, parent_id: parentId };
+      const created = await createComment(postId, payload);
 
       // Atualiza recursivamente a árvore raiz se estiver no modo normal
       const updateTree = (list) => {
@@ -376,9 +408,17 @@ export function PostPage() {
                           · {item.created_at ? new Date(item.created_at).toLocaleDateString() : ""}
                         </span>
                       </div>
-                      <p className="text-sm text-zinc-300 whitespace-pre-wrap break-words">
-                        {item.content_text}
-                      </p>
+                      {item.content_text && (
+                        <p className="text-sm text-zinc-300 whitespace-pre-wrap break-words">
+                          <RichText text={item.content_text} />
+                        </p>
+                      )}
+                      <MediaViewer
+                        imageUrl={item.image_url}
+                        videoUrl={item.video_url}
+                        alt={t("post.media_alt", "Mídia da publicação")}
+                        compact
+                      />
                     </div>
                   </div>
 
@@ -449,7 +489,7 @@ export function PostPage() {
               />
               <button
                 type="submit"
-                disabled={submittingRoot || !rootText.trim()}
+                disabled={submittingRoot || (!rootText.trim() && !rootImage && !rootVideo)}
                 className="px-4 py-2 bg-pink-600 hover:bg-pink-500 disabled:opacity-50 text-white text-xs font-medium rounded-xl flex items-center gap-1.5 transition-colors"
                 data-testid="root-comment-submit"
               >
@@ -457,6 +497,77 @@ export function PostPage() {
                 <span className="hidden sm:inline">{t("comments.send", "Enviar")}</span>
               </button>
             </div>
+            <div className="flex items-center gap-1 mt-2">
+              <input
+                ref={rootImageInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                onChange={handleRootImageSelect}
+                data-testid="root-comment-image-input"
+                className="hidden"
+              />
+              <input
+                ref={rootGifInputRef}
+                type="file"
+                accept="image/gif"
+                onChange={handleRootImageSelect}
+                data-testid="root-comment-gif-input"
+                className="hidden"
+              />
+              <input
+                ref={rootVideoInputRef}
+                type="file"
+                accept="video/mp4,video/webm,video/quicktime"
+                onChange={handleRootVideoSelect}
+                data-testid="root-comment-video-input"
+                className="hidden"
+              />
+              <button
+                type="button"
+                data-testid="root-comment-image-btn"
+                onClick={() => rootImageInputRef.current?.click()}
+                disabled={submittingRoot}
+                className="p-1.5 rounded-lg text-pink-400 hover:text-pink-300 hover:bg-pink-500/10 transition disabled:opacity-50"
+                title={t("post.add_media", "Adicionar mídia")}
+                aria-label={t("post.add_media", "Adicionar mídia")}
+              >
+                <ImageIcon size={16} />
+              </button>
+              <button
+                type="button"
+                data-testid="root-comment-gif-btn"
+                onClick={() => rootGifInputRef.current?.click()}
+                disabled={submittingRoot}
+                className="px-1.5 py-0.5 rounded-lg text-pink-400 hover:text-pink-300 hover:bg-pink-500/10 text-[11px] font-bold border border-pink-500/30 hover:border-pink-500/60 transition disabled:opacity-50"
+                title={t("post.add_gif", "Adicionar GIF")}
+                aria-label={t("post.add_gif", "Adicionar GIF")}
+              >
+                GIF
+              </button>
+              <button
+                type="button"
+                data-testid="root-comment-video-btn"
+                onClick={() => rootVideoInputRef.current?.click()}
+                disabled={submittingRoot}
+                className="p-1.5 rounded-lg text-pink-400 hover:text-pink-300 hover:bg-pink-500/10 transition disabled:opacity-50"
+                title={t("post.add_video", "Adicionar vídeo")}
+                aria-label={t("post.add_video", "Adicionar vídeo")}
+              >
+                <VideoIcon size={16} />
+              </button>
+            </div>
+            <MediaPreview
+              previewUrl={rootPreview}
+              mediaType={rootMediaType}
+              onClear={clearRootMedia}
+              t={t}
+              compact
+            />
+            {(rootError || rootMediaError) && (
+              <p data-testid="root-comment-error" className="text-xs text-rose-500 mt-1.5">
+                {rootError || rootMediaError}
+              </p>
+            )}
           </form>
 
           {/* Lista de comentários em árvore */}

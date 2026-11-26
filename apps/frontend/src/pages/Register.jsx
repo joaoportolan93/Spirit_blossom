@@ -51,7 +51,7 @@ export function Register() {
     }
 
     if (!termsAccepted) {
-      setErrorMessage("Você deve aceitar os Termos de Uso e Política de Privacidade.");
+      setErrorMessage(t("legal.terms_required"));
       return;
     }
 
@@ -191,7 +191,27 @@ export function Register() {
             required
           />
           <label htmlFor="reg-terms" className="text-xs text-zinc-300">
-            Declaro ter 18 anos ou mais e aceito os Termos de Uso e Política de Privacidade.
+            {t("legal.consent_prefix")}
+            <Link
+              to="/terms"
+              target="_blank"
+              rel="noopener noreferrer"
+              data-testid="register-terms-link"
+              className="text-pink-400 hover:underline font-medium"
+            >
+              {t("legal.terms_link")}
+            </Link>
+            {t("legal.consent_and")}
+            <Link
+              to="/privacy"
+              target="_blank"
+              rel="noopener noreferrer"
+              data-testid="register-privacy-link"
+              className="text-pink-400 hover:underline font-medium"
+            >
+              {t("legal.privacy_link")}
+            </Link>
+            .
           </label>
         </div>
 

@@ -5,7 +5,6 @@ Views sociais (ADR-N2: finas, delegando para services e selectors).
 from django.contrib.auth import get_user_model
 from django.db.models import Exists, OuterRef, Q
 from django.http import Http404
-from django.shortcuts import get_object_or_404
 from django.utils.translation import gettext as _
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
@@ -13,9 +12,10 @@ from rest_framework.response import Response
 from rest_framework.throttling import UserRateThrottle
 from rest_framework.views import APIView
 
-from core.models import Block, Follow, PostLike
+from core.models import Block, FeatureFlag, Follow, PostLike
 from core.serializers.posts import PostSerializer
 from core.serializers.social import FollowRequestSerializer
+from core.services.feature_flags import is_feature_enabled
 from core.services.social import (
     accept_follow_request,
     add_to_close_friends,
@@ -27,6 +27,7 @@ from core.services.social import (
     mute_user,
     reject_follow_request,
     remove_from_close_friends,
+    suggest_users_to_follow,
     unblock_user,
     unfollow_user,
     unmute_user,
@@ -44,6 +45,13 @@ from core.utils.visibility import (
 User = get_user_model()
 
 
+def _get_user_by_username_or_404(username: str) -> User:
+    target = User.objects.filter(username__iexact=username).select_related("profile").first()
+    if not target:
+        raise Http404()
+    return target
+
+
 class FollowView(APIView):
     """
     POST /api/social/follow/<username>/   → seguir usuário
@@ -53,8 +61,8 @@ class FollowView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, username):
-        target = get_object_or_404(User, username=username)
-        if is_user_blocked(request.user, target):
+        target = _get_user_by_username_or_404(username)
+        if is_user_blocked(request.user, target) or not getattr(target, "is_valid_for_auth", True):
             raise Http404()
         try:
             follow, created = follow_user(follower=request.user, target_user=target)
@@ -64,7 +72,9 @@ class FollowView(APIView):
         return Response({"detail": msg, "status": follow.status}, status=status.HTTP_201_CREATED)
 
     def delete(self, request, username):
-        target = get_object_or_404(User, username=username)
+        target = _get_user_by_username_or_404(username)
+        if is_user_blocked(request.user, target):
+            raise Http404()
         deleted = unfollow_user(follower=request.user, target_user=target)
         if not deleted:
             return Response(
@@ -84,7 +94,7 @@ class BlockView(APIView):
     throttle_classes = [BlockRateThrottle]
 
     def post(self, request, username):
-        target = get_object_or_404(User, username=username)
+        target = _get_user_by_username_or_404(username)
         if target == request.user:
             return Response(
                 {"detail": _("Não é possível bloquear a si mesmo.")},
@@ -98,7 +108,7 @@ class BlockView(APIView):
         )
 
     def delete(self, request, username):
-        target = get_object_or_404(User, username=username)
+        target = _get_user_by_username_or_404(username)
         unblock_user(blocker=request.user, target_user=target)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -115,7 +125,7 @@ class ProfileDetailView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, username):
-        target = User.objects.filter(username=username).select_related("profile").first()
+        target = User.objects.filter(username__iexact=username).select_related("profile").first()
         if (
             not target
             or is_user_blocked(request.user, target)
@@ -183,7 +193,7 @@ class ProfileLikesView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, username):
-        target = User.objects.filter(username=username).select_related("profile").first()
+        target = User.objects.filter(username__iexact=username).select_related("profile").first()
         if (
             not target
             or is_user_blocked(request.user, target)
@@ -214,9 +224,9 @@ class CloseFriendsView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, username):
-        target = get_object_or_404(User, username=username)
-        if is_user_blocked(request.user, target):
-            return Response({"detail": "Não encontrado."}, status=status.HTTP_404_NOT_FOUND)
+        target = _get_user_by_username_or_404(username)
+        if is_user_blocked(request.user, target) or not getattr(target, "is_valid_for_auth", True):
+            raise Http404()
         try:
             added = add_to_close_friends(user=request.user, target_user=target)
         except Http404:
@@ -234,7 +244,7 @@ class CloseFriendsView(APIView):
         return Response({"detail": "Adicionado ao círculo."}, status=status.HTTP_201_CREATED)
 
     def delete(self, request, username):
-        target = get_object_or_404(User, username=username)
+        target = _get_user_by_username_or_404(username)
         removed = remove_from_close_friends(user=request.user, target_user=target)
         if not removed:
             return Response(
@@ -359,7 +369,7 @@ class MuteView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, username):
-        target = get_object_or_404(User, username=username)
+        target = _get_user_by_username_or_404(username)
         if target == request.user:
             return Response(
                 {"detail": _("Não é possível silenciar a si mesmo.")},
@@ -373,7 +383,7 @@ class MuteView(APIView):
         )
 
     def delete(self, request, username):
-        target = get_object_or_404(User, username=username)
+        target = _get_user_by_username_or_404(username)
         unmute_user(muter=request.user, target_user=target)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -503,3 +513,28 @@ class FollowRequestRejectView(APIView):
             {"detail": "Solicitação de seguir recusada."},
             status=status.HTTP_200_OK,
         )
+
+
+class FollowSuggestionsView(APIView):
+    """
+    GET /api/social/suggestions/?limit=5
+    Retorna sugestões transparentes para seguir (Onda 7b / ADR-N24).
+    Integrado com FeatureFlag `follow_suggestions` (se cadastrada).
+    """
+
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [UserRateThrottle]
+
+    def get(self, request):
+        if FeatureFlag.objects.filter(key="follow_suggestions").exists() and not is_feature_enabled(
+            "follow_suggestions", request.user
+        ):
+            return Response({"results": []}, status=status.HTTP_200_OK)
+
+        try:
+            limit = max(1, min(int(request.query_params.get("limit", 5)), 20))
+        except (ValueError, TypeError):
+            limit = 5
+
+        results = suggest_users_to_follow(request.user, limit=limit)
+        return Response({"results": results}, status=status.HTTP_200_OK)

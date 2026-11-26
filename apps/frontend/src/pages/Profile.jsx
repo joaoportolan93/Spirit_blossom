@@ -20,6 +20,7 @@ export function Profile() {
   const [likesLoading, setLikesLoading] = useState(false);
   const [showLikesTab, setShowLikesTab] = useState(true);
   const [stats, setStats] = useState({
+    posts_count: null,
     followers_count: 0,
     following_count: 0,
     is_following: false,
@@ -37,32 +38,28 @@ export function Profile() {
     let isMounted = true;
 
     async function loadData() {
+      setLoading(true);
       try {
-        const [postsRes, profileRes] = await Promise.allSettled([
-          api.get("/api/posts/"),
-          api.get(`/api/social/profile/${currentUsername}/`),
-        ]);
-
+        const profileRes = await api.get(`/api/social/profile/${currentUsername}/`);
         if (isMounted) {
-          if (postsRes.status === "fulfilled") {
-            const data = postsRes.value.data;
-            const userPosts = Array.isArray(data)
-              ? data.filter((p) => p.author?.username === currentUsername)
-              : [];
-            setPosts(userPosts);
-          }
-          if (profileRes.status === "fulfilled") {
-            const pData = profileRes.value.data;
-            setProfileData(pData);
-            setStats({
-              followers_count: pData.followers_count ?? 0,
-              following_count: pData.following_count ?? 0,
-              is_following: Boolean(pData.is_following),
-            });
-            setIsMuting(Boolean(pData.is_muting));
-            setIsPrivate(Boolean(pData.is_private));
-            setShowLikesTab(pData.show_likes_tab !== false);
-          }
+          const pData = profileRes.data || {};
+          const userPosts = Array.isArray(pData.posts) ? pData.posts : [];
+          setPosts(userPosts);
+          setProfileData(pData);
+          setStats({
+            posts_count:
+              typeof pData.posts_count === "number" ? pData.posts_count : null,
+            followers_count: pData.followers_count ?? 0,
+            following_count: pData.following_count ?? 0,
+            is_following: Boolean(pData.is_following),
+          });
+          setIsMuting(Boolean(pData.is_muting));
+          setIsPrivate(Boolean(pData.is_private));
+          setShowLikesTab(pData.show_likes_tab !== false);
+        }
+      } catch {
+        if (isMounted) {
+          setPosts([]);
         }
       } finally {
         if (isMounted) setLoading(false);
@@ -262,7 +259,7 @@ export function Profile() {
         {/* Contadores do perfil */}
         <div className="flex items-center gap-6 mt-6 pt-6 border-t border-zinc-800 text-sm">
           <div data-testid="profile-stat-posts" className="flex items-center gap-1.5">
-            <span className="font-bold text-white">{posts.length}</span>
+            <span className="font-bold text-white">{stats.posts_count ?? posts.length}</span>
             <span className="text-zinc-400">{t("profile.posts")}</span>
           </div>
           <div data-testid="profile-stat-followers" className="flex items-center gap-1.5">

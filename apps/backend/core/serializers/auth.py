@@ -243,6 +243,7 @@ class CurrentUserSerializer(serializers.ModelSerializer):
     notify_comments = serializers.SerializerMethodField()
     notify_follows = serializers.SerializerMethodField()
     notify_mentions = serializers.SerializerMethodField()
+    terms_accepted_at = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -261,6 +262,7 @@ class CurrentUserSerializer(serializers.ModelSerializer):
             "notify_comments",
             "notify_follows",
             "notify_mentions",
+            "terms_accepted_at",
         )
 
     def get_display_name(self, obj):
@@ -307,6 +309,10 @@ class CurrentUserSerializer(serializers.ModelSerializer):
         p = getattr(obj, "profile", None)
         return p.notify_mentions if p else True
 
+    def get_terms_accepted_at(self, obj):
+        p = getattr(obj, "profile", None)
+        return p.terms_accepted_at.isoformat() if p and p.terms_accepted_at else None
+
 
 class UserSettingsSerializer(serializers.ModelSerializer):
     """Representação serializada de configurações do usuário (Onda 5)."""
@@ -331,7 +337,9 @@ class UserSettingsSerializer(serializers.ModelSerializer):
             "notify_mentions",
             "theme",
             "language",
+            "terms_accepted_at",
         )
+        read_only_fields = ("terms_accepted_at",)
 
     def get_avatar(self, obj):
         return obj.avatar.url if obj.avatar else None
@@ -356,7 +364,7 @@ class UserSettingsUpdateSerializer(serializers.Serializer):
 
     def validate_username(self, value):
         user = self.context["request"].user
-        value = value.strip()
+        value = value.strip().lower()
         if not value.isalnum():
             raise serializers.ValidationError(
                 _("O nome de usuário deve conter apenas letras e números.")

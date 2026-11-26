@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "../hooks/useAuth";
 import { api } from "../services/api";
 import { APP_NAME } from "../config/brand";
 
 export function CompleteSignup() {
+  const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
   const { setUser } = useAuth();
@@ -182,7 +184,27 @@ export function CompleteSignup() {
             required
           />
           <label htmlFor="google-terms" className="text-xs text-zinc-300">
-            Declaro ter 18 anos ou mais e aceito os Termos de Uso e Política de Privacidade.
+            {t("legal.consent_prefix")}
+            <Link
+              to="/terms"
+              target="_blank"
+              rel="noopener noreferrer"
+              data-testid="complete-terms-link"
+              className="text-pink-400 hover:underline font-medium"
+            >
+              {t("legal.terms_link")}
+            </Link>
+            {t("legal.consent_and")}
+            <Link
+              to="/privacy"
+              target="_blank"
+              rel="noopener noreferrer"
+              data-testid="complete-privacy-link"
+              className="text-pink-400 hover:underline font-medium"
+            >
+              {t("legal.privacy_link")}
+            </Link>
+            .
           </label>
         </div>
 

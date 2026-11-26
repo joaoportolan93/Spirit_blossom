@@ -89,7 +89,7 @@ describe("Timeline Component (3 testes)", () => {
     fireEvent.click(screen.getByTestId("load-more-btn"));
 
     await waitFor(() => {
-      expect(api.get).toHaveBeenCalledWith("/api/posts/?cursor=post-uuid-19");
+      expect(api.get).toHaveBeenCalledWith("/api/feed/following/?cursor=post-uuid-19");
       expect(screen.getByText("Post da página 2")).toBeInTheDocument();
     });
   });

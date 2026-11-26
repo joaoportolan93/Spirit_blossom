@@ -13,7 +13,7 @@ from django.utils.translation import gettext_lazy as _
 
 from comments.models import Comment, CommentBookmark, CommentLike
 from core.models import Block, Mute, Notification, Post
-from core.services.notifications import create_notification
+from core.services.notifications import create_notification, notify_mentions_for_content
 from core.services.posts import (
     decrement_post_comments_count,
     decrement_post_hidden_comments_count,
@@ -158,17 +158,26 @@ def create_comment(
     *,
     author,
     post: Post,
-    content_text: str,
+    content_text: str = "",
     parent: Optional[Comment] = None,
+    image=None,
+    video=None,
 ) -> Comment:
     """
     Cria um comentário ou resposta respeitando:
     - can_view_post como guardião estrito.
     - Bloqueio bidirecional com o dono do post e com o autor do comentário pai.
+    - Sanitização segura de imagem/GIF/vídeo quando anexado.
     - Limite de profundidade alto (MAX_COMMENT_DEPTH = 50) contra DoS recursivo.
     - Incremento atômico de comments_count no post e replies_count no pai via F().
     - Disparo transacional de notificação via on_commit.
     """
+    from core.utils.media_security import (
+        MediaSanitizationError,
+        sanitize_media_image,
+        sanitize_media_video,
+    )
+
     if not can_view_post(author, post):
         raise PermissionDenied(_("You cannot view or comment on this post."))
 
@@ -179,12 +188,27 @@ def create_comment(
         raise PermissionDenied(_("Interaction blocked by privacy settings."))
 
     cleaned_text = (content_text or "").strip()
-    if not cleaned_text:
+    if image and video:
+        raise ValidationError({"detail": _("Send either an image/GIF or a video, not both.")})
+    if not cleaned_text and not image and not video:
         raise ValidationError({"content_text": _("Comment content cannot be empty.")})
     if len(cleaned_text) > MAX_COMMENT_LENGTH:
         raise ValidationError(
             {"content_text": _("Comment exceeds maximum length of 1000 characters.")}
         )
+
+    clean_image = None
+    clean_video = None
+    if image:
+        try:
+            clean_image = sanitize_media_image(image)
+        except MediaSanitizationError as exc:
+            raise ValidationError({"image": str(exc)}) from exc
+    if video:
+        try:
+            clean_video = sanitize_media_video(video)
+        except MediaSanitizationError as exc:
+            raise ValidationError({"video": str(exc)}) from exc
 
     depth = 0
     if parent is not None:
@@ -210,6 +234,8 @@ def create_comment(
             parent=parent,
             depth=depth,
             content_text=cleaned_text,
+            image=clean_image,
+            video=clean_video,
             is_deleted=False,
             likes_count=0,
             replies_count=0,
@@ -221,6 +247,14 @@ def create_comment(
             Comment.objects.filter(pk=parent.pk).update(replies_count=F("replies_count") + 1)
 
     notify_comment_created(sender=author, comment=comment)
+    if cleaned_text:
+        notify_mentions_for_content(
+            sender=author,
+            content_text=cleaned_text,
+            post=post,
+            ref_id=str(comment.id),
+            is_hidden=is_in_hidden_thread(comment),
+        )
     return comment
 
 
@@ -236,17 +270,26 @@ def edit_comment(*, comment: Comment, user, content_text: str) -> Comment:
         raise ValidationError({"detail": _("Cannot edit a deleted comment.")})
 
     cleaned_text = (content_text or "").strip()
-    if not cleaned_text:
+    if not cleaned_text and not comment.image and not comment.video:
         raise ValidationError({"content_text": _("Comment content cannot be empty.")})
     if len(cleaned_text) > MAX_COMMENT_LENGTH:
         raise ValidationError(
             {"content_text": _("Comment exceeds maximum length of 1000 characters.")}
         )
 
-    comment.content_text = cleaned_text
-    comment.is_edited = True
-    comment.edited_at = timezone.now()
-    comment.save(update_fields=["content_text", "is_edited", "edited_at", "updated_at"])
+    with transaction.atomic():
+        comment.content_text = cleaned_text
+        comment.is_edited = True
+        comment.edited_at = timezone.now()
+        comment.save(update_fields=["content_text", "is_edited", "edited_at", "updated_at"])
+        if cleaned_text:
+            notify_mentions_for_content(
+                sender=user,
+                content_text=cleaned_text,
+                post=comment.post,
+                ref_id=str(comment.id),
+                is_hidden=is_in_hidden_thread(comment),
+            )
     return comment
 
 
@@ -285,13 +328,21 @@ def delete_comment(*, comment: Comment, user) -> bool:
 
         Notification.objects.filter(ref_id=comment.id).delete()
 
+        media_to_delete = []
+        if comment.image and comment.image.name:
+            media_to_delete.append((comment.image.storage, comment.image.name))
+        if comment.video and comment.video.name:
+            media_to_delete.append((comment.video.storage, comment.video.name))
+
         # Verifica se há filhos cadastrados
         has_children = comment.replies.exists()
 
         if has_children:
-            # Padrão Tombstone: anonimiza para LGPD (sem texto de tombstone no banco)
+            # Padrão Tombstone: anonimiza para LGPD (sem texto/mídia de tombstone no banco)
             comment.is_deleted = True
             comment.content_text = ""
+            comment.image = None
+            comment.video = None
             comment.author = None
             comment.is_edited = False
             comment.edited_at = None
@@ -299,6 +350,8 @@ def delete_comment(*, comment: Comment, user) -> bool:
                 update_fields=[
                     "is_deleted",
                     "content_text",
+                    "image",
+                    "video",
                     "author",
                     "is_edited",
                     "edited_at",
@@ -316,6 +369,12 @@ def delete_comment(*, comment: Comment, user) -> bool:
                 next_parent = curr_parent.parent
                 curr_parent.delete()
                 curr_parent = next_parent
+
+    for storage, name in media_to_delete:
+        try:
+            storage.delete(name)
+        except Exception:
+            pass
 
     return True
 

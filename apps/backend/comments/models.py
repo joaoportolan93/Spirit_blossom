@@ -40,7 +40,15 @@ class Comment(models.Model):
         verbose_name=_("comentário pai"),
     )
     depth = models.PositiveIntegerField(default=0, verbose_name=_("profundidade"))
-    content_text = models.TextField(max_length=1000, verbose_name=_("conteúdo"))
+    content_text = models.TextField(
+        max_length=1000, blank=True, default="", verbose_name=_("conteúdo")
+    )
+    image = models.ImageField(
+        upload_to="comment_images/", null=True, blank=True, verbose_name=_("imagem")
+    )
+    video = models.FileField(
+        upload_to="comment_videos/", null=True, blank=True, verbose_name=_("vídeo")
+    )
     is_deleted = models.BooleanField(default=False, verbose_name=_("excluído"))
     is_edited = models.BooleanField(default=False, verbose_name=_("editado"))
     edited_at = models.DateTimeField(null=True, blank=True, verbose_name=_("data de edição"))

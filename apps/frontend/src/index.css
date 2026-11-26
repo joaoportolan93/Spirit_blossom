@@ -76,7 +76,11 @@ html[data-theme="light"] .bg-zinc-800 {
 }
 
 html[data-theme="light"] .border-zinc-800,
-html[data-theme="light"] .border-zinc-700 {
+html[data-theme="light"] .border-zinc-800\/80,
+html[data-theme="light"] .border-zinc-800\/60,
+html[data-theme="light"] .border-zinc-700,
+html[data-theme="light"] .border-zinc-700\/80,
+html[data-theme="light"] .border-zinc-700\/60 {
   border-color: var(--border-color) !important;
 }
 
@@ -105,6 +109,23 @@ html[data-theme="light"] .hover\:bg-zinc-800:hover {
 
 html[data-theme="light"] .hover\:bg-zinc-900:hover {
   background-color: #f1f5f9 !important;
+}
+
+html[data-theme="light"] .text-pink-400 {
+  color: #be185d !important;
+}
+
+html[data-theme="light"] .bg-pink-600.text-white {
+  color: #ffffff !important;
+}
+
+html[data-theme="light"] .bg-white.text-zinc-950 {
+  background-color: #18181b !important;
+  color: #ffffff !important;
+}
+
+html[data-theme="light"] .bg-white.text-zinc-950:hover {
+  background-color: #27272a !important;
 }
 
 /* ==========================================================================
@@ -137,6 +158,10 @@ html[data-theme="oled"] .bg-zinc-800 {
 }
 
 html[data-theme="oled"] .border-zinc-800,
-html[data-theme="oled"] .border-zinc-700 {
+html[data-theme="oled"] .border-zinc-800\/80,
+html[data-theme="oled"] .border-zinc-800\/60,
+html[data-theme="oled"] .border-zinc-700,
+html[data-theme="oled"] .border-zinc-700\/80,
+html[data-theme="oled"] .border-zinc-700\/60 {
   border-color: #1f1f1f !important;
 }

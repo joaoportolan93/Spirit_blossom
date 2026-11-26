@@ -14,6 +14,7 @@ from core.services.posts import (
     delete_draft,
     delete_post,
     get_post_detail_for_user,
+    get_trending_hashtags,
     like_post,
     list_bookmarked_posts,
     list_drafts,
@@ -26,7 +27,7 @@ from core.services.posts import (
 
 class PostListCreateView(APIView):
     """
-    GET  /api/posts/   → lista posts visíveis via selector keyset
+    GET  /api/posts/   → lista posts visíveis via selector keyset (com ?hashtag= opcional)
     POST /api/posts/   → cria um post via serializer/service
     """
 
@@ -34,8 +35,9 @@ class PostListCreateView(APIView):
 
     def get(self, request):
         cursor = request.query_params.get("cursor")
+        hashtag = request.query_params.get("hashtag")
         try:
-            qs = list_posts_keyset(user=request.user, cursor=cursor, limit=20)
+            qs = list_posts_keyset(user=request.user, cursor=cursor, limit=20, hashtag=hashtag)
         except ValueError as exc:
             return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -217,3 +219,20 @@ class DraftDetailView(APIView):
         if not deleted:
             return Response({"detail": "Não encontrado."}, status=status.HTTP_404_NOT_FOUND)
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class TrendingHashtagsView(APIView):
+    """
+    GET /api/hashtags/trending/?limit=<int>
+    Lista hashtags populares a partir de posts públicos visíveis (ADR-N21 / ADR-N24).
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        try:
+            limit = min(int(request.query_params.get("limit", 10)), 30)
+        except (ValueError, TypeError):
+            limit = 10
+        results = get_trending_hashtags(user=request.user, limit=limit)
+        return Response({"results": results})

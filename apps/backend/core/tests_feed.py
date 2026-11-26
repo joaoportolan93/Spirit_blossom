@@ -54,6 +54,16 @@ class TestFollowingFeed:
         ids = [item["post_id"] for item in client.get("/api/feed/following/").json()["items"]]
         assert str(post.pk) not in ids
 
+    def test_feed_inclui_proprios_posts_do_usuario_sem_seguidos(self):
+        user = UserFactory()
+        stranger = UserFactory()
+        own_post = PostFactory(author=user)
+        stranger_post = PostFactory(author=stranger)
+        client = auth_client(user)
+        ids = [item["post_id"] for item in client.get("/api/feed/following/").json()["items"]]
+        assert str(own_post.pk) in ids
+        assert str(stranger_post.pk) not in ids
+
     def test_cursor_invalido_retorna_400(self):
         user = UserFactory()
         client = auth_client(user)

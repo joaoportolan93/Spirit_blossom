@@ -32,8 +32,20 @@ class AuthorSummarySerializer(serializers.Serializer):
         return None
 
 
+def _build_media_url(file_field, request):
+    if not file_field:
+        return None
+    try:
+        url = file_field.url
+    except Exception:
+        return None
+    return request.build_absolute_uri(url) if request else url
+
+
 class PostSummarySerializer(serializers.ModelSerializer):
     author = AuthorSummarySerializer(read_only=True)
+    image_url = serializers.SerializerMethodField()
+    video_url = serializers.SerializerMethodField()
 
     class Meta:
         model = Post
@@ -41,17 +53,27 @@ class PostSummarySerializer(serializers.ModelSerializer):
             "id",
             "author",
             "content_text",
+            "image_url",
+            "video_url",
             "visibility",
             "comments_count",
             "likes_count",
             "created_at",
         ]
 
+    def get_image_url(self, obj):
+        return _build_media_url(getattr(obj, "image", None), self.context.get("request"))
+
+    def get_video_url(self, obj):
+        return _build_media_url(getattr(obj, "video", None), self.context.get("request"))
+
 
 class CommentItemSerializer(serializers.ModelSerializer):
     author = serializers.SerializerMethodField()
     parent_id = serializers.CharField(allow_null=True, required=False)
     preview_replies = serializers.SerializerMethodField()
+    image_url = serializers.SerializerMethodField()
+    video_url = serializers.SerializerMethodField()
     is_liked = serializers.BooleanField(default=False)
     is_bookmarked = serializers.BooleanField(default=False)
     can_delete = serializers.SerializerMethodField()
@@ -70,6 +92,8 @@ class CommentItemSerializer(serializers.ModelSerializer):
             "parent_id",
             "depth",
             "content_text",
+            "image_url",
+            "video_url",
             "is_deleted",
             "is_edited",
             "edited_at",
@@ -88,6 +112,16 @@ class CommentItemSerializer(serializers.ModelSerializer):
             "preview_replies",
         ]
 
+    def get_image_url(self, obj):
+        if getattr(obj, "is_placeholder", False) or obj.is_deleted:
+            return None
+        return _build_media_url(getattr(obj, "image", None), self.context.get("request"))
+
+    def get_video_url(self, obj):
+        if getattr(obj, "is_placeholder", False) or obj.is_deleted:
+            return None
+        return _build_media_url(getattr(obj, "video", None), self.context.get("request"))
+
     def get_author(self, obj):
         # Se for placeholder ou tombstone excluído, não expõe dados do autor (LGPD)
         if getattr(obj, "is_placeholder", False) or obj.is_deleted or not obj.author:
@@ -102,14 +136,11 @@ class CommentItemSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
-        # Oculta texto se for nó placeholder ou excluído (texto não vem do banco)
-        if getattr(instance, "is_placeholder", False):
+        # Oculta texto e mídia se for nó placeholder ou excluído (texto não vem do banco)
+        if getattr(instance, "is_placeholder", False) or instance.is_deleted:
             data["content_text"] = ""
-            data["author"] = None
-            data["is_edited"] = False
-            data["edited_at"] = None
-        elif instance.is_deleted:
-            data["content_text"] = ""
+            data["image_url"] = None
+            data["video_url"] = None
             data["author"] = None
             data["is_edited"] = False
             data["edited_at"] = None
@@ -150,8 +181,24 @@ class CommentItemSerializer(serializers.ModelSerializer):
 
 
 class CommentCreateSerializer(serializers.Serializer):
-    content_text = serializers.CharField(max_length=1000, allow_blank=False, trim_whitespace=True)
+    content_text = serializers.CharField(
+        max_length=1000, required=False, allow_blank=True, default="", trim_whitespace=True
+    )
     parent_id = serializers.UUIDField(required=False, allow_null=True, default=None)
+    image = serializers.FileField(required=False, allow_null=True, default=None)
+    video = serializers.FileField(required=False, allow_null=True, default=None)
+
+    def validate(self, attrs):
+        text = (attrs.get("content_text") or "").strip()
+        image = attrs.get("image")
+        video = attrs.get("video")
+        if image and video:
+            raise serializers.ValidationError(
+                "Envie apenas uma imagem/GIF ou um vídeo por comentário."
+            )
+        if not text and not image and not video:
+            raise serializers.ValidationError({"content_text": "Comment content cannot be empty."})
+        return attrs
 
 
 class CommentUpdateSerializer(serializers.Serializer):

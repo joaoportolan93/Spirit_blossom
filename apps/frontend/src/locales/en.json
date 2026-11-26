@@ -44,6 +44,10 @@
     "add_media": "Add media",
     "add_gif": "Add GIF",
     "add_video": "Add video",
+    "remove_media": "Remove media",
+    "media_alt": "Post media",
+    "image_too_large": "Image or GIF must be at most 5 MB.",
+    "video_too_large": "Video must be at most 50 MB.",
     "chars_remaining": "{{count}} characters remaining",
     "too_long": "Character limit exceeded",
     "visibility": "Visibility",
@@ -71,7 +75,8 @@
     "confirmMute": "Mute @{{username}}?",
     "blockUser": "Block @{{username}}",
     "confirmBlock": "Are you sure you want to block @{{username}}?",
-    "actions": "More options"
+    "actions": "More options",
+    "mention_suggestions": "Mention suggestions"
   },
   "bookmarks": {
     "title": "Saved posts",
@@ -103,7 +108,10 @@
   "explore": {
     "title": "Explore",
     "subtitle": "Discover recent community posts.",
-    "empty": "No posts to explore right now."
+    "empty": "No posts to explore right now.",
+    "hashtag_filtering": "Filtering by #{{tag}}",
+    "clear_filter": "Clear filter",
+    "trending_tags": "Trending tags"
   },
   "feed": {
     "title": "Following Timeline",
@@ -122,6 +130,7 @@
     "followers": "Followers",
     "following": "Following",
     "follow": "Follow",
+    "follow_pending": "Requested",
     "unfollow": "Unfollow",
     "mute": "Mute",
     "unmute": "Unmute",
@@ -334,5 +343,45 @@
     "not_found": "Page not found.",
     "unauthorized": "You need to be signed in.",
     "required_field": "Required field"
+  },
+  "suggestions": {
+    "title": "Who to follow",
+    "followed_by": "Followed by @{{username}}",
+    "followed_by_and_more": "Followed by @{{username}} and {{count}} more",
+    "active_community": "Active in the community"
+  },
+  "legal": {
+    "terms_title": "Terms of Use",
+    "terms_subtitle": "Transparent rules of conduct and usage for {{appName}}.",
+    "privacy_title": "Privacy Policy",
+    "privacy_subtitle": "How we protect your personal data under LGPD and Brazil's Marco Civil da Internet.",
+    "last_updated": "Last updated: November 2026",
+    "terms_link": "Terms of Use",
+    "privacy_link": "Privacy Policy",
+    "consent_prefix": "I declare that I am 18 or older and accept the ",
+    "consent_and": " and the ",
+    "terms_required": "You must accept the Terms of Use and Privacy Policy.",
+    "settings_title": "Terms & Privacy",
+    "settings_desc": "Review the platform's legal documents and your recorded consent.",
+    "accepted_at": "Accepted on {{date}}",
+    "accepted_registered": "Acceptance recorded at sign-up.",
+    "terms_age_title": "1. Eligibility and Minimum Age (18+)",
+    "terms_age_body": "Access to {{appName}} is strictly restricted to individuals aged 18 or older. Birth date verification is mandatory during both standard registration and Google OAuth onboarding.",
+    "terms_feed_title": "2. Chronological Transparency",
+    "terms_feed_body": "Your Following timeline presents posts in transparent chronological order without hidden algorithmic manipulation or invasive behavioral tracking.",
+    "terms_conduct_title": "3. Community Conduct & Personal Moderation",
+    "terms_conduct_body": "Illegal content, harassment, spam, and third-party rights violations are prohibited. You have active controls for bilateral blocking (mutual invisibility), asymmetric muting, private accounts, and hiding replies on your posts.",
+    "terms_ip_title": "4. Intellectual Property",
+    "terms_ip_body": "You retain full ownership of the content you publish, granting the platform only a limited technical license to display it according to your chosen visibility (Public or Close Friends).",
+    "terms_termination_title": "5. Account Termination",
+    "terms_termination_body": "You may permanently delete your account at any time under Settings > Account, ending your relationship with immediate effect.",
+    "privacy_data_title": "1. Data We Collect and Purpose",
+    "privacy_data_body": "We collect only the data strictly needed for authentication and platform operation: email, username, birth date (18+ gate), profile details, posts, drafts, comments, and theme/language/notification preferences. We never sell your data.",
+    "privacy_controls_title": "2. Privacy & Visibility Controls",
+    "privacy_controls_body": "You control who sees your profile and posts via Private Account, Close Friends, likes tab visibility, muting, and bilateral blocking (which hides profiles, posts, comments, search results, and mentions in both directions).",
+    "privacy_retention_title": "3. Legal Access Log Retention (Marco Civil)",
+    "privacy_retention_body": "In compliance with Art. 15 of Brazilian Law No. 12.965/2014 (Marco Civil da Internet), minimal access logs are retained for 6 months with IP addresses protected via irreversible cryptographic hashing (HMAC-SHA256).",
+    "privacy_lgpd_title": "4. Your Rights Under LGPD (Law No. 13.709/2018)",
+    "privacy_lgpd_body": "Under Art. 18 of LGPD, you may export a complete JSON copy of your data or request permanent, irreversible account deletion (atomic hard-delete with comment anonymization in threads) directly in Settings > Account."
   }
 }

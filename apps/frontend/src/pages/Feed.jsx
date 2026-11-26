@@ -1,26 +1,37 @@
-import { useState, useEffect, useCallback } from "react";
-import { useLocation } from "react-router-dom";
+import { useState, useEffect, useCallback, useContext } from "react";
+import { useLocation, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { FeedTabs } from "../components/FeedTabs";
 import { PostComposer } from "../components/PostComposer";
 import { PostCard } from "../components/PostCard";
 import { UserMiniCard } from "../components/UserMiniCard";
+import { FollowSuggestions } from "../components/FollowSuggestions";
+import { AuthContext } from "../hooks/useAuth";
 import { APP_NAME } from "../config/brand";
 import { api } from "../services/api";
 import {
   PenSquare,
 } from "lucide-react";
 
-/** Sidebar direita minimalista: card do usuário autenticado + footer */
-function RightSidebar() {
+/** Sidebar direita minimalista: card do usuário autenticado + sugestões + footer */
+function RightSidebar({ isAuthenticated }) {
+  const { t } = useTranslation();
+
   return (
     <aside
       className="w-72 shrink-0 py-6 pr-4 space-y-5 hidden xl:block"
       aria-label="Informações do usuário"
     >
       <UserMiniCard />
-      <p className="text-[11px] text-zinc-600 px-1 leading-relaxed">
-        Sobre · Privacidade · Termos · Ajuda
+      {isAuthenticated && <FollowSuggestions limit={5} />}
+      <p className="text-[11px] text-zinc-500 px-1 leading-relaxed">
+        <Link to="/privacy" className="hover:text-zinc-300 hover:underline transition">
+          {t("legal.privacy_link")}
+        </Link>
+        {" · "}
+        <Link to="/terms" className="hover:text-zinc-300 hover:underline transition">
+          {t("legal.terms_link")}
+        </Link>
         <br />© 2026 {APP_NAME}
       </p>
     </aside>
@@ -28,15 +39,16 @@ function RightSidebar() {
 }
 
 /**
- * Busca o feed "Seguindo".
- * Suporta resposta de lista plana (legado / testes) e paginada ({items, next_cursor}).
+ * Busca o feed "Seguindo" — apenas posts de quem o usuário segue.
+ * Endpoint correto: /api/feed/following/ (backend get_following_feed)
  */
 async function fetchFollowingFeed(cursor = null) {
   const url = cursor
-    ? `/api/posts/?cursor=${cursor}`
-    : "/api/posts/";
+    ? `/api/feed/following/?cursor=${cursor}`
+    : "/api/feed/following/";
   const res = await api.get(url);
 
+  // Resposta lista plana (edge case / testes)
   if (Array.isArray(res.data)) {
     const items = res.data;
     const nextCursor =
@@ -84,6 +96,8 @@ async function fetchForYouFeed(cursor = null) {
 export function Feed() {
   const { t } = useTranslation();
   const location = useLocation();
+  const auth = useContext(AuthContext);
+  const isAuthenticated = Boolean(auth?.user);
 
   const [activeTab, setActiveTab] = useState("following");
   const [isComposerOpen, setIsComposerOpen] = useState(false);
@@ -291,7 +305,7 @@ export function Feed() {
       </div>
 
       {/* Sidebar direita */}
-      <RightSidebar />
+      <RightSidebar isAuthenticated={isAuthenticated} />
     </div>
   );
 }
