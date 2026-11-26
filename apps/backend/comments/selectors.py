@@ -107,7 +107,9 @@ def list_post_comments_with_preview(
     # Consulta 1: Raízes (depth 0)
     qs = Comment.objects.filter(post=post, parent__isnull=True).select_related("author")
     if viewer and viewer.is_authenticated:
-        qs = qs.filter(Q(is_hidden=False) | Q(is_hidden=True, author=viewer))
+        qs = qs.filter(
+            Q(is_hidden=False) | (Q(is_hidden=True, author=viewer) & ~Q(hidden_reason="moderation"))
+        )
     else:
         qs = qs.filter(is_hidden=False)
 
@@ -173,7 +175,9 @@ def list_post_comments_with_preview(
         .order_by("created_at", "id")
     )
     if viewer and viewer.is_authenticated:
-        level1_qs = level1_qs.filter(Q(is_hidden=False) | Q(is_hidden=True, author=viewer))
+        level1_qs = level1_qs.filter(
+            Q(is_hidden=False) | (Q(is_hidden=True, author=viewer) & ~Q(hidden_reason="moderation"))
+        )
     else:
         level1_qs = level1_qs.filter(is_hidden=False)
     level1_items = list(level1_qs)
@@ -188,7 +192,10 @@ def list_post_comments_with_preview(
             .order_by("created_at", "id")
         )
         if viewer and viewer.is_authenticated:
-            level2_qs = level2_qs.filter(Q(is_hidden=False) | Q(is_hidden=True, author=viewer))
+            level2_qs = level2_qs.filter(
+                Q(is_hidden=False)
+                | (Q(is_hidden=True, author=viewer) & ~Q(hidden_reason="moderation"))
+            )
         else:
             level2_qs = level2_qs.filter(is_hidden=False)
         level2_items = list(level2_qs)
@@ -262,9 +269,11 @@ def list_comment_replies(
     muted_ids = _extract_muted_ids(viewer)
 
     # Se o comentário for oculto, apenas o autor ou o dono do post podem acessar replies
+    # (exceto se ocultado pela moderação)
     if comment.is_hidden:
         is_allowed = (
-            viewer
+            comment.hidden_reason != "moderation"
+            and viewer
             and viewer.is_authenticated
             and (comment.author_id == viewer.id or comment.post.author_id == viewer.id)
         )
@@ -273,7 +282,9 @@ def list_comment_replies(
 
     qs = Comment.objects.filter(parent=comment).select_related("author")
     if viewer and viewer.is_authenticated:
-        qs = qs.filter(Q(is_hidden=False) | Q(is_hidden=True, author=viewer))
+        qs = qs.filter(
+            Q(is_hidden=False) | (Q(is_hidden=True, author=viewer) & ~Q(hidden_reason="moderation"))
+        )
     else:
         qs = qs.filter(is_hidden=False)
 
@@ -376,9 +387,11 @@ def get_comment_thread_context(
         return None
 
     # Se o comentário focado for oculto, apenas o autor e o dono do post podem visualizá-lo no Focar
+    # (exceto se ocultado pela moderação)
     if comment.is_hidden:
         is_allowed = (
-            viewer
+            comment.hidden_reason != "moderation"
+            and viewer
             and viewer.is_authenticated
             and (comment.author_id == viewer.id or comment.post.author_id == viewer.id)
         )

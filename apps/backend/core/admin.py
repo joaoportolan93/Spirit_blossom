@@ -7,10 +7,13 @@ from .models import (
     FeatureFlag,
     Follow,
     Hashtag,
+    ModerationLog,
     Mute,
     Notification,
+    PermanentBanRecord,
     Post,
     PushDevice,
+    Report,
     User,
     UserProfile,
 )
@@ -87,13 +90,20 @@ class NotificationAdmin(admin.ModelAdmin):
 
 @admin.register(FeatureFlag)
 class FeatureFlagAdmin(admin.ModelAdmin):
-    list_display = ("key", "is_enabled", "rollout_percentage", "created_at", "updated_at")
-    list_filter = ("is_enabled",)
+    list_display = (
+        "key",
+        "is_enabled",
+        "admin_only",
+        "rollout_percentage",
+        "created_at",
+        "updated_at",
+    )
+    list_filter = ("is_enabled", "admin_only")
     search_fields = ("key", "description")
     filter_horizontal = ("allowed_users",)
     readonly_fields = ("created_at", "updated_at")
     fieldsets = (
-        (None, {"fields": ("key", "description", "is_enabled")}),
+        (None, {"fields": ("key", "description", "is_enabled", "admin_only")}),
         ("Rollout", {"fields": ("rollout_percentage", "allowed_users")}),
         ("Timestamps", {"fields": ("created_at", "updated_at"), "classes": ("collapse",)}),
     )
@@ -112,4 +122,37 @@ class PushDeviceAdmin(admin.ModelAdmin):
 class HashtagAdmin(admin.ModelAdmin):
     list_display = ("name", "created_at")
     search_fields = ("name",)
+    readonly_fields = ("id", "created_at")
+
+
+@admin.register(PermanentBanRecord)
+class PermanentBanRecordAdmin(admin.ModelAdmin):
+    list_display = ("username", "preserve_for_authorities", "banned_at", "deleted_at")
+    list_filter = ("preserve_for_authorities",)
+    search_fields = ("username", "email_hash")
+    readonly_fields = ("id", "username", "email_hash", "banned_at", "deleted_at")
+
+
+@admin.register(Report)
+class ReportAdmin(admin.ModelAdmin):
+    list_display = ("target_type", "target_id", "reason", "status", "reporter", "created_at")
+    list_filter = ("target_type", "reason", "status")
+    search_fields = ("target_id", "reporter__username", "description")
+    raw_id_fields = ("reporter", "moderator")
+    readonly_fields = ("id", "created_at")
+
+
+@admin.register(ModerationLog)
+class ModerationLogAdmin(admin.ModelAdmin):
+    list_display = (
+        "action",
+        "target_type",
+        "target_id",
+        "affected_user",
+        "moderator",
+        "created_at",
+    )
+    list_filter = ("action", "target_type")
+    search_fields = ("target_id", "reason")
+    raw_id_fields = ("affected_user", "moderator", "report")
     readonly_fields = ("id", "created_at")

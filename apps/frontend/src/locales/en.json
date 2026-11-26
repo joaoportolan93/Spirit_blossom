@@ -32,7 +32,17 @@
     "register_submitting": "Creating account...",
     "dont_have_account": "Don't have an account? Sign up",
     "already_have_account": "Already have an account? Log in",
-    "throttle_error": "Too many requests. Please wait a minute."
+    "throttle_error": "Too many requests. Please wait a minute.",
+    "banned_title": "Account suspended by moderation",
+    "banned_subtitle": "Your access has been restricted by an administrator.",
+    "banned_reason_label": "Reason provided",
+    "banned_reason_fallback": "Violation of community guidelines.",
+    "banned_expires_label": "Suspension active until",
+    "banned_appeal_days": "Appeal window: {{count}} day(s) remaining.",
+    "banned_appeal_title": "Appeal / Review",
+    "banned_appeal_link_text": "Think this was a mistake? Contact us so we can review it again.",
+    "banned_appeal_hint": "Clicking above will open your email client so you can explain what happened.",
+    "banned_back_to_login": "Sign in with another account"
   },
   "post": {
     "title": "New post",
@@ -383,5 +393,38 @@
     "privacy_retention_body": "In compliance with Art. 15 of Brazilian Law No. 12.965/2014 (Marco Civil da Internet), minimal access logs are retained for 6 months with IP addresses protected via irreversible cryptographic hashing (HMAC-SHA256).",
     "privacy_lgpd_title": "4. Your Rights Under LGPD (Law No. 13.709/2018)",
     "privacy_lgpd_body": "Under Art. 18 of LGPD, you may export a complete JSON copy of your data or request permanent, irreversible account deletion (atomic hard-delete with comment anonymization in threads) directly in Settings > Account."
+  },
+  "report": {
+    "action": "Report",
+    "title": "Submit report",
+    "subtitle": "Help keep the community safe. Our moderation team will review your report.",
+    "reasonLabel": "Reason",
+    "reasons": {
+      "inappropriate": "Inappropriate content",
+      "harassment": "Harassment or bullying",
+      "spam": "Spam or scam",
+      "hate_speech": "Hate speech",
+      "illegal": "Illegal content",
+      "other": "Other"
+    },
+    "descriptionLabel": "Additional details (optional)",
+    "descriptionPlaceholder": "Provide context to help our review...",
+    "submit": "Submit report",
+    "submitting": "Submitting...",
+    "cancel": "Cancel",
+    "success": "Report submitted successfully. Thank you for helping keep the community safe.",
+    "close": "Close",
+    "error": "Could not submit report."
+  },
+  "admin": {
+    "nav": {
+      "panel": "Admin",
+      "dashboard": "Dashboard",
+      "moderation": "Moderation",
+      "users": "Users",
+      "logs": "Audit Logs",
+      "settings": "Feature Flags",
+      "backToSite": "Back to Site"
+    }
   }
 }

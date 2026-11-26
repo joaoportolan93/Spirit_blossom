@@ -35,6 +35,7 @@ from core.serializers.auth import (
 from core.services.auth import (
     authenticate_user,
     authenticate_with_google,
+    build_banned_auth_payload,
     clear_auth_cookies,
     complete_google_signup,
     confirm_password_reset,
@@ -116,6 +117,14 @@ class LoginView(APIView):
             password=serializer.validated_data["password"],
             request=request,
         )
+        if user and not user.is_valid_for_auth:
+            return Response(
+                build_banned_auth_payload(
+                    user,
+                    detail=_("Credenciais inválidas ou conta inativa."),
+                ),
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         if not user or not refresh:
             return Response(
                 {"detail": "Credenciais inválidas ou conta inativa."},
@@ -255,6 +264,12 @@ class GoogleAuthView(APIView):
             )
         except ValueError as exc:
             return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+        if auth_status == "banned":
+            return Response(data, status=status.HTTP_403_FORBIDDEN)
+
+        if auth_status == "blocked":
+            return Response(data, status=status.HTTP_403_FORBIDDEN)
 
         if auth_status == "logged_in":
             response = Response({"status": "logged_in", "detail": "Login realizado com sucesso."})

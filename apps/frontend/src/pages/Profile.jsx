@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { Flag } from "lucide-react";
 import { FollowButton } from "../components/FollowButton";
 import { PostCard } from "../components/PostCard";
+import { ReportModal } from "../components/ReportModal";
 import { useAuth } from "../hooks/useAuth";
 import { api, blockUser, unblockUser } from "../services/api";
 
@@ -32,6 +34,7 @@ export function Profile() {
   const [toast, setToast] = useState(null);
   const [isPrivate, setIsPrivate] = useState(false);
   const [profileData, setProfileData] = useState(null);
+  const [reportOpen, setReportOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -252,6 +255,18 @@ export function Profile() {
               >
                 {isBlocked ? t("profile.unblock", "Desbloquear") : t("profile.block", "Bloquear")}
               </button>
+              {profileData?.id && (
+                <button
+                  type="button"
+                  data-testid="report-user-btn"
+                  onClick={() => setReportOpen(true)}
+                  className="px-2.5 py-1.5 rounded-lg text-xs font-medium bg-zinc-800 text-zinc-300 border border-zinc-700 hover:bg-zinc-700 hover:text-amber-400 transition inline-flex items-center gap-1"
+                  title={t("report.action", "Denunciar")}
+                >
+                  <Flag size={13} />
+                  <span>{t("report.action", "Denunciar")}</span>
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -351,6 +366,14 @@ export function Profile() {
           )}
         </div>
       )}
+
+      <ReportModal
+        isOpen={reportOpen}
+        targetType="user"
+        targetId={profileData?.id}
+        targetLabel={`@${currentUsername}`}
+        onClose={() => setReportOpen(false)}
+      />
     </div>
   );
 }

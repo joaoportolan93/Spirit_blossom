@@ -14,6 +14,7 @@ import {
   Settings,
   User,
   LogOut,
+  ShieldCheck,
 } from "lucide-react";
 
 /** useAuth seguro — não lança erro quando fora de AuthProvider. */
@@ -111,6 +112,7 @@ export function Navbar() {
   const { t } = useTranslation();
   const { user, logout } = useSafeAuth();
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   const notifBadge = useNotificationBadge(Boolean(user));
 
   const handleLogout = async () => {
@@ -119,6 +121,7 @@ export function Navbar() {
   };
 
   if (!user) {
+    const hideAuthButtons = pathname === "/login";
     return (
       <nav className="border-b border-zinc-800/60 bg-zinc-950/95 backdrop-blur sticky top-0 z-50 px-6 py-3">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
@@ -129,20 +132,22 @@ export function Navbar() {
             <span className="text-pink-400">✦</span>
             {APP_NAME}
           </Link>
-          <div className="flex items-center gap-3">
-            <Link
-              to="/login"
-              className="text-sm text-zinc-300 hover:text-white px-4 py-2 rounded-xl border border-zinc-700 hover:border-zinc-500 transition"
-            >
-              {t("auth.login")}
-            </Link>
-            <Link
-              to="/register"
-              className="text-sm bg-pink-600 hover:bg-pink-500 text-white font-semibold px-4 py-2 rounded-xl transition shadow-lg shadow-pink-900/30"
-            >
-              {t("auth.register")}
-            </Link>
-          </div>
+          {!hideAuthButtons && (
+            <div className="flex items-center gap-3">
+              <Link
+                to="/login"
+                className="text-sm text-zinc-300 hover:text-white px-4 py-2 rounded-xl border border-zinc-700 hover:border-zinc-500 transition"
+              >
+                {t("auth.login")}
+              </Link>
+              <Link
+                to="/register"
+                className="text-sm bg-pink-600 hover:bg-pink-500 text-white font-semibold px-4 py-2 rounded-xl transition shadow-lg shadow-pink-900/30"
+              >
+                {t("auth.register")}
+              </Link>
+            </div>
+          )}
         </div>
       </nav>
     );
@@ -175,6 +180,9 @@ export function Navbar() {
         <NavItem to="/bookmarks" icon={Bookmark} label={t("nav.bookmarks")} />
         <NavItem to="/settings" icon={Settings} label={t("nav.settings")} />
         <NavItem to="/profile" icon={User} label={t("nav.profile")} />
+        {(user.is_staff || user.is_superuser) && (
+          <NavItem to="/admin" icon={ShieldCheck} label={t("admin.nav.panel", "Admin")} />
+        )}
 
         {/* NotificationBell mantido para compatibilidade com mocks de teste */}
         <div className="hidden" aria-hidden="true">

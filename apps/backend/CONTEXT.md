@@ -9,20 +9,20 @@ O backend é organizado em um único app de domínio (`core`), estruturado por p
 ```
 apps/backend/
 ├── config/             Configurações Django, URLs raiz, Celery
-└── core/               Único app de domínio
-    ├── models.py       Modelos consolidados (User, Post, Follow, Block, Mute, Notification, etc.)
-    ├── admin.py        Administração Django consolidada
-    ├── authentication.py Cookie JWT + CSRF
-    ├── throttles.py    Limitadores de taxa
-    ├── tasks.py        Tarefas assíncronas Celery
-    ├── factories.py    Fábricas para testes (FactoryBoy)
-    ├── urls.py         URLs centralizadas sob /api/*
-    ├── migrations/     0001_initial.py
-    ├── views/          Divididas por assunto (auth, posts, social, feed, notifications)
-    ├── serializers/    Divididos por assunto (auth, posts, social, feed, notifications)
-    ├── services/       Lógica de escrita e seletores divididos por assunto
-    ├── utils/          Utilitários de visibilidade central (visibility.py)
-    └── tests_*.py      Testes por assunto (auth, csrf, feed, interactions, posts, search, social, visibility, etc.)
+├── core/               App principal (novas ondas com domínio próprio devem virar apps Django dedicados, como `comments/`)
+│   ├── models/         Submódulos por domínio (users, posts, social, notifications, feature_flags, moderation)
+│   ├── admin.py        Administração Django consolidada
+│   ├── authentication.py Cookie JWT + CSRF
+│   ├── throttles.py    Limitadores de taxa
+│   ├── tasks.py        Tarefas assíncronas Celery
+│   ├── factories.py    Fábricas para testes (FactoryBoy)
+│   ├── urls.py         URLs centralizadas sob /api/*
+│   ├── migrations/     0001_initial.py+
+│   ├── views/          Subpacotes/módulos por assunto (auth, posts, reports, feed, notifications, admin/, social/)
+│   ├── serializers/    Divididos por assunto (auth, posts, social, feed, notifications)
+│   ├── services/       Lógica de escrita e seletores divididos por assunto
+│   ├── utils/          Utilitários de visibilidade central (visibility.py)
+│   └── tests_*.py      Testes por assunto (auth, csrf, feed, interactions, posts, search, social, visibility, etc.)
 ```
 
 ## Convenções

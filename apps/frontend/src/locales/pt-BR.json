@@ -32,7 +32,17 @@
     "register_submitting": "Cadastrando...",
     "dont_have_account": "Não tem uma conta? Cadastre-se",
     "already_have_account": "Já possui conta? Entre aqui",
-    "throttle_error": "Muitas tentativas. Aguarde um minuto."
+    "throttle_error": "Muitas tentativas. Aguarde um minuto.",
+    "banned_title": "Conta suspensa pela moderação",
+    "banned_subtitle": "Seu acesso foi restrito por um administrador.",
+    "banned_reason_label": "Motivo informado",
+    "banned_reason_fallback": "Violação das regras da comunidade.",
+    "banned_expires_label": "Suspensão válida até",
+    "banned_appeal_days": "Prazo para recurso: {{count}} dia(s) restante(s).",
+    "banned_appeal_title": "Contestação / Análise",
+    "banned_appeal_link_text": "Acha que isso foi um erro? Entre em contato conosco para analisarmos novamente.",
+    "banned_appeal_hint": "Ao clicar acima, seu aplicativo de e-mail será aberto para escrever o que aconteceu.",
+    "banned_back_to_login": "Entrar com outra conta"
   },
   "post": {
     "title": "Nova publicação",
@@ -383,5 +393,38 @@
     "privacy_retention_body": "Em cumprimento ao Art. 15 da Lei nº 12.965/2014 (Marco Civil da Internet), mantemos registros mínimos de acesso por 6 meses com endereço IP protegido via hash criptográfico irreversível (HMAC-SHA256).",
     "privacy_lgpd_title": "4. Seus Direitos sob a LGPD (Lei nº 13.709/2018)",
     "privacy_lgpd_body": "Conforme o Art. 18 da LGPD, você pode exportar integralmente seus dados em formato JSON ou solicitar a exclusão definitiva e irreversível da sua conta (hard-delete atômico com anonimização de comentários em threads) diretamente em Configurações > Conta."
+  },
+  "report": {
+    "action": "Denunciar",
+    "title": "Enviar denúncia",
+    "subtitle": "Ajude a manter a comunidade segura. Nossa equipe analisará sua denúncia.",
+    "reasonLabel": "Motivo da denúncia",
+    "reasons": {
+      "inappropriate": "Conteúdo inadequado",
+      "harassment": "Assédio ou intimidação",
+      "spam": "Spam ou golpe",
+      "hate_speech": "Discurso de ódio",
+      "illegal": "Conteúdo ilegal",
+      "other": "Outro motivo"
+    },
+    "descriptionLabel": "Detalhes adicionais (opcional)",
+    "descriptionPlaceholder": "Descreva o contexto para ajudar na análise...",
+    "submit": "Enviar denúncia",
+    "submitting": "Enviando...",
+    "cancel": "Cancelar",
+    "success": "Denúncia enviada com sucesso. Obrigado por ajudar a comunidade.",
+    "close": "Fechar",
+    "error": "Não foi possível enviar a denúncia."
+  },
+  "admin": {
+    "nav": {
+      "panel": "Admin",
+      "dashboard": "Dashboard",
+      "moderation": "Moderação",
+      "users": "Usuários",
+      "logs": "Auditoria",
+      "settings": "Feature Flags",
+      "backToSite": "Voltar ao Site"
+    }
   }
 }

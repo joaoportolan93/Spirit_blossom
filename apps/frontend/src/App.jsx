@@ -1,6 +1,12 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "./hooks/useAuth";
 import { Navbar } from "./components/Navbar";
+import { AdminLayout } from "./layouts/AdminLayout";
+import { AdminDashboard } from "./pages/admin/AdminDashboard";
+import { ModerationQueue } from "./pages/admin/ModerationQueue";
+import { UserManagement } from "./pages/admin/UserManagement";
+import { AdminModerationLogs } from "./pages/admin/AdminModerationLogs";
+import { AdminSettings } from "./pages/admin/AdminSettings";
 import { Feed } from "./pages/Feed";
 import { Login } from "./pages/Login";
 import { Register } from "./pages/Register";
@@ -44,11 +50,13 @@ function ProtectedRoute({ children }) {
 
 function AppShell() {
   const { user } = useAuth();
+  const location = useLocation();
+  const isAdminRoute = location.pathname.startsWith("/admin");
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans">
-      <Navbar />
-      <div className={`${user ? "pl-60 " : ""}min-h-screen flex flex-col`}>
+      {!isAdminRoute && <Navbar />}
+      <div className={`${user && !isAdminRoute ? "pl-60 " : ""}min-h-screen flex flex-col`}>
         <main className="flex-1">
           <Routes>
             <Route
@@ -155,6 +163,13 @@ function AppShell() {
                 </ProtectedRoute>
               }
             />
+            <Route path="/admin" element={<AdminLayout />}>
+              <Route index element={<AdminDashboard />} />
+              <Route path="moderation" element={<ModerationQueue />} />
+              <Route path="users" element={<UserManagement />} />
+              <Route path="logs" element={<AdminModerationLogs />} />
+              <Route path="settings" element={<AdminSettings />} />
+            </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>

@@ -77,6 +77,9 @@ class CookieJWTAuthentication(BaseAuthentication):
         except User.DoesNotExist as exc:
             raise AuthenticationFailed("Usuário não encontrado.") from exc
 
+        if user.status == user.Status.SUSPENDED:
+            user.check_and_expire_ban()
+
         if not user.is_active or user.status != user.Status.ACTIVE:
             raise AuthenticationFailed("Conta inativa ou suspensa.")
 

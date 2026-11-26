@@ -5,6 +5,16 @@ Preserva todas as rotas públicas, caminhos e namespaces.
 
 from django.urls import include, path
 
+from core.views.admin import (
+    AdminFeatureFlagDetailView,
+    AdminFeatureFlagListView,
+    AdminModerationLogsView,
+    AdminReportActionView,
+    AdminReportsView,
+    AdminStatsView,
+    AdminUserDetailView,
+    AdminUsersView,
+)
 from core.views.auth import (
     ChangePasswordView,
     CSRFView,
@@ -41,6 +51,7 @@ from core.views.posts import (
     PostSearchView,
     TrendingHashtagsView,
 )
+from core.views.reports import CreateReportView
 from core.views.social import (
     BlockedUsersListView,
     BlockView,
@@ -145,6 +156,25 @@ notifications_patterns = [
     path("devices/", PushDeviceView.as_view(), name="push_devices"),
 ]
 
+admin_patterns = [
+    path("stats/", AdminStatsView.as_view(), name="admin_stats"),
+    path("users/", AdminUsersView.as_view(), name="admin_users"),
+    path("users/<uuid:pk>/", AdminUserDetailView.as_view(), name="admin_user_detail"),
+    path("reports/", AdminReportsView.as_view(), name="admin_reports"),
+    path(
+        "reports/<uuid:pk>/action/",
+        AdminReportActionView.as_view(),
+        name="admin_report_action",
+    ),
+    path("moderation-logs/", AdminModerationLogsView.as_view(), name="admin_moderation_logs"),
+    path("feature-flags/", AdminFeatureFlagListView.as_view(), name="admin_feature_flags_list"),
+    path(
+        "feature-flags/<str:key>/",
+        AdminFeatureFlagDetailView.as_view(),
+        name="admin_feature_flags_detail",
+    ),
+]
+
 urlpatterns = [
     path("auth/", include((auth_patterns, "auth"))),
     path("users/", include((users_patterns, "users"))),
@@ -153,5 +183,7 @@ urlpatterns = [
     path("hashtags/", include((hashtags_patterns, "hashtags"))),
     path("feed/", include((feed_patterns, "feed"))),
     path("notifications/", include((notifications_patterns, "notifications"))),
+    path("reports/", CreateReportView.as_view(), name="create_report"),
+    path("admin/", include((admin_patterns, "admin_api"))),
     path("feature-flags/", FeatureFlagsView.as_view(), name="feature_flags"),
 ]

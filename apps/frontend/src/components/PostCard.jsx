@@ -8,12 +8,14 @@ import {
   EyeOff,
   VolumeX,
   Ban,
+  Flag,
   Check,
   X,
 } from "lucide-react";
 import { HeartIcon, SpeechBubbleIcon, BookmarkIcon } from "./CommentIcons";
 import { RichText } from "./RichText";
 import { MediaViewer } from "./MediaAttachment";
+import { ReportModal } from "./ReportModal";
 import { formatDistanceToNow } from "../utils/date";
 import { useAuth } from "../hooks/useAuth";
 import {
@@ -65,6 +67,7 @@ export function PostCard({
   const [isExpanded, setIsExpanded] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
 
   const handleToggleLike = async () => {
     if (actionLoading) return;
@@ -382,6 +385,19 @@ export function PostCard({
                           {t("post.blockUser", `Bloquear @${authorName}`, { username: authorName })}
                         </span>
                       </button>
+                      <button
+                        type="button"
+                        data-testid="post-report-btn"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowMenu(false);
+                          setReportOpen(true);
+                        }}
+                        className="w-full flex items-center gap-2 px-3.5 py-2 text-amber-400 hover:bg-amber-950/30 text-xs transition border-t border-zinc-800/80"
+                      >
+                        <Flag size={14} />
+                        <span>{t("report.action", "Denunciar")}</span>
+                      </button>
                     </>
                   )}
                 </div>
@@ -504,6 +520,14 @@ export function PostCard({
           <span data-testid="bookmarks-count">{bookmarksCount}</span>
         </button>
       </footer>
+
+      <ReportModal
+        isOpen={reportOpen}
+        targetType="post"
+        targetId={post.id}
+        targetLabel={`@${authorName}`}
+        onClose={() => setReportOpen(false)}
+      />
     </article>
   );
 }

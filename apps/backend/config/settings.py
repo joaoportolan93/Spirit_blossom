@@ -61,6 +61,7 @@ USE_X_FORWARDED_HOST = True
 # Produto — nome configurável; não use literais de marca aqui
 # ---------------------------------------------------------------------------
 APP_NAME = os.environ.get("APP_NAME", "App")
+MODERATION_EMAIL = os.environ.get("MODERATION_EMAIL", "moderacao@spirit.blossom")
 
 # ---------------------------------------------------------------------------
 # Aplicativos instalados

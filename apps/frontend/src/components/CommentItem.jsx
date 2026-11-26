@@ -8,6 +8,7 @@ import {
   EyeOff,
   VolumeX,
   Ban,
+  Flag,
   Check,
   X,
   CornerDownRight,
@@ -21,6 +22,7 @@ import {
 } from "./CommentIcons";
 import { RichText } from "./RichText";
 import { MediaPreview, MediaViewer, useMediaSelection } from "./MediaAttachment";
+import { ReportModal } from "./ReportModal";
 import {
   toggleCommentLike,
   toggleCommentBookmark,
@@ -90,6 +92,7 @@ export const CommentItem = React.memo(function CommentItem({
   const [isHidden, setIsHidden] = useState(Boolean(comment.is_hidden));
   const [hidingLoading, setHidingLoading] = useState(false);
   const [showMutedContent, setShowMutedContent] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
   const {
     selectedImage: replyImage,
     selectedVideo: replyVideo,
@@ -561,6 +564,19 @@ export const CommentItem = React.memo(function CommentItem({
                   })}
                 </span>
               </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowMenu(false);
+                  setReportOpen(true);
+                }}
+                className="w-full flex items-center gap-2 px-3 py-1.5 text-amber-400 hover:bg-amber-950/30 text-left transition border-t border-zinc-800/80"
+                data-testid={`report-comment-btn-${comment.id}`}
+              >
+                <Flag size={12} />
+                <span>{t("report.action", "Denunciar")}</span>
+              </button>
             </>
           )}
         </div>
@@ -984,6 +1000,14 @@ export const CommentItem = React.memo(function CommentItem({
           ))}
         </div>
       )}
+
+      <ReportModal
+        isOpen={reportOpen}
+        targetType="comment"
+        targetId={comment.id}
+        targetLabel={comment.author?.username ? `@${comment.author.username}` : ""}
+        onClose={() => setReportOpen(false)}
+      />
     </div>
   );
 });

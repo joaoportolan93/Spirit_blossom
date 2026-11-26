@@ -65,7 +65,11 @@ class Comment(models.Model):
     hidden_reason = models.CharField(
         max_length=20,
         default="owner",
-        choices=[("owner", _("Proprietário")), ("block", _("Bloqueio"))],
+        choices=[
+            ("owner", _("Proprietário")),
+            ("block", _("Bloqueio")),
+            ("moderation", _("Moderação")),
+        ],
         verbose_name=_("motivo de ocultação"),
     )
     likes_count = models.PositiveIntegerField(default=0, verbose_name=_("contagem de curtidas"))

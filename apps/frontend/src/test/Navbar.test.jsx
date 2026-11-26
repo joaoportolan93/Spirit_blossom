@@ -10,7 +10,7 @@ vi.mock("../components/NotificationBell", () => ({
   NotificationBell: () => <div data-testid="mock-notification-bell" />,
 }));
 
-function renderNavbar(user = null, logout = vi.fn()) {
+function renderNavbar(user = null, logout = vi.fn(), initialEntries = ["/"]) {
   const authValue = {
     user,
     loading: false,
@@ -20,7 +20,7 @@ function renderNavbar(user = null, logout = vi.fn()) {
 
   return render(
     <AuthContext.Provider value={authValue}>
-      <MemoryRouter>
+      <MemoryRouter initialEntries={initialEntries}>
         <Navbar />
       </MemoryRouter>
     </AuthContext.Provider>
@@ -89,6 +89,13 @@ describe("Navbar Component", () => {
       expect(screen.queryByTestId("nav-notif-badge")).not.toBeInTheDocument();
       expect(screen.queryByTestId("nav-notif-dot")).not.toBeInTheDocument();
     });
+  });
+
+  it("5. Oculta botões de Entrar e Criar conta na barra superior quando na tela de login", () => {
+    renderNavbar(null, vi.fn(), ["/login"]);
+
+    expect(screen.queryByText("Entrar")).not.toBeInTheDocument();
+    expect(screen.queryByText("Criar conta (18+)")).not.toBeInTheDocument();
   });
 });
 

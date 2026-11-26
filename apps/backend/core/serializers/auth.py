@@ -37,7 +37,21 @@ class RegisterSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 _("O nome de usuário deve conter apenas letras e números.")
             )
-        return value.lower()
+        cleaned = value.lower()
+        from core.services.user_lifecycle import is_email_or_username_blocked
+
+        blocked, msg = is_email_or_username_blocked(username=cleaned)
+        if blocked:
+            raise serializers.ValidationError(msg)
+        return cleaned
+
+    def validate_email(self, value):
+        from core.services.user_lifecycle import is_email_or_username_blocked
+
+        blocked, msg = is_email_or_username_blocked(email=value)
+        if blocked:
+            raise serializers.ValidationError(msg)
+        return value
 
     def validate_birth_date(self, value):
         today = date.today()
@@ -128,6 +142,11 @@ class GoogleCompleteSignupSerializer(serializers.Serializer):
         value = value.lower()
         if User.objects.filter(username=value).exists():
             raise serializers.ValidationError(_("Este nome de usuário já está em uso."))
+        from core.services.user_lifecycle import is_email_or_username_blocked
+
+        blocked, msg = is_email_or_username_blocked(username=value)
+        if blocked:
+            raise serializers.ValidationError(msg)
         return value
 
     def validate_birth_date(self, value):
@@ -263,6 +282,8 @@ class CurrentUserSerializer(serializers.ModelSerializer):
             "notify_follows",
             "notify_mentions",
             "terms_accepted_at",
+            "is_staff",
+            "is_superuser",
         )
 
     def get_display_name(self, obj):

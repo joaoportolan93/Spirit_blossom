@@ -36,7 +36,7 @@ def visible_posts_for(user) -> QuerySet:
     )
 
     qs = Post.objects.exclude(Exists(blocked_by_user)).exclude(Exists(blocker_of_user))
-    qs = qs.filter(author__is_active=True, author__status="active")
+    qs = qs.filter(is_hidden=False, author__is_active=True, author__status="active")
 
     # IDs de autores que o usuário segue ativamente
     following_active_ids = Follow.objects.filter(

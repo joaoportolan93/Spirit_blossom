@@ -395,3 +395,58 @@ def delete_draft(*, author, draft_id) -> bool:
     """Exclui rascunho do autor."""
     deleted, _ = Draft.objects.filter(pk=draft_id, author=author).delete()
     return bool(deleted)
+
+
+# -----------------------------------------------------------------------------
+# Helpers administrativos e de moderação sobre Post (centraliza Post.objects)
+# -----------------------------------------------------------------------------
+
+
+def get_post_by_id_for_moderation(post_id) -> Optional[Post]:
+    """Busca publicação sem filtro de visibilidade para moderação/denúncia."""
+    return Post.objects.filter(pk=post_id).select_related("author").first()
+
+
+def get_posts_map_for_moderation(post_ids: list) -> dict[str, Post]:
+    """Carrega lote de publicações para a fila de moderação sem N+1."""
+    if not post_ids:
+        return {}
+    return {str(p.id): p for p in Post.objects.filter(id__in=post_ids).select_related("author")}
+
+
+def count_posts_for_author(user) -> int:
+    """Conta todas as publicações de um autor para inspeção administrativa."""
+    return Post.objects.filter(author=user).count()
+
+
+def delete_posts_for_user(user) -> None:
+    """Remove fisicamente todas as publicações e mídias de um usuário na exclusão definitiva."""
+    from core.utils.media_security import delete_media_file
+
+    user_posts = list(Post.objects.filter(author=user))
+    for p in user_posts:
+        delete_media_file(p.image)
+        delete_media_file(p.video)
+    Post.objects.filter(author=user).delete()
+
+
+def get_admin_post_stats(today, seven_days_ago) -> dict:
+    """Retorna contagens e série diária de posts para o dashboard administrativo."""
+    from django.db.models.functions import TruncDate
+
+    total_posts = Post.objects.count()
+    hidden_posts = Post.objects.filter(is_hidden=True).count()
+    new_posts_today = Post.objects.filter(created_at__date=today).count()
+    posts_by_day = dict(
+        Post.objects.filter(created_at__date__gte=seven_days_ago)
+        .annotate(day=TruncDate("created_at"))
+        .values("day")
+        .annotate(total=Count("id"))
+        .values_list("day", "total")
+    )
+    return {
+        "total_posts": total_posts,
+        "hidden_posts": hidden_posts,
+        "new_posts_today": new_posts_today,
+        "posts_by_day": posts_by_day,
+    }

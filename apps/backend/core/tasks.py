@@ -74,3 +74,23 @@ def send_push_notification_task(
     except Exception as exc:
         logger.error("Erro na task push %s: %s", notification_id, exc)
         raise self.retry(exc=exc)
+
+
+@shared_task(name="core.expire_temporary_bans")
+def expire_temporary_bans_task():
+    """Restaura usuários cuja suspensão temporária já expirou."""
+    from core.services.user_lifecycle import expire_temporary_bans
+
+    restored = expire_temporary_bans()
+    logger.info("Suspensões temporárias expiradas restauradas: %d", restored)
+    return restored
+
+
+@shared_task(name="core.purge_expired_banned_accounts")
+def purge_expired_banned_accounts_task(dry_run: bool | None = None):
+    """Expurgo periódico de contas banidas após prazo de recurso (Onda 8)."""
+    from core.services.user_lifecycle import purge_expired_banned_accounts
+
+    results = purge_expired_banned_accounts(dry_run=dry_run)
+    logger.info("Expurgo de contas banidas processado: %d registros", len(results))
+    return len(results)

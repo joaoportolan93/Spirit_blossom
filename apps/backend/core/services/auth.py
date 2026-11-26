@@ -208,6 +208,19 @@ def log_user_access(*, user: User, request) -> None:
         logger.warning("Falha ao registrar AccessLog.", exc_info=True)
 
 
+def build_banned_auth_payload(user, *, detail: str) -> dict:
+    """Monta payload padronizado para respostas de login bloqueado por suspensão/banimento."""
+    return {
+        "detail": detail,
+        "banned": user.status == user.Status.SUSPENDED,
+        "ban_reason": user.ban_reason,
+        "appeal_deadline": user.appeal_deadline.isoformat() if user.appeal_deadline else None,
+        "appeal_days_remaining": user.appeal_days_remaining,
+        "ban_expires_at": user.ban_expires_at.isoformat() if user.ban_expires_at else None,
+        "appeal_email": getattr(settings, "MODERATION_EMAIL", "moderacao@spirit.blossom"),
+    }
+
+
 def authenticate_user(
     *,
     email: str,
@@ -215,9 +228,20 @@ def authenticate_user(
     request=None,
 ) -> Tuple[Optional[User], Optional[RefreshToken]]:
     """Autentica usuário e retorna user e tokens ou None."""
+    existing = User.objects.filter(email__iexact=email).first()
+    if existing and existing.status == User.Status.SUSPENDED:
+        existing.check_and_expire_ban()
+
     user = authenticate(request=request, username=email, password=password)
-    if not user or not user.is_valid_for_auth:
+    if not user:
+        # Se a senha estiver correta mas is_active=False (Django ModelBackend rejeita inativos),
+        # verificamos explicitamente para sinalizar conta suspensa/banida.
+        if existing and existing.check_password(password) and not existing.is_valid_for_auth:
+            return existing, None
         return None, None
+
+    if not user.is_valid_for_auth:
+        return user, None
 
     log_user_access(user=user, request=request)
     refresh = RefreshToken.for_user(user)
@@ -237,6 +261,8 @@ def refresh_user_tokens(*, raw_refresh_token: str) -> Tuple[str, str]:
 
     decoded = AccessToken(new_access)
     user = User.objects.get(pk=decoded["user_id"])
+    if user.status == User.Status.SUSPENDED:
+        user.check_and_expire_ban()
     if not user.is_valid_for_auth:
         raise ValueError("Conta inativa ou suspensa.")
 
@@ -406,6 +432,12 @@ def authenticate_with_google(*, id_token_str: str, request=None) -> Tuple[str, d
     if not email_verified:
         raise ValueError("O e-mail da conta Google não foi verificado.")
 
+    from core.services.user_lifecycle import is_email_or_username_blocked
+
+    blocked, block_reason = is_email_or_username_blocked(email=email)
+    if blocked:
+        return "blocked", {"detail": block_reason}
+
     oauth_acc = (
         OAuthAccount.objects.select_related("user")
         .filter(provider="google", uid=google_sub)
@@ -413,13 +445,22 @@ def authenticate_with_google(*, id_token_str: str, request=None) -> Tuple[str, d
     )
     if oauth_acc:
         user = oauth_acc.user
+        if user.status == User.Status.SUSPENDED:
+            user.check_and_expire_ban()
         if not user.is_valid_for_auth:
-            raise ValueError("Conta inativa ou suspensa.")
+            return "banned", build_banned_auth_payload(user, detail="Conta suspensa ou banida.")
         log_user_access(user=user, request=request)
         refresh = RefreshToken.for_user(user)
         return "logged_in", {"user": user, "refresh": refresh}
 
-    if User.objects.filter(email=email).exists():
+    existing_email_user = User.objects.filter(email__iexact=email).first()
+    if existing_email_user:
+        if existing_email_user.status == User.Status.SUSPENDED:
+            existing_email_user.check_and_expire_ban()
+        if not existing_email_user.is_valid_for_auth:
+            return "banned", build_banned_auth_payload(
+                existing_email_user, detail="Conta suspensa ou banida."
+            )
         raise ValueError(
             "Este e-mail já está cadastrado. Faça login com sua senha e vincule sua conta Google "
             "nas configurações de segurança."

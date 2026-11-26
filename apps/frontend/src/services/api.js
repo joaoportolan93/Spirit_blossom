@@ -347,3 +347,86 @@ export async function getTrendingHashtags(limit = 8) {
   return res.data?.results || [];
 }
 
+// ----------------------------------------------------------------------------
+// API de Denúncias, Moderação e Painel Admin — Onda 8
+// ----------------------------------------------------------------------------
+
+export async function createReport({ target_type, target_id, reason, description = "" }) {
+  const res = await api.post("/api/reports/", {
+    target_type,
+    target_id,
+    reason,
+    description,
+  });
+  return res.data;
+}
+
+export async function getAdminStats() {
+  const res = await api.get("/api/admin/stats/");
+  return res.data;
+}
+
+export async function getAdminUsers({ search = "", status = "", page = 1 } = {}) {
+  const params = new URLSearchParams();
+  if (search) params.set("search", search);
+  if (status) params.set("status", status);
+  params.set("page", String(page));
+  const res = await api.get(`/api/admin/users/?${params.toString()}`);
+  return res.data;
+}
+
+export async function getAdminUserDetail(userId) {
+  const res = await api.get(`/api/admin/users/${userId}/`);
+  return res.data;
+}
+
+export async function updateAdminUserStatus(userId, payload) {
+  const res = await api.patch(`/api/admin/users/${userId}/`, payload);
+  return res.data;
+}
+
+export async function permanentlyDeleteAdminUser(userId, confirmUsername) {
+  const res = await api.delete(`/api/admin/users/${userId}/`, {
+    data: { confirm_username: confirmUsername },
+  });
+  return res.data;
+}
+
+export async function getAdminReports({ status = "pending", target_type = "all" } = {}) {
+  const params = new URLSearchParams();
+  if (status) params.set("status", status);
+  if (target_type && target_type !== "all") params.set("target_type", target_type);
+  const res = await api.get(`/api/admin/reports/?${params.toString()}`);
+  return res.data;
+}
+
+export async function executeReportAction(reportId, payload) {
+  const res = await api.post(`/api/admin/reports/${reportId}/action/`, payload);
+  return res.data;
+}
+
+export async function getAdminModerationLogs() {
+  const res = await api.get("/api/admin/moderation-logs/");
+  return res.data;
+}
+
+export async function getAdminFeatureFlags() {
+  const res = await api.get("/api/admin/feature-flags/");
+  return res.data;
+}
+
+export async function createAdminFeatureFlag(payload) {
+  const res = await api.post("/api/admin/feature-flags/", payload);
+  return res.data;
+}
+
+export async function updateAdminFeatureFlag(key, payload) {
+  const res = await api.patch(`/api/admin/feature-flags/${key}/`, payload);
+  return res.data;
+}
+
+export async function deleteAdminFeatureFlag(key) {
+  const res = await api.delete(`/api/admin/feature-flags/${key}/`);
+  return res.data;
+}
+
