@@ -188,4 +188,44 @@ describe("LoginForm Component (3 testes)", () => {
     delete window.__GOOGLE_TEST_TOKEN__;
     postSpy.mockRestore();
   });
+
+  it("7. Trata fluxo Google OAuth needs_signup e login bem-sucedido", async () => {
+    const postSpy = vi
+      .spyOn(api, "post")
+      .mockResolvedValueOnce({
+        data: { status: "needs_signup", onboarding_token: "tok", email: "new@example.com" },
+      })
+      .mockResolvedValueOnce({
+        data: { status: "logged_in" },
+      });
+    const mockSetUser = vi.fn();
+    vi.spyOn(authHook, "useAuth").mockReturnValue({
+      user: null,
+      loading: false,
+      login: mockLogin,
+      setUser: mockSetUser,
+      register: vi.fn(),
+      logout: vi.fn(),
+    });
+
+    window.__GOOGLE_TEST_TOKEN__ = "tok-1";
+    render(
+      <MemoryRouter>
+        <Login />
+      </MemoryRouter>
+    );
+
+    fireEvent.click(screen.getByTestId("google-login-button"));
+    await waitFor(() => {
+      expect(postSpy).toHaveBeenCalledTimes(1);
+    });
+
+    fireEvent.click(screen.getByTestId("google-login-button"));
+    await waitFor(() => {
+      expect(mockSetUser).toHaveBeenCalledWith({ is_authenticated: true });
+    });
+
+    delete window.__GOOGLE_TEST_TOKEN__;
+    postSpy.mockRestore();
+  });
 });

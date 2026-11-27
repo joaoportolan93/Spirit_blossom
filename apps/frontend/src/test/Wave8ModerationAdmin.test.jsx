@@ -9,6 +9,7 @@ import { ModerationQueue } from "../pages/admin/ModerationQueue";
 import { UserManagement } from "../pages/admin/UserManagement";
 import { AdminModerationLogs } from "../pages/admin/AdminModerationLogs";
 import { AdminSettings } from "../pages/admin/AdminSettings";
+import { PermanentDeleteModal } from "../components/admin/PermanentDeleteModal";
 import { PostCard } from "../components/PostCard";
 import { CommentItem } from "../components/CommentItem";
 import { Profile } from "../pages/Profile";
@@ -583,6 +584,47 @@ describe("Onda 8 — Denúncias, Moderação e Painel Admin", () => {
     render(<AdminSettings />);
     await waitFor(() => {
       expect(screen.getByText("Erro ao carregar as feature flags.")).toBeInTheDocument();
+    });
+  });
+
+  it("8. PermanentDeleteModal valida confirmação, exibe erro e AdminDashboard trata falha", async () => {
+    const onCancel = vi.fn();
+    const onConfirm = vi
+      .fn()
+      .mockRejectedValueOnce({ response: { data: { detail: "Falha ao excluir." } } });
+
+    render(
+      <PermanentDeleteModal
+        isOpen={true}
+        user={{ id: "u99", username: "alvo99" }}
+        onConfirm={onConfirm}
+        onCancel={onCancel}
+      />
+    );
+
+    fireEvent.change(screen.getByTestId("permanent-delete-username-input"), {
+      target: { value: "errado" },
+    });
+    fireEvent.submit(screen.getByTestId("permanent-delete-username-input").closest("form"));
+    expect(screen.getByText("Digite exatamente @alvo99 para confirmar.")).toBeInTheDocument();
+
+    fireEvent.change(screen.getByTestId("permanent-delete-username-input"), {
+      target: { value: "@alvo99" },
+    });
+    fireEvent.click(screen.getByTestId("confirm-permanent-delete-btn"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Falha ao excluir.")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText("Cancelar"));
+    expect(onCancel).toHaveBeenCalled();
+    cleanup();
+
+    vi.spyOn(api, "get").mockRejectedValueOnce(new Error("fail"));
+    render(<AdminDashboard />);
+    await waitFor(() => {
+      expect(screen.getByText("Não foi possível carregar as estatísticas.")).toBeInTheDocument();
     });
   });
 });
