@@ -729,8 +729,6 @@ class TestProtectedMediaDelivery:
         ok_resp = auth_client(friend).get(media_url)
         assert ok_resp.status_code == status.HTTP_200_OK
         assert ok_resp["X-Content-Type-Options"] == "nosniff"
-        if hasattr(ok_resp, "close"):
-            ok_resp.close()
 
     def test_private_account_media_blocked_for_non_follower(self, settings, tmp_path):
         settings.MEDIA_ROOT = tmp_path
@@ -747,8 +745,6 @@ class TestProtectedMediaDelivery:
         assert auth_client(stranger).get(media_url).status_code == status.HTTP_404_NOT_FOUND
         ok_resp = auth_client(follower).get(media_url)
         assert ok_resp.status_code == status.HTTP_200_OK
-        if hasattr(ok_resp, "close"):
-            ok_resp.close()
 
     def test_expired_ephemeral_media_returns_404(self, settings, tmp_path):
         settings.MEDIA_ROOT = tmp_path
@@ -844,8 +840,6 @@ class TestEphemeralDraftsAndPublish:
         dm_url = f"/api/media/{draft.media.first().file.name}"
         ok_resp = client.get(dm_url)
         assert ok_resp.status_code == status.HTTP_200_OK
-        if hasattr(ok_resp, "close"):
-            ok_resp.close()
         assert auth_client(other).get(dm_url).status_code == status.HTTP_404_NOT_FOUND
 
     def test_patch_draft_updates_duration_and_replaces_images(self, settings, tmp_path):
@@ -1052,7 +1046,6 @@ class TestEphemeralDraftsAndPublish:
         av_path = f"/api/media/{owner.profile.avatar.name}"
         ok_av = auth_client(viewer).get(av_path)
         assert ok_av.status_code == status.HTTP_200_OK
-        ok_av.close()
         assert auth_client(blocked).get(av_path).status_code == status.HTTP_404_NOT_FOUND
 
         # Post legado com imagem/video e comentario com imagem
@@ -1062,7 +1055,6 @@ class TestEphemeralDraftsAndPublish:
         leg_url = f"/api/media/{legacy_post.image.name}"
         ok_leg = auth_client(viewer).get(leg_url)
         assert ok_leg.status_code == status.HTTP_200_OK
-        ok_leg.close()
         assert auth_client(blocked).get(leg_url).status_code == status.HTTP_404_NOT_FOUND
 
         comment = Comment.objects.create(
@@ -1071,7 +1063,6 @@ class TestEphemeralDraftsAndPublish:
         cm_url = f"/api/media/{comment.image.name}"
         ok_cm = auth_client(viewer).get(cm_url)
         assert ok_cm.status_code == status.HTTP_200_OK
-        ok_cm.close()
         assert auth_client(blocked).get(cm_url).status_code == status.HTTP_404_NOT_FOUND
 
     def test_draft_detail_get_clear_images_empty_validation_and_404s(self, settings, tmp_path):

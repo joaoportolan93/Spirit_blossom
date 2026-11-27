@@ -65,6 +65,12 @@ class ProtectedMediaView(APIView):
         if not os.path.isfile(full_path):
             raise Http404()
 
-        response = FileResponse(open(full_path, "rb"), content_type=content_type)
+        # Em testes automatizados, evita FileResponse (streaming) para não disparar
+        # request_finished/close_old_connections no meio da transação de teste no Postgres.
+        if getattr(settings, "TESTING", False):
+            with open(full_path, "rb") as media_file:
+                response = HttpResponse(media_file.read(), content_type=content_type)
+        else:
+            response = FileResponse(open(full_path, "rb"), content_type=content_type)
         response["X-Content-Type-Options"] = "nosniff"
         return response

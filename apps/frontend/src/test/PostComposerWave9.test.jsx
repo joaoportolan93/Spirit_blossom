@@ -214,4 +214,109 @@ describe("PostComposer — Onda 9 (multi-imagens + efêmero)", () => {
     unmount();
     expect(URL.revokeObjectURL).toHaveBeenCalledWith(mockObjectURL);
   });
+
+  it("14. Seletor unificado aceita vídeo ou GIF e bloqueia mistura ou imagem >5MB", async () => {
+    render(<PostComposer />);
+    const input = screen.getByTestId("composer-image-input");
+
+    // Vídeo único funciona no botão unificado
+    const videoFile = new File([new Uint8Array([0x00, 0x00, 0x00, 0x18])], "clip.mp4", {
+      type: "video/mp4",
+    });
+    fireEvent.change(input, { target: { files: [videoFile] } });
+    expect(URL.createObjectURL).toHaveBeenCalled();
+
+    // GIF único substitui mídia anterior
+    const gifFile = new File(["gif89a"], "anim.gif", { type: "image/gif" });
+    fireEvent.change(input, { target: { files: [gifFile] } });
+    expect(URL.createObjectURL).toHaveBeenCalled();
+
+    // Imagem > 5MB é bloqueada
+    const bigImg = makeFile("huge.jpg");
+    Object.defineProperty(bigImg, "size", { value: 6 * 1024 * 1024 });
+    fireEvent.change(input, { target: { files: [bigImg] } });
+    expect(screen.getByTestId("composer-error")).toBeDefined();
+
+    // Misturar vídeo + imagem é bloqueado
+    fireEvent.change(input, { target: { files: [videoFile, makeFile("x.jpg")] } });
+    expect(screen.getByTestId("composer-error")).toBeDefined();
+
+    // Alterar ephemeral-selector diretamente funciona
+    const selector = screen.getByTestId("ephemeral-selector");
+    fireEvent.change(selector, { target: { value: "48" } });
+    expect(selector.value).toBe("48");
+    fireEvent.change(selector, { target: { value: "" } });
+    expect(selector.value).toBe("");
+  });
+
+  it("15. Publica vídeo único com expiração 7d, salva/edita rascunho efêmero com imagens e trata erro", async () => {
+    api.get.mockResolvedValueOnce({
+      data: [
+        {
+          id: "draft-9",
+          content_text: "Rascunho antigo",
+          visibility: "circle",
+          ephemeral_duration_hours: 48,
+        },
+      ],
+    });
+    api.patch.mockResolvedValueOnce({ data: { id: "draft-9" } });
+
+    render(<PostComposer />);
+
+    // Vídeo > 50MB dispara erro
+    const hugeVideo = new File(["v"], "huge.mp4", { type: "video/mp4" });
+    Object.defineProperty(hugeVideo, "size", { value: 60 * 1024 * 1024 });
+    fireEvent.change(screen.getByTestId("composer-image-input"), { target: { files: [hugeVideo] } });
+    expect(screen.getByText(/50 MB|máximo/i)).toBeDefined();
+
+    // Cicla até 7d (3 cliques: null -> 24 -> 48 -> 168)
+    const ephBtn = screen.getByTestId("ephemeral-btn");
+    fireEvent.click(ephBtn);
+    fireEvent.click(ephBtn);
+    fireEvent.click(ephBtn);
+    expect(screen.getByText("7d")).toBeDefined();
+
+    // Publica vídeo único válido com duração 168h
+    const okVideo = new File(["v"], "ok.mp4", { type: "video/mp4" });
+    fireEvent.change(screen.getByTestId("composer-image-input"), { target: { files: [okVideo] } });
+    fireEvent.click(screen.getByTestId("publish-button"));
+
+    await waitFor(() => {
+      expect(api.post).toHaveBeenCalled();
+      const fd = api.post.mock.calls[0][1];
+      expect(fd).toBeInstanceOf(FormData);
+      expect(fd.get("ephemeral_duration_hours")).toBe("168");
+      expect(fd.get("video")).toBe(okVideo);
+    });
+
+    // Salva rascunho com múltiplas imagens
+    fireEvent.change(screen.getByTestId("composer-image-input"), {
+      target: { files: [makeFile("d1.jpg")] },
+    });
+    fireEvent.change(screen.getByTestId("composer-textarea"), {
+      target: { value: "Texto do rascunho" },
+    });
+    fireEvent.click(ephBtn); // 24h
+    fireEvent.click(screen.getByTestId("save-draft-button"));
+    await waitFor(() => expect(api.post).toHaveBeenCalledTimes(2));
+
+    // Abre rascunhos, seleciona draft-9 e salva via PATCH
+    fireEvent.click(screen.getByTestId("toggle-drafts-button"));
+    await waitFor(() => expect(api.get).toHaveBeenCalledWith("/api/posts/drafts/"));
+    fireEvent.click(screen.getByText("Rascunho antigo"));
+    expect(screen.getByText("48h")).toBeDefined();
+
+    fireEvent.click(screen.getByTestId("save-draft-button"));
+    await waitFor(() => {
+      expect(api.patch).toHaveBeenCalledWith("/api/posts/drafts/draft-9/", expect.any(FormData));
+    });
+
+    // Erro na API de publicação mostra composer-error
+    api.post.mockRejectedValueOnce({ response: { data: { detail: "Erro simulado" } } });
+    fireEvent.click(screen.getByTestId("publish-button"));
+    await waitFor(() => {
+      expect(screen.getByTestId("composer-error")).toHaveTextContent("Erro simulado");
+    });
+  });
 });
