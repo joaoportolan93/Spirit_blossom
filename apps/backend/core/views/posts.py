@@ -10,15 +10,16 @@ from rest_framework.views import APIView
 from core.serializers.posts import DraftSerializer, PostEditSerializer, PostSerializer
 from core.services.posts import (
     bookmark_post,
-    create_draft,
     delete_draft,
     delete_post,
+    get_draft_for_author,
     get_post_detail_for_user,
     get_trending_hashtags,
     like_post,
     list_bookmarked_posts,
     list_drafts,
     list_posts_keyset,
+    publish_draft,
     search_posts,
     unbookmark_post,
     unlike_post,
@@ -83,8 +84,11 @@ class PostDetailView(APIView):
             post, data=request.data, partial=True, context={"request": request}
         )
         serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(PostSerializer(post, context={"request": request}).data)
+        updated_post = serializer.save()
+        refreshed = (
+            get_post_detail_for_user(post_id=updated_post.id, user=request.user) or updated_post
+        )
+        return Response(PostSerializer(refreshed, context={"request": request}).data)
 
     def delete(self, request, pk):
         post = get_post_detail_for_user(post_id=pk, user=request.user)
@@ -187,38 +191,81 @@ class BookmarkedPostListView(APIView):
 class DraftListCreateView(APIView):
     """
     GET  /api/posts/drafts/  → lista rascunhos do usuário
-    POST /api/posts/drafts/  → cria novo rascunho
+    POST /api/posts/drafts/  → cria novo rascunho (JSON ou multipart)
     """
 
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
         qs = list_drafts(author=request.user)
-        serializer = DraftSerializer(qs, many=True)
+        serializer = DraftSerializer(qs, many=True, context={"request": request})
         return Response(serializer.data)
 
     def post(self, request):
-        serializer = DraftSerializer(data=request.data)
+        serializer = DraftSerializer(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
-        draft = create_draft(
-            author=request.user,
-            content_text=serializer.validated_data["content_text"],
+        draft = serializer.save()
+        return Response(
+            DraftSerializer(draft, context={"request": request}).data,
+            status=status.HTTP_201_CREATED,
         )
-        return Response(DraftSerializer(draft).data, status=status.HTTP_201_CREATED)
 
 
 class DraftDetailView(APIView):
     """
+    GET    /api/posts/drafts/<id>/  → detalha rascunho do usuário
+    PATCH  /api/posts/drafts/<id>/  → edita rascunho (JSON ou multipart)
     DELETE /api/posts/drafts/<id>/  → exclui rascunho do usuário
     """
 
     permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+        draft = get_draft_for_author(author=request.user, draft_id=pk)
+        if not draft:
+            return Response({"detail": "Não encontrado."}, status=status.HTTP_404_NOT_FOUND)
+        return Response(DraftSerializer(draft, context={"request": request}).data)
+
+    def patch(self, request, pk):
+        draft = get_draft_for_author(author=request.user, draft_id=pk)
+        if not draft:
+            return Response({"detail": "Não encontrado."}, status=status.HTTP_404_NOT_FOUND)
+        serializer = DraftSerializer(
+            draft,
+            data=request.data,
+            partial=True,
+            context={"request": request},
+        )
+        serializer.is_valid(raise_exception=True)
+        updated = serializer.save()
+        return Response(DraftSerializer(updated, context={"request": request}).data)
 
     def delete(self, request, pk):
         deleted = delete_draft(author=request.user, draft_id=pk)
         if not deleted:
             return Response({"detail": "Não encontrado."}, status=status.HTTP_404_NOT_FOUND)
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class DraftPublishView(APIView):
+    """
+    POST /api/posts/drafts/<id>/publish/  → publica rascunho (inicia expires_at aqui)
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        draft = get_draft_for_author(author=request.user, draft_id=pk)
+        if not draft:
+            return Response({"detail": "Não encontrado."}, status=status.HTTP_404_NOT_FOUND)
+        try:
+            post = publish_draft(draft=draft, author=request.user)
+        except ValueError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            PostSerializer(post, context={"request": request}).data,
+            status=status.HTTP_201_CREATED,
+        )
 
 
 class TrendingHashtagsView(APIView):

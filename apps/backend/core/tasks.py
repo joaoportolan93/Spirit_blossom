@@ -94,3 +94,24 @@ def purge_expired_banned_accounts_task(dry_run: bool | None = None):
     results = purge_expired_banned_accounts(dry_run=dry_run)
     logger.info("Expurgo de contas banidas processado: %d registros", len(results))
     return len(results)
+
+
+# ---------------------------------------------------------------------------
+# Onda 9 — Limpeza de posts efêmeros expirados
+# ---------------------------------------------------------------------------
+
+
+@shared_task(name="core.cleanup_expired_ephemeral_posts")
+def cleanup_expired_ephemeral_posts():
+    """
+    Remove em lote posts efêmeros expirados (expires_at <= now) e seus arquivos físicos.
+    Executada a cada hora pelo Celery Beat. Delega ao service para cumprir ADR-N2/N21.
+    """
+    from core.services.posts import purge_expired_ephemeral_posts
+
+    deleted_count = purge_expired_ephemeral_posts()
+    if deleted_count:
+        logger.info(
+            "cleanup_expired_ephemeral_posts: %d posts efêmeros expirados removidos.", deleted_count
+        )
+    return deleted_count

@@ -5,6 +5,7 @@ import { ArrowLeft, ChevronLeft } from "lucide-react";
 import CommentItem from "./CommentItem";
 import { RichText } from "./RichText";
 import { MediaViewer } from "./MediaAttachment";
+import { PostMediaGrid, PostLightbox } from "./PostCard";
 import { getCommentReplies } from "../services/api";
 
 const LINE_BG = "bg-zinc-700";
@@ -29,6 +30,7 @@ export function FocusedThreadView({
   const [nextCursor, setNextCursor] = useState(initialNextCursor);
   const [loadingMore, setLoadingMore] = useState(false);
   const [activeReplyId, setActiveReplyId] = useState(null);
+  const [lightboxIndex, setLightboxIndex] = useState(null);
 
   // Ancoragem de scroll via useLayoutEffect
   useLayoutEffect(() => {
@@ -145,6 +147,25 @@ export function FocusedThreadView({
                 videoUrl={post.video_url}
                 alt={t("post.media_alt", "Mídia da publicação")}
               />
+              {post.media && post.media.length > 0 && (
+                <div className="mt-2">
+                  <PostMediaGrid
+                    media={post.media}
+                    authorName={post.author?.username || "anônimo"}
+                    t={t}
+                    onOpenLightbox={(idx) => setLightboxIndex(idx)}
+                  />
+                </div>
+              )}
+              {lightboxIndex !== null && post.media && post.media.length > 0 && (
+                <PostLightbox
+                  media={post.media}
+                  initialIndex={lightboxIndex}
+                  authorName={post.author?.username || "anônimo"}
+                  t={t}
+                  onClose={() => setLightboxIndex(null)}
+                />
+              )}
             </div>
           </div>
         </div>

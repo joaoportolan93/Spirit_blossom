@@ -30,7 +30,7 @@ describe("Mídia em Posts e Comentários (Imagem, GIF e Vídeo)", () => {
     }
   });
 
-  it("1. PostComposer: seleciona GIF, exibe preview, remove e envia FormData com mídia", async () => {
+  it("1. PostComposer: seleciona vídeo ou GIF pelo botão unificado e envia FormData", async () => {
     const postSpy = vi.spyOn(api, "post").mockResolvedValueOnce({
       data: { id: "p-gif", content_text: "", image_url: "/media/post_images/anim.gif" },
     });
@@ -38,25 +38,24 @@ describe("Mídia em Posts e Comentários (Imagem, GIF e Vídeo)", () => {
 
     renderWithAuth(<PostComposer onPostCreated={onPostCreated} />);
 
-    // Botões imagem e vídeo também acionam seus inputs
-    const imgClickSpy = vi.spyOn(screen.getByTestId("composer-image-input"), "click");
+    // Botão unificado "Adicionar mídias" aciona composer-image-input (múltiplo, aceita imagens e vídeos)
+    const mediaInput = screen.getByTestId("composer-image-input");
+    const imgClickSpy = vi.spyOn(mediaInput, "click");
     fireEvent.click(screen.getByTestId("composer-image-btn"));
     expect(imgClickSpy).toHaveBeenCalledTimes(1);
+    expect(mediaInput.multiple).toBe(true);
+    expect(mediaInput.accept).toContain("video/mp4");
 
-    const vidClickSpy = vi.spyOn(screen.getByTestId("composer-video-input"), "click");
-    fireEvent.click(screen.getByTestId("composer-video-btn"));
-    expect(vidClickSpy).toHaveBeenCalledTimes(1);
-
-    // Seleciona vídeo, verifica preview e remove
+    // Seleciona vídeo pelo input unificado, verifica preview e remove
     const vidFile = new File(["ftypisom"], "clip.mp4", { type: "video/mp4" });
-    fireEvent.change(screen.getByTestId("composer-video-input"), { target: { files: [vidFile] } });
+    fireEvent.change(mediaInput, { target: { files: [vidFile] } });
     await waitFor(() => {
       expect(screen.getByTestId("media-preview-video")).toBeInTheDocument();
     });
     fireEvent.click(screen.getByTestId("remove-media-btn"));
     expect(screen.queryByTestId("media-preview-container")).not.toBeInTheDocument();
 
-    // Verifica que os botões Imagem, GIF e Vídeo existem e acionam os inputs
+    // Verifica que o botão GIF aciona seu input
     const gifBtn = screen.getByTestId("composer-gif-btn");
     const gifInput = screen.getByTestId("composer-gif-input");
     const clickSpy = vi.spyOn(gifInput, "click");
@@ -89,19 +88,18 @@ describe("Mídia em Posts e Comentários (Imagem, GIF e Vídeo)", () => {
   it("2. PostComposer: rejeita imagem acima de 5 MB e vídeo acima de 50 MB", async () => {
     renderWithAuth(<PostComposer />);
 
-    const imgInput = screen.getByTestId("composer-image-input");
+    const mediaInput = screen.getByTestId("composer-image-input");
     const bigImg = new File(["x"], "huge.png", { type: "image/png" });
     Object.defineProperty(bigImg, "size", { value: 6 * 1024 * 1024 });
-    fireEvent.change(imgInput, { target: { files: [bigImg] } });
+    fireEvent.change(mediaInput, { target: { files: [bigImg] } });
 
     await waitFor(() => {
       expect(screen.getByTestId("composer-error")).toHaveTextContent("5 MB");
     });
 
-    const vidInput = screen.getByTestId("composer-video-input");
     const bigVid = new File(["v"], "huge.mp4", { type: "video/mp4" });
     Object.defineProperty(bigVid, "size", { value: 55 * 1024 * 1024 });
-    fireEvent.change(vidInput, { target: { files: [bigVid] } });
+    fireEvent.change(mediaInput, { target: { files: [bigVid] } });
 
     await waitFor(() => {
       expect(screen.getByTestId("composer-error")).toHaveTextContent("50 MB");

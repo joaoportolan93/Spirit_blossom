@@ -4,6 +4,8 @@ from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from .models import (
     AccessLog,
     Block,
+    Draft,
+    DraftMedia,
     FeatureFlag,
     Follow,
     Hashtag,
@@ -12,6 +14,7 @@ from .models import (
     Notification,
     PermanentBanRecord,
     Post,
+    PostMedia,
     PushDevice,
     Report,
     User,
@@ -54,12 +57,46 @@ class AccessLogAdmin(admin.ModelAdmin):
         return False
 
 
+class PostMediaInline(admin.TabularInline):
+    model = PostMedia
+    extra = 0
+    readonly_fields = ("id", "file", "order", "alt_text", "width", "height", "created_at")
+    can_delete = False
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+
 @admin.register(Post)
 class PostAdmin(admin.ModelAdmin):
-    list_display = ("id", "author", "visibility", "created_at")
+    list_display = ("id", "author", "visibility", "get_is_ephemeral", "expires_at", "created_at")
     list_filter = ("visibility", "created_at")
     search_fields = ("content_text", "author__username")
     readonly_fields = ("id", "created_at", "search_vector")
+    inlines = [PostMediaInline]
+
+    @admin.display(boolean=True, description="Efêmero")
+    def get_is_ephemeral(self, obj):
+        return obj.is_ephemeral
+
+
+class DraftMediaInline(admin.TabularInline):
+    model = DraftMedia
+    extra = 0
+    readonly_fields = ("id", "file", "order", "alt_text", "width", "height", "created_at")
+    can_delete = False
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(Draft)
+class DraftAdmin(admin.ModelAdmin):
+    list_display = ("id", "author", "visibility", "ephemeral_duration_hours", "updated_at")
+    list_filter = ("visibility", "ephemeral_duration_hours")
+    search_fields = ("content_text", "author__username")
+    readonly_fields = ("id", "created_at", "updated_at")
+    inlines = [DraftMediaInline]
 
 
 @admin.register(Follow)

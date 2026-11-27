@@ -340,3 +340,60 @@ msgstr "hashtag"
 msgid "hashtags"
 msgstr "hashtags"
 
+msgid "expira em"
+msgstr "expires at"
+
+msgid "Definido no momento da publicação. Null = permanente."
+msgstr "Set at publish time. Null = permanent."
+
+msgid "duração efêmera (h)"
+msgstr "ephemeral duration (h)"
+
+msgid "24, 48 ou 168 horas. Null = permanente."
+msgstr "24, 48 or 168 hours. Null = permanent."
+
+msgid "24, 48 ou 168 horas ao publicar. Null = permanente."
+msgstr "24, 48 or 168 hours on publish. Null = permanent."
+
+msgid "24 horas"
+msgstr "24 hours"
+
+msgid "48 horas"
+msgstr "48 hours"
+
+msgid "7 dias"
+msgstr "7 days"
+
+msgid "mídia do post"
+msgstr "post media"
+
+msgid "mídias do post"
+msgstr "post media"
+
+msgid "mídia do rascunho"
+msgstr "draft media"
+
+msgid "mídias do rascunho"
+msgstr "draft media"
+
+msgid "texto alternativo"
+msgstr "alt text"
+
+msgid "ordem"
+msgstr "order"
+
+msgid "largura (px)"
+msgstr "width (px)"
+
+msgid "altura (px)"
+msgstr "height (px)"
+
+msgid "Cada imagem não pode exceder 5 MB."
+msgstr "Each image must not exceed 5 MB."
+
+msgid "Máximo de %(n)d imagens por publicação."
+msgstr "Maximum of %(n)d images per post."
+
+msgid "Dimensões da imagem excedem o limite de %(px)d px por lado."
+msgstr "Image dimensions exceed the limit of %(px)d px per side."
+

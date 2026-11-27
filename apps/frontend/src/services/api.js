@@ -112,8 +112,9 @@ export async function getPostDetail(postId) {
   return res.data;
 }
 
-export async function editPost(postId, content_text) {
-  const res = await api.patch(`/api/posts/${postId}/`, { content_text });
+export async function editPost(postId, payload) {
+  const body = typeof payload === "string" ? { content_text: payload } : payload;
+  const res = await api.patch(`/api/posts/${postId}/`, body);
   return res.data;
 }
 

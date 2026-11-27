@@ -6,7 +6,7 @@ Reexportados aqui para compatibilidade com Django migrations e `from core.models
 from .feature_flags import FeatureFlag
 from .moderation import ModerationLog, PermanentBanRecord, Report
 from .notifications import Notification, PushDevice
-from .posts import Draft, Hashtag, Post, PostBookmark, PostLike
+from .posts import Draft, DraftMedia, Hashtag, Post, PostBookmark, PostLike, PostMedia
 from .social import Block, Follow, Mute
 from .users import (
     AccessLog,
@@ -21,6 +21,7 @@ __all__ = [
     "AccessLog",
     "Block",
     "Draft",
+    "DraftMedia",
     "FeatureFlag",
     "Follow",
     "Hashtag",
@@ -33,6 +34,7 @@ __all__ = [
     "Post",
     "PostBookmark",
     "PostLike",
+    "PostMedia",
     "PushDevice",
     "Report",
     "User",

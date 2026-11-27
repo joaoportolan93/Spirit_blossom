@@ -67,7 +67,12 @@ class ProfileDetailView(APIView):
             )
 
         counters = get_profile_counters(target_user=target, viewer=request.user)
-        posts_qs = visible_posts_for(request.user).filter(author=target).order_by("-id")[:20]
+        posts_qs = (
+            visible_posts_for(request.user)
+            .filter(author=target)
+            .prefetch_related("media")
+            .order_by("-id")[:20]
+        )
         posts_data = PostSerializer(posts_qs, many=True, context={"request": request}).data
 
         return Response(
@@ -113,7 +118,10 @@ class ProfileLikesView(APIView):
 
         liked_post_ids = PostLike.objects.filter(user=target).values_list("post_id", flat=True)
         posts_qs = (
-            visible_posts_for(request.user).filter(id__in=liked_post_ids).order_by("-id")[:20]
+            visible_posts_for(request.user)
+            .filter(id__in=liked_post_ids)
+            .prefetch_related("media")
+            .order_by("-id")[:20]
         )
         posts_data = PostSerializer(posts_qs, many=True, context={"request": request}).data
         return Response(posts_data, status=status.HTTP_200_OK)

@@ -6,10 +6,10 @@ import { MediaPreview, useMediaSelection } from "./MediaAttachment";
 import {
   X,
   Image as ImageIcon,
-  Video as VideoIcon,
   Globe,
   Users,
   ChevronDown,
+  Clock,
 } from "lucide-react";
 /** useAuth seguro — retorna fallback quando fora de AuthProvider (testes unitários isolados). */
 function useSafeAuth() {
@@ -112,6 +112,14 @@ function VisibilityDropdown({ value, onChange, t }) {
 
 const MAX_CHARS = 3000;
 const CHARS_THRESHOLD = 300;
+const MAX_MULTI_IMAGES = 4;
+const MAX_MULTI_IMAGE_BYTES = 5 * 1024 * 1024;
+const EPHEMERAL_OPTIONS = [
+  { value: null, labelKey: "post.ephemeral_permanent" },
+  { value: 24, labelKey: "post.ephemeral_24h" },
+  { value: 48, labelKey: "post.ephemeral_48h" },
+  { value: 168, labelKey: "post.ephemeral_7d" },
+];
 
 /**
  * PostComposer — Compositor de posts do Spirit Blossom.
@@ -144,6 +152,13 @@ export function PostComposer({ onPostCreated, isOpen, onClose }) {
   const [mentionQuery, setMentionQuery] = useState(null);
   const [mentionResults, setMentionResults] = useState([]);
   const [mentionIndex, setMentionIndex] = useState(0);
+  // Onda 9: múltiplas imagens + efêmero
+  const [selectedImages, setSelectedImages] = useState([]); // File[]
+  const [imagePreviewUrls, setImagePreviewUrls] = useState([]); // ObjectURL[]
+  const [altTexts, setAltTexts] = useState([]); // string[]
+  const [ephemeralDuration, setEphemeralDuration] = useState(null); // null | 24 | 48 | 168
+  const [editingDraftId, setEditingDraftId] = useState(null);
+  const imagePreviewsRef = useRef([]);
   const textareaRef = useRef(null);
   const modalRef = useRef(null);
   const mentionRangeRef = useRef(null);
@@ -156,19 +171,126 @@ export function PostComposer({ onPostCreated, isOpen, onClose }) {
     setMediaError,
     imageInputRef,
     gifInputRef,
-    videoInputRef,
     handleImageSelect,
     handleVideoSelect,
     clearMedia,
   } = useMediaSelection(t);
+
+  useEffect(() => {
+    imagePreviewsRef.current = imagePreviewUrls;
+  }, [imagePreviewUrls]);
+
+  // Previne memory leak de ObjectURLs no unmount
+  useEffect(() => {
+    return () => {
+      imagePreviewsRef.current.forEach((url) => URL.revokeObjectURL?.(url));
+    };
+  }, []);
+
+  const revokeAllPreviews = () => {
+    imagePreviewsRef.current.forEach((url) => URL.revokeObjectURL?.(url));
+  };
+
+  const clearMultiImages = () => {
+    revokeAllPreviews();
+    setSelectedImages([]);
+    setImagePreviewUrls([]);
+    setAltTexts([]);
+    if (imageInputRef.current) imageInputRef.current.value = "";
+  };
+
+  const handleUnifiedMediaSelect = (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+
+    const isVideoFile = (f) =>
+      f.type?.startsWith("video/") || /\.(mp4|webm|mov)$/i.test(f.name || "");
+    const isGifFile = (f) =>
+      f.type === "image/gif" || /\.gif$/i.test(f.name || "");
+
+    const hasVideo = files.some(isVideoFile);
+    const hasGif = files.some(isGifFile);
+
+    if (hasVideo) {
+      if (files.length > 1 || selectedImages.length > 0) {
+        setError(t("post.media_mix_error"));
+        e.target.value = "";
+        return;
+      }
+      clearMultiImages();
+      setError("");
+      handleVideoSelect(e);
+      return;
+    }
+
+    if (hasGif) {
+      if (files.length > 1 || selectedImages.length > 0) {
+        setError(t("post.media_mix_error"));
+        e.target.value = "";
+        return;
+      }
+      clearMultiImages();
+      setError("");
+      handleImageSelect(e);
+      return;
+    }
+
+    handleMultiImageSelect(e);
+  };
+
+  const handleMultiImageSelect = (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+
+    const oversized = files.find((f) => f.size > MAX_MULTI_IMAGE_BYTES);
+    if (oversized) {
+      setError(t("post.image_too_large"));
+      if (imageInputRef.current) imageInputRef.current.value = "";
+      return;
+    }
+
+    const availableSlots = MAX_MULTI_IMAGES - selectedImages.length;
+    if (availableSlots <= 0 || files.length > availableSlots) {
+      setError(t("post.max_images"));
+    } else {
+      setError("");
+    }
+
+    const accepted = files.slice(0, Math.max(0, availableSlots));
+    if (accepted.length > 0) {
+      const urls = accepted.map((f) => URL.createObjectURL(f));
+      setSelectedImages((prev) => [...prev, ...accepted]);
+      setImagePreviewUrls((prev) => [...prev, ...urls]);
+      setAltTexts((prev) => [...prev, ...accepted.map(() => "")]);
+      clearMedia();
+    }
+    if (imageInputRef.current) imageInputRef.current.value = "";
+  };
+
+  const handleRemoveImage = (idx) => {
+    URL.revokeObjectURL(imagePreviewUrls[idx]);
+    setSelectedImages((prev) => prev.filter((_, i) => i !== idx));
+    setImagePreviewUrls((prev) => prev.filter((_, i) => i !== idx));
+    setAltTexts((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  const handleAltTextChange = (idx, value) => {
+    setAltTexts((prev) => {
+      const next = [...prev];
+      next[idx] = value;
+      return next;
+    });
+  };
+
+  const hasMultiImages = selectedImages.length > 0;
 
   const trimmed = content.trim();
   const charsRemaining = MAX_CHARS - content.length;
   const isOverLimit = charsRemaining < 0;
   const showCharCount = charsRemaining <= CHARS_THRESHOLD;
   const hasMedia = Boolean(selectedImage || selectedVideo);
-  const canSubmit = (trimmed.length > 0 || hasMedia) && !isOverLimit && !isSubmitting;
-  const canSaveDraft = trimmed.length > 0 && !isOverLimit && !isSavingDraft;
+  const canSubmit = (trimmed.length > 0 || hasMedia || hasMultiImages) && !isOverLimit && !isSubmitting;
+  const canSaveDraft = (trimmed.length > 0 || hasMultiImages) && !isOverLimit && !isSavingDraft;
 
   // Auto-resize do textarea
   useEffect(() => {
@@ -299,21 +421,37 @@ export function PostComposer({ onPostCreated, isOpen, onClose }) {
     setMediaError("");
     try {
       let response;
-      if (selectedImage || selectedVideo) {
+      if (hasMultiImages) {
+        // Onda 9: FormData com múltiplas imagens
+        const formData = new FormData();
+        formData.append("content_text", content);
+        formData.append("visibility", visibility);
+        selectedImages.forEach((img) => formData.append("images", img));
+        altTexts.forEach((alt) => formData.append("alt_texts", alt));
+        if (ephemeralDuration !== null) {
+          formData.append("ephemeral_duration_hours", String(ephemeralDuration));
+        }
+        response = await api.post("/api/posts/", formData);
+      } else if (selectedImage || selectedVideo) {
         const formData = new FormData();
         formData.append("content_text", content);
         formData.append("visibility", visibility);
         if (selectedImage) formData.append("image", selectedImage);
         if (selectedVideo) formData.append("video", selectedVideo);
+        if (ephemeralDuration !== null) {
+          formData.append("ephemeral_duration_hours", String(ephemeralDuration));
+        }
         response = await api.post("/api/posts/", formData);
       } else {
-        response = await api.post("/api/posts/", {
-          content_text: content,
-          visibility,
-        });
+        const body = { content_text: content, visibility };
+        if (ephemeralDuration !== null) body.ephemeral_duration_hours = ephemeralDuration;
+        response = await api.post("/api/posts/", body);
       }
       setContent("");
       clearMedia();
+      clearMultiImages();
+      setEphemeralDuration(null);
+      setEditingDraftId(null);
       setMentionQuery(null);
       setMentionResults([]);
       mentionRangeRef.current = null;
@@ -337,7 +475,32 @@ export function PostComposer({ onPostCreated, isOpen, onClose }) {
     setError("");
     setDraftMessage("");
     try {
-      await api.post("/api/posts/drafts/", { content_text: content });
+      let payload;
+      if (hasMultiImages) {
+        const formData = new FormData();
+        formData.append("content_text", content);
+        formData.append("visibility", visibility);
+        selectedImages.forEach((img) => formData.append("images", img));
+        altTexts.forEach((alt) => formData.append("alt_texts", alt));
+        if (ephemeralDuration !== null) {
+          formData.append("ephemeral_duration_hours", String(ephemeralDuration));
+        }
+        payload = formData;
+      } else if (ephemeralDuration !== null || visibility !== "public" || editingDraftId) {
+        payload = {
+          content_text: content,
+          visibility,
+          ephemeral_duration_hours: ephemeralDuration,
+        };
+      } else {
+        payload = { content_text: content };
+      }
+
+      if (editingDraftId) {
+        await api.patch(`/api/posts/drafts/${editingDraftId}/`, payload);
+      } else {
+        await api.post("/api/posts/drafts/", payload);
+      }
       setDraftMessage(t("post.draft_saved"));
       setTimeout(() => setDraftMessage(""), 3000);
     } catch (err) {
@@ -368,7 +531,10 @@ export function PostComposer({ onPostCreated, isOpen, onClose }) {
   };
 
   const handleSelectDraft = (draft) => {
-    setContent(draft.content_text);
+    setContent(draft.content_text || "");
+    if (draft.visibility) setVisibility(draft.visibility);
+    setEphemeralDuration(draft.ephemeral_duration_hours ?? null);
+    setEditingDraftId(draft.id || null);
     setMentionQuery(null);
     setMentionResults([]);
     mentionRangeRef.current = null;
@@ -498,6 +664,64 @@ export function PostComposer({ onPostCreated, isOpen, onClose }) {
         t={t}
       />
 
+      {/* Onda 9: Grid de preview de múltiplas imagens */}
+      {hasMultiImages && (
+        <div data-testid="multi-image-preview" className="mt-2 mb-2 grid grid-cols-2 gap-1.5">
+          {imagePreviewUrls.map((url, idx) => (
+            <div key={idx} className="relative group rounded-lg overflow-hidden bg-zinc-800" data-testid={`image-preview-${idx}`}>
+              <img
+                src={url}
+                alt={altTexts[idx] || t("post.media_alt_fallback", { username: user?.username || "você" })}
+                className="w-full h-28 object-cover"
+              />
+              {/* Botão remover */}
+              <button
+                type="button"
+                data-testid={`remove-image-${idx}`}
+                onClick={() => handleRemoveImage(idx)}
+                className="overlay-contrast absolute top-1 right-1 w-6 h-6 rounded-full bg-black/70 text-white flex items-center justify-center hover:bg-black/90 transition"
+                aria-label={t("post.remove_image")}
+              >
+                <X size={12} />
+              </button>
+              {/* ALT text quick-edit */}
+              <div className="absolute bottom-0 left-0 right-0 bg-black/70 px-1.5 py-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition">
+                <input
+                  type="text"
+                  data-testid={`alt-text-input-${idx}`}
+                  value={altTexts[idx] || ""}
+                  onChange={(e) => handleAltTextChange(idx, e.target.value)}
+                  maxLength={300}
+                  placeholder={t("post.alt_text_placeholder")}
+                  className="overlay-contrast w-full bg-transparent text-white text-[10px] placeholder-zinc-300 focus:outline-none"
+                  aria-label={t("post.alt_text_label")}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Onda 9: Seletor de expiração efêmera */}
+      <div className="mb-2">
+        <select
+          data-testid="ephemeral-selector"
+          value={ephemeralDuration === null ? "" : String(ephemeralDuration)}
+          onChange={(e) => {
+            const v = e.target.value;
+            setEphemeralDuration(v === "" ? null : Number(v));
+          }}
+          aria-label={t("post.ephemeral_label")}
+          className="sr-only"
+        >
+          {EPHEMERAL_OPTIONS.map((opt) => (
+            <option key={String(opt.value)} value={opt.value === null ? "" : String(opt.value)}>
+              {t(opt.labelKey)}
+            </option>
+          ))}
+        </select>
+      </div>
+
       {/* Mensagens de feedback de erro / sucesso */}
       {(error || mediaError) && (
         <p data-testid="composer-error" className="text-xs text-rose-500 mt-2 mb-2">
@@ -512,13 +736,14 @@ export function PostComposer({ onPostCreated, isOpen, onClose }) {
 
       {/* Barra de ações inferior: mídia + contagem + publicar */}
       <div className="flex items-center justify-between pt-3 border-t border-zinc-800/80">
-        {/* Botões de mídia */}
+        {/* Botões de mídia: unificado (imagens/vídeo) + GIF + efêmero */}
         <div className="flex items-center gap-1">
           <input
             ref={imageInputRef}
             type="file"
-            accept="image/jpeg,image/png,image/webp,image/gif"
-            onChange={handleImageSelect}
+            accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime"
+            multiple
+            onChange={handleUnifiedMediaSelect}
             data-testid="composer-image-input"
             className="hidden"
           />
@@ -526,16 +751,11 @@ export function PostComposer({ onPostCreated, isOpen, onClose }) {
             ref={gifInputRef}
             type="file"
             accept="image/gif"
-            onChange={handleImageSelect}
+            onChange={(e) => {
+              clearMultiImages();
+              handleImageSelect(e);
+            }}
             data-testid="composer-gif-input"
-            className="hidden"
-          />
-          <input
-            ref={videoInputRef}
-            type="file"
-            accept="video/mp4,video/webm,video/quicktime"
-            onChange={handleVideoSelect}
-            data-testid="composer-video-input"
             className="hidden"
           />
           <button
@@ -544,8 +764,8 @@ export function PostComposer({ onPostCreated, isOpen, onClose }) {
             onClick={() => imageInputRef.current?.click()}
             disabled={isSubmitting}
             className="p-2 rounded-lg text-pink-400 hover:text-pink-300 hover:bg-pink-500/10 transition disabled:opacity-50"
-            title={t("post.add_media", "Adicionar mídia")}
-            aria-label={t("post.add_media", "Adicionar mídia")}
+            title={t("post.add_media_unified")}
+            aria-label={t("post.add_media_unified")}
           >
             <ImageIcon size={18} />
           </button>
@@ -560,17 +780,35 @@ export function PostComposer({ onPostCreated, isOpen, onClose }) {
           >
             GIF
           </button>
-          <button
-            type="button"
-            data-testid="composer-video-btn"
-            onClick={() => videoInputRef.current?.click()}
-            disabled={isSubmitting}
-            className="p-2 rounded-lg text-pink-400 hover:text-pink-300 hover:bg-pink-500/10 transition disabled:opacity-50"
-            title={t("post.add_video", "Adicionar vídeo")}
-            aria-label={t("post.add_video", "Adicionar vídeo")}
-          >
-            <VideoIcon size={18} />
-          </button>
+
+          {/* Onda 9: Seletor de expira\u00e7\u00e3o (glyph rel\u00f3gio) */}
+          <div className="relative">
+            <button
+              type="button"
+              data-testid="ephemeral-btn"
+              onClick={() => {
+                const opts = EPHEMERAL_OPTIONS.map((o) => o.value);
+                const curIdx = opts.indexOf(ephemeralDuration);
+                const nextIdx = (curIdx + 1) % opts.length;
+                setEphemeralDuration(opts[nextIdx]);
+              }}
+              disabled={isSubmitting}
+              className={`p-2 rounded-lg transition disabled:opacity-50 ${
+                ephemeralDuration !== null
+                  ? "text-amber-400 hover:text-amber-300 hover:bg-amber-500/10"
+                  : "text-pink-400 hover:text-pink-300 hover:bg-pink-500/10"
+              }`}
+              title={t("post.ephemeral_label")}
+              aria-label={t("post.ephemeral_label")}
+            >
+              <Clock size={18} />
+            </button>
+            {ephemeralDuration !== null && (
+              <span className="ephemeral-duration-pill absolute -top-1 -right-1 text-[9px] font-bold text-amber-400 bg-zinc-900 border border-amber-500/40 rounded-full px-1 leading-none">
+                {ephemeralDuration === 168 ? "7d" : `${ephemeralDuration}h`}
+              </span>
+            )}
+          </div>
 
           {/* Botões de rascunho preservados para compatibilidade com testes (ocultos da UI) */}
           <button

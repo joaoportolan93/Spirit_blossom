@@ -515,6 +515,21 @@ def export_user_data(*, user) -> dict:
             "likes_count": p.likes_count,
             "comments_count": p.comments_count,
             "created_at": p.created_at.isoformat(),
+            # Onda 9 — posts efêmeros e mídia múltipla
+            "expires_at": p.expires_at.isoformat() if p.expires_at else None,
+            "ephemeral_duration_hours": p.ephemeral_duration_hours,
+            "media": [
+                {
+                    "id": str(pm.id),
+                    "url": pm.file.url if pm.file else None,
+                    "alt_text": pm.alt_text,
+                    "order": pm.order,
+                    "width": pm.width,
+                    "height": pm.height,
+                    "created_at": pm.created_at.isoformat(),
+                }
+                for pm in p.media.all()
+            ],
         }
         for p in list_posts_for_export(author=user)
     ]
@@ -524,9 +539,23 @@ def export_user_data(*, user) -> dict:
         {
             "id": str(d.id),
             "content_text": d.content_text,
+            "visibility": d.visibility,
+            "ephemeral_duration_hours": d.ephemeral_duration_hours,
+            "media": [
+                {
+                    "id": str(dm.id),
+                    "url": dm.file.url if dm.file else None,
+                    "alt_text": dm.alt_text,
+                    "order": dm.order,
+                    "width": dm.width,
+                    "height": dm.height,
+                    "created_at": dm.created_at.isoformat(),
+                }
+                for dm in d.media.all()
+            ],
             "updated_at": d.updated_at.isoformat(),
         }
-        for d in Draft.objects.filter(author=user).order_by("-updated_at")
+        for d in Draft.objects.filter(author=user).prefetch_related("media").order_by("-updated_at")
     ]
 
     # Curtidas de post
@@ -704,11 +733,15 @@ def delete_account(*, user, raw_refresh_token: Optional[str] = None) -> None:
 
     try:
         from comments.models import Comment
+        from core.services.posts import delete_drafts_for_user
         from core.utils.media_security import delete_media_file
 
         for p in list_posts_for_export(author=user):
             delete_media_file(p.image)
             delete_media_file(p.video)
+            for pm in p.media.all():
+                delete_media_file(pm.file)
+        delete_drafts_for_user(user)
         for c in Comment.objects.filter(author=user):
             delete_media_file(c.image)
             delete_media_file(c.video)

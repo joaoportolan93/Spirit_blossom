@@ -165,3 +165,22 @@ html[data-theme="oled"] .border-zinc-700\/80,
 html[data-theme="oled"] .border-zinc-700\/60 {
   border-color: #1f1f1f !important;
 }
+
+/* ==========================================================================
+   ONDA 9: CONTRASTE OVERLAY / LIGHTBOX / BADGE EFÊMERO NOS 3 TEMAS
+   ========================================================================== */
+html[data-theme="light"] .overlay-contrast,
+html[data-theme="light"] [data-testid="post-lightbox"] .overlay-contrast {
+  color: #ffffff !important;
+}
+
+html[data-theme="light"] .ephemeral-pill {
+  background-color: #fef3c7 !important;
+  color: #92400e !important;
+  border-color: rgba(217, 119, 6, 0.45) !important;
+}
+
+html[data-theme="light"] .ephemeral-duration-pill {
+  background-color: #fef3c7 !important;
+  color: #92400e !important;
+}

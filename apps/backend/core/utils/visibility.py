@@ -6,6 +6,7 @@ Regras centralizadas de visibilidade, bloqueio bilateral e filtros sociais (ADR-
 from typing import Any, Dict, Optional
 
 from django.db.models import Exists, OuterRef, Q, QuerySet
+from django.utils import timezone
 
 from core.models import Block, Follow, Mute, Post, UserProfile
 
@@ -20,7 +21,9 @@ def visible_posts_for(user) -> QuerySet:
        - FOLLOWERS: visível ao autor e a seguidores ativos
        - CIRCLE: visível ao autor e a amigos próximos ativos (is_close_friend=True)
        - Autor sempre vê suas próprias publicações
+    4. Posts efêmeros expirados (expires_at <= now) são invisíveis a todos (Onda 9)
     """
+
     if user is None or getattr(user, "is_anonymous", True):
         # Visitante anônimo / não autenticado: login obrigatório em todo o produto
         return Post.objects.none()
@@ -37,6 +40,9 @@ def visible_posts_for(user) -> QuerySet:
 
     qs = Post.objects.exclude(Exists(blocked_by_user)).exclude(Exists(blocker_of_user))
     qs = qs.filter(is_hidden=False, author__is_active=True, author__status="active")
+
+    # Exclui posts efêmeros expirados (Onda 9) — invisíveis a todos incluindo o autor
+    qs = qs.exclude(expires_at__lte=timezone.now())
 
     # IDs de autores que o usuário segue ativamente
     following_active_ids = Follow.objects.filter(
@@ -166,11 +172,16 @@ def get_profile_counters(*, target_user, viewer=None) -> Dict[str, int]:
             "following_count": 0,
         }
 
-    # Posts públicos acessíveis
-    posts_count = Post.objects.filter(
-        author=target_user,
-        visibility=Post.Visibility.PUBLIC,
-    ).count()
+    # Posts públicos acessíveis (exclui ocultos e efêmeros já expirados)
+    posts_count = (
+        Post.objects.filter(
+            author=target_user,
+            visibility=Post.Visibility.PUBLIC,
+            is_hidden=False,
+        )
+        .exclude(expires_at__lte=timezone.now())
+        .count()
+    )
     followers_count = Follow.objects.filter(
         followed=target_user,
         status=Follow.Status.ACTIVE,

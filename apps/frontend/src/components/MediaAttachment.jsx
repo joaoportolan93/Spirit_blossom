@@ -159,8 +159,8 @@ export function MediaViewer({ imageUrl, videoUrl, alt, compact = false }) {
     <div
       data-testid="media-viewer"
       onClick={(e) => e.stopPropagation()}
-      className={`mt-2.5 rounded-xl overflow-hidden border border-zinc-800/80 bg-black/20 ${
-        compact ? "max-w-md" : "w-full"
+      className={`mt-3 rounded-xl overflow-hidden border border-zinc-800/80 bg-black/20 ${
+        compact ? "max-w-sm" : "max-w-lg"
       }`}
     >
       {imageUrl && (
@@ -173,8 +173,8 @@ export function MediaViewer({ imageUrl, videoUrl, alt, compact = false }) {
             e.stopPropagation();
             window.open(imageUrl, "_blank", "noopener,noreferrer");
           }}
-          className={`w-full object-contain cursor-pointer hover:opacity-95 transition-opacity ${
-            compact ? "max-h-80" : "max-h-[480px]"
+          className={`w-full object-cover cursor-pointer hover:opacity-95 transition-opacity ${
+            compact ? "max-h-56" : "max-h-72 sm:max-h-80"
           }`}
         />
       )}
@@ -186,7 +186,7 @@ export function MediaViewer({ imageUrl, videoUrl, alt, compact = false }) {
           data-testid="media-video"
           onClick={(e) => e.stopPropagation()}
           className={`w-full object-contain bg-black ${
-            compact ? "max-h-80" : "max-h-[480px]"
+            compact ? "max-h-56" : "max-h-72 sm:max-h-80"
           }`}
         />
       )}

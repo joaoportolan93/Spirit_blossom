@@ -173,6 +173,11 @@ CELERY_BEAT_SCHEDULE = {
         "task": "core.flush_expired_tokens",
         "schedule": crontab(hour=3, minute=0),  # 03:00 America/Sao_Paulo todo dia
     },
+    # Onda 9 — posts efêmeros: limpa a cada hora
+    "cleanup-expired-ephemeral-posts-hourly": {
+        "task": "core.cleanup_expired_ephemeral_posts",
+        "schedule": crontab(minute=0),  # todo início de hora
+    },
 }
 
 # ---------------------------------------------------------------------------
